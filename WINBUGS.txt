@@ -1,0 +1,14 @@
+audio engine crashes sometimes
+stop problems
+
+
+
+
+
+Done:
+#MAC - number key keycodes?
+#alt-O doesn't highlight Options menu, etc.
+#dialogs don't adjust scrolls correctly :( :( :(
+#o, n, and audio dialogs not focused???
+#-b and -B defaults??
+#different pitches depending on key!!!

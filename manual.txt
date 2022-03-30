@@ -1,0 +1,350 @@
+A guide to the Rationale just intonation sequencer.
+
+
+=Modes=
+
+Rationale has 4 modes: ADD, EDIT, DELETE, and SCRUB.  ADD allows you to insert notes using a hover that displays ratios; EDIT allows you to select, move, and change existing notes; DELETE simply deletes any notes you click on; SCRUB, the most recently implemented and least stable mode, plays any notes that are aligned with the mouse when you hold the left mouse button down (and move it left or right).  Hit A for ADD, E for EDIT, D for DELETE, and S for SCRUB.
+
+
+=Tone Changes=
+
+In ADD mode, you can hit "T" or "t" at any time to change the tonal center of the hover and any existing notes.  You will see two numbers, above and below the widest part of the hover and notes, which tell you the current tonal center in relation to 1:1, or Middle C.  To automatically return to 1:1, hit "G" or "g".
+Rationale also provides regions.  You may leave certain notes unchanged, with the same tonal center, while you change the tonal center of the hover and other notes.  Type any number while holding down "R" or "r".  When you release "R", the hover changes to the region you just typed.  If you only hit "R" and release it, you go to Region 0.  If you type a number higher than the highest existing region, a new region is created one higher than the highest, with the same tonal center.  The number above the thin line on the hover/notes, starting with "r", tells you the current region.  To change the color of this number, hit "n" or "N" or select the Region Dialog from the Edit menu.
+When you hit "T" or "t", only the notes in the same region as the hover change tonal center.
+In EDIT mode, there is no automatic tone-center change, but you can change the region of selected notes by hitting "R" and optionally typing numbers while holding it down.
+"N" or "n" or "Region Dialog" from the Edit menu will bring up the Region Dialog, which displays the current tonal center and color of each region; you can only edit the color from here.
+
+
+=The Cursor=
+
+The cursor starts at the beginning.  To move it:
+Page-Down: Next Beat
+Page-Up: Previous Beat
+Control + Page-Down: Next Bar
+Control + Page-Up: Previous Bar
+Home: Beginning
+End: End of last note
+
+
+=Instruments=
+
+Instruments are set much the same way as regions, but with the SHIFT key instead of "R".  There is no Instrument 0, and simply hitting SHIFT will NOT change your instrument (you're welcome!).  Only if you type numbers while holding SHIFT will it change.  This works in ADD and EDIT modes, just like region changes, and, like them, it will only go 1 higher than the highest existing instrument.  If you have 4 instruments and hit SHIFT-4-9, you don't add Instrument 49, you add Instrument 5.
+The sounds and options for the various instruments are set using the Output Dialog.
+All of the notes of a certain instrument can be hidden by holding ALT (Control on OSX) and typing the number of the instrument.  Do it again to show the instrument, or hit Alt-S (Control-S on OSX) to show all.
+
+
+=Voices=
+
+I stole the voices concept straight from Csound.  I'm the Jesse James of voices.  If you want to slur notes, but select which ones they slur to, you need to tell them which notes to connect to.  A note with instrument 4 and voice 2 will only connect (slur) to notes with instrument 4 and voice 2.
+Setting voices is exactly the same as setting regions and instruments, with some changes: voice 0 exists, but it means no voice, an unslurred note, and it displays nothing.  Any other voice displays under the thin line on the hover/note.  Also, the voice may be set to any number, they don't count up sequentially like regions and instruments.  Do NOT go higher than 999.  The limits of Csound's voices were not very clear to me, though it can definitely handle up to 999.  Rationale will divide the voice by 1000, add it to the Csound instrument number, and play it through Csound.
+
+
+=Connection=
+
+A very simple concept is connection.  Hit "C" or "c" to make added notes (in ADD mode) or selected notes (in EDIT mode) connect to the following note with the same voice.  The last note of any voice will not attempt to connect to the end of the piece, but will remember whether it is set to connect, and if you add a note after it, will connect to it.  Hit "X" or "x" to disconnect added notes/selected notes.
+Connected notes are shown with a light pink line between them.
+Connecting notes only makes their duration negative- in Csound, this means the notes are indefinite.  For the default Rationale instrument and Soundfont instrument, this means something, but for OSC instruments it means nothing; for Csound instruments, it is up to the user to handle this information in their orchestra.
+
+
+=Duration=
+
+Duration is set with the numbers, again, for both ADD and EDIT modes:
+1 - 32nd note
+2 - 16th note
+3 - 8th note
+4 - quarter note
+5 - half note
+6 - whole note
+7 - double whole note
+8 - 4x whole note
+9 - 8x whole note
+Hold any number and hit SPACE to make it dotted, i.e. 1 1/2 times the duration.
+Hold any number and hit "T" or "t" to make it triplet, i.e. 2/3 the duration.
+Hold SHIFT and hit the UP/DOWN ARROWS to increase/decrease duration in tiny increments, rounded off to the nearest 16th note triplet...
+Hold SHIFT and hit the RIGHT/LEFT ARROWS to increase/decrease duration in tiny increments, rounded off to the nearest 32nd note.
+So, if you want to add or edit a note to have a duration of three quarter notes plus a 16th note, hit 6, then hold SHIFT and hit the LEFT ARROW 7 times.
+Because of the way this is handled, ties are not necessary in Rationale.  Notes don't have to end at the end of a bar.
+NOTE- entering arbitrary tuplets is on the way.  I haven't worked out the best way to implement this yet, but I know no serious musician could take himself/herself seriously without being able to use some serious tuplets. --This is now implemented, serious musicians see below.
+
+
+=Quantization/Tuplets=
+
+The resolution of the possible times for notes, in both ADD and EDIT modes, can be set to 16th notes (default) by hitting "." or ">", or to 16th note triplets by hitting "," or "<".  For other values, hit Control (Command on OSX) and type a number.  When you release Control, quantization, for both note placement and duration, is set to 1/x quarter notes, where x is the number you typed.  To make a quintuplet with 5 to a quarter note, hit Ctl-5.  To make a quintuplet with 5 to an eighth note, hit Ctl-1-0.  After doing this, Shift + Up/Down Arrows will adjust the duration of the hover (ADD mode) or selected notes (EDIT mode) in increments of this fraction as well.  Hit Ctl-6 to reset this to default (16th note triplets).
+
+
+=Db/Volume=
+
+In ADD or EDIT modes, hit "Y" or "y" to go up, and "H" or "h" to go down.  The size of the triangle notehead changes accordingly.  There are a relatively small number of possibilities here, and if you need finer control, I'm open to suggestions to change this system.
+
+
+=Note Banks=
+
+You can edit the set of available ratios.  You can maintain any number of banks of ratios, and switch between them quickly.  Holding "B" and typing any number while in ADD or EDIT mode switches to that bank, if it exists, or to the highest available bank.  To edit the banks (you start with one default bank), hit Ctl+B or select "Notebanks" from the "Edit" menu.
+This dialog has a lot...  Each new bank adds a button at the top to bring it into focus.  The number on this button is the number you type while holding "B" to make this bank active.  The "Current" list shows all the ratios in this bank.  The "Suggested" list shows a number of ratios that are not currently used, but that fall within the chosen prime limit, which can be changed using the drop-down box on the right.  The arrow buttons between these columns add and remove selected ratios.  The "Save" and "Load" buttons save a whole set of notebanks as one file.  You can type an arbitrary ratio in the "Enter Ratio" space; entering "8 7", "8:7", "8/7" will all have the same effect.  As you enter a ratio, The button under "Ratio & Inverse" becomes populated with the reciprocal of the ratio you enter, adjusted to fall between 1 and 2.  Then hitting enter on the keyboard or the "Just Ratio" button will add just the ratio, or hitting the "Ratio & Inverse" button will add the ratio you enter and its reciprocal.
+"Clear" just clears the selected bank, not the whole set.  "Default" replaces the current bank with the default bank.
+
+
+=Output=
+
+This is pretty involved, but ultimately really intuitive.
+Hit "O" or "o", or select "Output Dialog" from the Edit menu.  The first tab to show up is the Csound tab, which you can ignore if you're only using Soundfonts or OSC.  If you want to use a Csound orchestra, you can load it, edit it, and reload it here, as well as set it to reload automatically.  This way you can edit it in emacs or what not, and when you reopen the dialog or play the score, it will reload itself.  I highly recommend this, because it is not my purpose to make a Csound editor, so all I am willing to give you is an ugly scrollbar.
+Each instrument has an unlimited number of potential output rules.  When you SCRUB notes in SCRUB mode, or when you play the score in any of the other modes, each note activates Csound, Soundfont, or OSC outputs, according to what you put here.
+I hope it's obvious how to change instruments: the buttons labeled "i1", "i2", etc. at the top, after the one labeled "CSD".  Any time you add an instrument, by holding SHIFT and pressing numbers or by clicking "New Instrument" here, you get another instrument page.
+Each instrument page has a color widget, mute, solo, and a list of outputs (initially empty).  The Solo and Mute here apply to the entire instrument.  To add a Csound output, type "C" or "c" in the little box that I've provided and hit TAB.  "S" or "s" for a Soundfont output.  "O" or "o" for an OSC output.
+Csound, Soundfont, and OSC outputs have in common the X (remove) button, mute and solo buttons, and volume sliders.  Solo and Mute here only apply to the selected instrument; if you solo an output line, it only becomes solo for that instrument; if you want to silence all other instruments, you have to check the Solo button for the instrument as well.  Of course, if you mute an instrument, none of its outputs will sound.
+Hit the "Play" button to hear how your score will sound, and it will magically change into a "Stop" button.
+-Csound-
+Csound outputs have a field to type a number or string for the Csound instrument.  You see "time dur" next, because these are always sent automatically from Rationale for p2 and p3 (in Csound talk).  Next is a field you can edit; "db" and "freq" are there by default, meaning that p4 and p5 are populated by each note's volume and frequency.  You can customize what aspects of the note are sent by typing them here; there is a guide under this field.  Available are "inst", "voice", "time", "dur" (duration), "db", "freq", "region", "num" (numerator), "den" (denominator), and a set of values consisting of the letter "a" followed by a number.  This "a" stands for "arbitrary", and each note's arbitrary fields can be edited by right-clicking on it with the mouse and selecting "Arbitrary", in ADD, EDIT, or DELETE modes.  These arbitrary fields are referenced starting at number 1, not 0.
+-Soundfont-
+Soundfont outputs have buttons for "sf2" (a soundfont file), "bank", and "program".  Under "sf2" you'll see "Load" and a list with any files you've already loaded.  When you load or select a file, the "bank" menu will populate with the available banks, and when you then select one of them, the "program" menu will be available.  It's meant to go from left to right.  If you change either of the first two, the ones to the right return to "None" and you have to select again from their menus.  In case there's any confusion, the menus appear when you click on each button.  You have 4 fields under these for Attack, Decay, Sustain, and Release.  A, D, and R take millisecond arguments, and S is relative to 1, which is full volume.  The way Rationale handles these is pretty simple, and if you want more control, I suggest learning some Csound and making a more involved instrument.  Then, if it works well, I suggest contributing it to Rationale!
+-OSC-
+Here you have fields for host, port, path, and "send", which works exactly like the free field in a Csound output: you type names here, and when the note plays, it looks up those names in the note's properties and sends the results to that host, port, and path.  If you want to send note-off messages too, check the "Send Noteoff" box and fill in the note-off path and send values.  OSC functioning may be a little funny in SCRUB mode; if you notice anything uproariously funny, please submit it as a bug report so I can have a laugh too.
+
+
+=Tempos and Meter changes=
+
+Hit "P" or "p" for the Tempo Dialog and "M" or "m" for the Meter Dialog, or click above the score window on the Tempo or Meter strips.
+What else is there to say?  If you add two tempos on the same bar and beat, the tempo will jump instantly at that point.  If two tempos are separated by some time, the tempo will ramp up or down from one to the other.  Rationale won't allow you to put more than two tempo changes, or more than one meter change, at any one spot, you sneaky sneak.  "BPM" stands for "beats per minute" and just means the tempo.  "Top" means the top of the time signature, and "Bottom" means the bottom.  Stop me if this is too hard.  The "Sort" button only sorts tempos/meters in the dialog window- this is done automatically in the score if you hit "OK" or "Apply".
+Meter changes don't affect notes at all.  Tempo changes, on the other hand, will attempt to keep the same bar/beat number if the meter setup changes.  But notes just sit there until you move them.  I won't mess with deleting notes when you make a bar shorter, or spreading them out when you make a bar longer.  Just cut and paste them.
+
+
+=Cut, Copy, and Paste=
+
+Control-X, Control-C, and Control-V, or from the Edit menu or the right-click menu.  The Paste command brings up a dialog box.  By default, it fills in the location of the cursor, but you can change this, with a resolution of 1/120th of a quarter note.  If you're not a very serious contemporary musician, you can paste multiple times at once, just set the number of repetitions and tell Rationale how far apart to space them.
+
+
+=Undo/Redo=
+
+All note editing functions can be undone, as well as note adding, deleting, pasting, cutting, and dragging; tempo, meter, region, and audio option dialog changes (each handled as one monolithic operation when you hit "OK"); tone center changes; new instruments; and new regions.  Output changes in the output dialog are undoable, but only the instrument pages; the info on the Csound tab is not undoable.  Selecting/deselecting notes is NOT undoable (as it is in graphics programs like Photoshop and GIMP- I liked the idea, but since leaving EDIT mode deselects everything, users could lose redo-able actions by changing modes).  Zoom change, hover changes, and time cursor movement are not undoable.
+Control-Z undoes and Control-Y redoes (Command-Z and Command-Y in OSX).
+
+
+=Zoom=
+
+Unlike standard notation, Rationale represents note durations with fixed widths.  A quarter note is always 4 times the width of a 16th note.  Rationale also allows notes far closer vertically than standard notation.  Because of this, you can zoom the score horizontally or vertically, independently.  Press +/= to zoom in horizontally, -/_ to zoom out horizontally, and backspace to reset the horizontal zoom to default.  Use the same keystrokes together with Control (or Command on OSX) for vertical zoom.
+
+
+=Hiding/Showing Instruments=
+
+Since Rationale puts all instruments in one big field, there's a problem that traditional notation doesn't have: different instruments playing the same note cover each other.  In order to see overlapped notes, you'll have to hide some instruments.  Hold the Alt key and type a number, then release Alt.  Notes with that instrument number will magically disappear!  It still sounds if you play the score, but it's invisible.  Hit Alt and the instrument number to see it again.  Any instruments that are hidden are shown at the bottom right in the status bar.  Hit Alt and "S" to show all, or select "Show All" from the View menu.
+Do not try to add notes for an instrument that is hidden.  Rationale doesn't check for this yet, and it sends your existing notes into limbo, like the family cat in the Vincent Price version of 'The Fly'.
+
+
+=Audio Options=
+
+Under the Options menu, select Audio.  You have Real-Time, AIFF, or WAV output.  For Real-Time, select a module, and then a particular DAC for that module.  -b and -B are Csound options you can look up in the free Csound Manual if you want finer control.  -1 means the default value in this case.
+To enter your own command line, since I don't really know how to set stuff like this up, just check the box you see there and type in your options.
+You need to set a sample rate your hardware can handle.  If your hardware can't handle the default of 44100, you might want to buy a computer made after 1970.  Control rate is set automatically if you set the "ksmps" value, and vice versa.  "ksmps" must be an integer, Control Rate not necessarily.
+You can set any number of audio output channels, but 2 is probably best if you're using any Soundfont outputs or the "ratdefault" Csound instrument.
+The Play button here will let you hear your score with the current options.  It changes to "Stop" to stop it.
+
+
+=Key and Mouse Bindings for Score Window=
+
+*for Mac OSX, substitute the Command key wherever you see "Ctl", and the Option key to subtract from a selection in EDIT mode*
+
+by Function:
+-Universal-
+ADD mode = A
+EDIT mode = E
+DELETE mode = D
+SCRUB mode = S
+Output Dialog = O
+Tempo Dialog = P
+Meter Dialog = M
+Region Dialog = N
+Notebank Dialog = Ctl + B
+Audio Options Dialog = Ctl + D
+New Score = Ctl + N
+Open Rationale File = Ctl + O
+Save Rationale File = Ctl + S
+Save As... = Ctl + Shift + S
+Reload Rationale File = Ctl + R
+Quit = Ctl + Q
+Select All Notes = Ctl + A
+Undo = Ctl + Z
+Redo = Ctl + Y
+Cursor to Next Beat = Page-Down
+Cursor to Previous Beat = Page-Up
+Cursor to Next Bar = Ctl + Page-Down
+Cursor to Previous Bar = Ctl + Page-Up
+Cursor to Beginning = Home
+Cursor to End = End
+Hide/Show Instrument = Alt + Numbers
+Show All Instruments = Alt + S
+Zoom In Horizontal = +/=
+Zoom Out Horizontal = -/_
+Zoom Reset Horizontal = Backspace
+Zoom In Vertical = Ctl + +/=
+Zoom Out Vertical = Ctl + -/_
+Zoom Reset Vertical = Ctl + Backspace
+Drag Score = Middle-Click
+Scroll Score Vertically = Mouse Wheel
+
+-ADD Mode-
+Play/Stop = Spacebar
+Change Tonal Center = T
+1:1 Tonal Center = G
+Instrument Change = SHIFT + Numbers
+Voice Change = V + Numbers
+Region Change = R + Numbers
+Notebank Change = B + Numbers
+Duration Change = Number
+Dotted Duration Change = Number + Spacebar
+Triplet Duration Change = Number + T
+Triplet 16th Note Incremental Duration Change = SHIFT + UP/DOWN Arrows
+32nd Note Incremental Duration Change = SHIFT + LEFT/RIGHT Arrows
+Note Volume Up/Down = Y/H
+Quantize to 16th Note Triplets = ,
+Quantize to 16th Notes = .
+Quantize to 1/x Quarter Notes = Ctl + Numbers
+Set Notes to Connected = C
+Set Notes to Unconnected = X
+Add Note = Left-Click
+Edit Menu = Right-Click
+
+-EDIT Mode-
+Play/Stop = Spacebar
+Instrument Change = SHIFT + numbers
+Voice Change = V + Numbers
+Region Change = R + Numbers
+Notebank Change = B + Numbers
+Duration Change = Number
+Dotted Duration Change = Number + Spacebar
+Triplet Duration Change = Number + T
+Triplet 16th Note Incremental Duration Change = SHIFT + UP/DOWN Arrows
+32nd Note Incremental Duration Change = SHIFT + LEFT/RIGHT Arrows
+Note Volume Up/Down = Y/H
+Quantize to 16th Note Triplets = ,
+Quantize to 16th Notes = .
+Quantize to 1/x Quarter Notes = Ctl + Numbers
+Connect Notes = C
+Disconnect Notes = X
+Delete Notes = Delete
+Cut = Ctl + X
+Copy = Ctl + C
+Paste Dialog = Ctl + V
+Select Notes (SHIFT to add to current selection, CONTROL to subtract from it) = Left-Click + Drag
+Transpose Notes Vertically (SHIFT to Drag Horizontally) = Left-Click + Drag While Over a Note
+Edit Duration = Left-Click + Drag Over End of Note
+Edit Menu = Right-Click
+
+-DELETE Mode-
+Play/Stop = Spacebar
+Delete Note = Left-Click
+Edit Menu = Right-Click
+
+-SCRUB Mode-
+Sound Notes Under Mouse Pointer = Left-Click + Drag
+
+
+by Key:
+-Universal-
+A = ADD mode
+E = EDIT mode
+D = DELETE mode
+S = SCRUB mode
+O = Output Dialog
+P = Tempo Dialog
+M = Meter Dialog
+N = Region Dialog
+Ctl + B = Notebank Dialog
+Ctl + D = Audio Options Dialog
+Ctl + N = New Score
+Ctl + O = Open Rationale File
+Ctl + S = Save Rationale File
+Ctl + Shift + S = Save As...
+Ctl + R = Reload Rationale File
+Ctl + Q = Quit
+Ctl + A = Select All Notes
+Ctl + Z = Undo
+Ctl + Y = Redo
+Page-Down = Cursor to Next Beat
+Page-Up = Cursor to Previous Beat
+Ctl + Page-Down = Cursor to Next Bar
+Ctl + Page-Up = Cursor to Previous Bar
+Home = Cursor to Beginning
+End = Cursor to End
+Alt + Numbers = Hide/Show Instrument
+Alt + S = Show All Instruments
++/= = Zoom In Horizontal
+-/_ = Zoom Out Horizontal
+Backspace = Zoom Reset Horizontal
+Ctl + +/= = Zoom In Vertical
+Ctl + -/_ = Zoom Out Vertical
+Ctl + Backspace = Zoom Reset Vertical
+Middle-Click = Drag Score
+Mouse Wheel = Scroll Score Vertically
+
+-ADD Mode-
+Spacebar = Play/Stop
+T = Change Tonal Center
+G = 1:1 Tonal Center
+SHIFT + Numbers = Instrument Change
+V + Numbers = Voice Change
+R + Numbers = Region Change
+B + Numbers = Notebank Change
+Number = Duration Change
+Number + Spacebar = Dotted Duration Change
+Number + T = Triplet Duration Change
+SHIFT + UP/DOWN Arrows = Triplet 16th Note Incremental Duration Change
+SHIFT + LEFT/RIGHT Arrows = 32nd Note Incremental Duration Change
+Y/H = Note Volume Up/Down
+, = Quantize to 16th Note Triplets
+. = Quantize to 16th Notes
+Ctl + Numbers = Quantize to 1/x Quarter Notes
+C = Set Notes to Connected
+X = Set Notes to Unconnected
+Left-Click = Add Note
+Right-Click = Edit Menu
+
+-EDIT Mode-
+Spacebar = Play/Stop
+SHIFT + numbers = Instrument Change
+V + Numbers = Voice Change
+R + Numbers = Region Change
+B + Numbers = Notebank Change
+Number = Duration Change
+Number + Spacebar = Dotted Duration Change
+Number + T = Triplet Duration Change
+SHIFT + UP/DOWN Arrows = Triplet 16th Note Incremental Duration Change
+SHIFT + LEFT/RIGHT Arrows = 32nd Note Incremental Duration Change
+Y/H = Note Volume Up/Down
+, = Quantize to 16th Note Triplets
+. = Quantize to 16th Notes
+Ctl + Numbers = Quantize to 1/x Quarter Notes
+C = Connect Notes
+X = Disconnect Notes
+Delete = Delete Notes
+Ctl + X = Cut
+Ctl + C = Copy
+Ctl + V = Paste Dialog
+Left-Click + Drag = Select Notes (SHIFT to add to current selection, CONTROL to subtract from it)
+Left-Click + Drag While Over a Note = Transpose Notes Vertically (SHIFT to Drag Horizontally)
+Left-Click + Drag Over End of Note = Edit Duration
+Right-Click = Edit Menu
+
+-DELETE Mode-
+Spacebar = Play/Stop
+Left-Click = Delete Note
+Right-Click = Edit Menu
+
+-SCRUB Mode-
+Left-Click + Drag = Sound Notes Under Mouse Pointer
+
+
+Miscellaneous:
+
+All of the options in the right-click menu will apply to the note you're hovering over (in ADD, EDIT, or DELETE modes), and if that note is selected, they apply to all selected notes.  If you select some notes and then right-click over an UNSELECTED note, the changes are only applied to that note.  Arbitrary field editing only ever applies to single notes.
+
+If you use an always-on instrument that should be on even in SCRUB mode, include the text "ratalways" in a comment in the appropriate score line; otherwise, SCRUB mode deletes all "i" score events to prevent things like percussion from playing while you're scrubbing.  Gotta stay clean.
+
+On play, the macros $RATBASE and $RATSTART are available, for the base frequency and the amount of score time to be skipped.  The latter will almost never be right if the tempo is not 60 continuously, so its usefulness is questionable, if not downright nonexistent.  I promise to think about how to make it more useful.
+
+Don't use anything starting with the letters "rat" or "RAT".  They may interfere with internal operations.  Nothing else should interfere with anything, but I make no promises.  Barack Obama does not approve this message.
+
+If you use score expressions in your Csound outputs, separate them: "[" and "]" should ideally have spaces before and after.  For example: "freq voice [ time + dur ] a1 a2 a3"
+
+The Tkinter toolkit, through which Rationale has graphics, is somehow incapable of handling the + button in Mac OSX, to maximize the window.  Look under the View menu for the "Maximize" command.  I haven't had time to make it restore the previous size yet, but if you want the whole screen, this should approximate it in most cases.
+
+Tkinter is also incapable of moving the time cursor in OSX unless the user is moving the mouse or otherwise interacting with the program.  Don't be alarmed when it doesn't move; if you move the mouse you'll see it catch up.  There's NOTHING I can do about this but to rewrite my program.  Good luck getting me to do that.

@@ -1,0 +1,18 @@
+subprocess/socket/wrong format? for rataudiotester.py...
+meter/tempo/bar canvases and widgets too small
+"x" buttons in dialogs empty and misplaced
+??no maximize
+"NavGetReply failed, -128" on save cancel
+
+
+Done:
+#stipples don't change on note under mouse (activeoutline, etc., instead)
+#colors from output dialog don't apply
+#Images don't show in tempo dialog/canvas
+#right scroll half off screen
+
+
+
+
+#ijchain: <das> chuckkh: expected, turn on the custom MDEF to get images
+#ijchain: <das> i.e. set the global variable '::tk::mac::useCustomMDEF' to 1 to

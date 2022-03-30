@@ -1,8 +1,26 @@
-#!/usr/bin/python2.5
+##    Copyright 2008, 2009 Charles S. Hubbard, Jr.
+##
+##    This file is part of Rationale.
+##
+##    Rationale is free software: you can redistribute it and/or modify
+##    it under the terms of the GNU General Public License as published by
+##    the Free Software Foundation, either version 3 of the License, or
+##    (at your option) any later version.
+##
+##    Rationale is distributed in the hope that it will be useful,
+##    but WITHOUT ANY WARRANTY; without even the implied warranty of
+##    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+##    GNU General Public License for more details.
+##
+##    You should have received a copy of the GNU General Public License
+##    along with Rationale.  If not, see <http://www.gnu.org/licenses/>.
 
-import Tix as tk
+
+#import Tix as tk
+import Tkinter as tk
 import tkColorChooser as tkcc
 import copy
+import sys
 
 class regiondialog:
     def __init__(self, parent=None):
@@ -11,14 +29,23 @@ class regiondialog:
         self.regionmaybe = copy.deepcopy(self.myparent.regionlist)
         self.regionfr = tk.Toplevel(self.myroot, width=640, height=480)
         self.regionfr.title("Regions")
+        if sys.platform.count("win32"):
+            try: self.regionfr.iconbitmap('rat32.ico')
+            except: pass
         self.regionfr.rowconfigure(0, weight=1)
         self.regionfr.rowconfigure(1, weight=0)
         self.regionfr.columnconfigure(0, weight=1)
-        self.regionbuttons = tk.ButtonBox(self.regionfr, width=640, height=80)
-        self.regionbuttons.add('ok', text='OK', command=self.ok)
-        self.regionbuttons.add('cancel', text='Cancel', command=self.cancel)
-        self.regionbuttons.add('apply', text='Apply', command=self.apply)
-        self.regionbuttons.grid(row=1, column=0, sticky='ew')
+#        self.regionbuttons = tk.ButtonBox(self.regionfr, width=640, height=80)
+#        self.regionbuttons.add('ok', text='OK', command=self.ok)
+#        self.regionbuttons.add('cancel', text='Cancel', command=self.cancel)
+#        self.regionbuttons.add('apply', text='Apply', command=self.apply)
+
+        self.regionbuttons = tk.Frame(self.regionfr, width=640, height=80, relief="raised", bd=1)
+        tk.Button(self.regionbuttons, text="OK", command=self.ok).grid(row=0, column=0, padx=10)
+        tk.Button(self.regionbuttons, text="Cancel", command=self.cancel).grid(row=0, column=1, padx=10)
+        tk.Button(self.regionbuttons, text="Apply", command=self.apply).grid(row=0, column=2, padx=10)
+
+        self.regionbuttons.grid(row=1, column=0, sticky='ew', ipady=20)
         self.canvas = tk.Canvas(self.regionfr)
         self.canvas.grid(row=0, column=0, sticky='nesw')
         self.canvas.rowconfigure(2, weight=1)
@@ -43,13 +70,19 @@ class regiondialog:
                               lambda
                               event, arg1="scroll", arg2=1, arg3="units":
                               self.canvas.yview(arg1, arg2, arg3), "+")
+        self.regionfr.bind("<MouseWheel>",
+                          lambda
+                          event, arg1="scroll", arg3="units":
+                              self.canvaswheel(arg1, event, arg3))
 
         self.regionlinelist = []
 
 #        print self.regionmaybe
-        for reg in self.regionmaybe:
-            number = self.regionmaybe.index(reg)
+        for number, reg in enumerate(self.regionmaybe):
             newline = self.addregionline(reg, number)
+        self.regionfr.update_idletasks()
+        self.canvas.config(scrollregion=self.canvas.bbox("all"))
+        self.canvas.yview_moveto(0.0)
 
 #        self.blankcolor = tk.Frame(self.botrow, width=40, height=40, bg='#999999')
 #        self.blankcolor.grid(row=0, column=0, rowspan=2, padx=10)
@@ -68,11 +101,11 @@ class regiondialog:
         self.regionfr.bind("<Return>", self.ok)
         self.regionfr.bind("<Escape>", self.cancel)
 
-    def newregion(self):
-        number = len(self.regionmaybe)
-        newregion = 3
-        self.addregionline(newregion, number)
-        self.regionmaybe.append(newregion)
+    def canvaswheel(self, arg1, event, arg3):
+	if event.delta > 0:
+            self.canvas.yview(arg1, -1, arg3)
+	else:
+	    self.canvas.yview(arg1, 1, arg3)
 
     def addregionline(self, region, number):
         newline = regionline(self, region, number)
@@ -91,13 +124,35 @@ class regiondialog:
 #        del self.myparent.
 
     def apply(self):
-        self.myparent.regionlist = copy.deepcopy(self.regionmaybe)
-        for notewidget in self.myparent.notewidgetlist:
-            note = notewidget.note
-            notewidget.updateregion()
-        self.myparent.score.itemconfigure(self.myparent.hover.hrnumdisp, fill=self.myparent.regionlist[self.myparent.hover.hregion].color)
-        self.myparent.score.itemconfigure(self.myparent.hover.hrdendisp, fill=self.myparent.regionlist[self.myparent.hover.hregion].color)
-        self.myparent.score.itemconfigure(self.myparent.hover.hregiondisp, fill=self.myparent.regionlist[self.myparent.hover.hregion].color)
+#        self.myparent.regionlist = copy.deepcopy(self.regionmaybe)
+        flag = 0
+        if len(self.myparent.regionlist) == len(self.regionmaybe):
+            for ind, r in enumerate(self.regionmaybe):
+                rparent = self.myparent.regionlist[ind]
+                if r.color == rparent.color:
+                    pass
+                else:
+                    flag = 1
+        else:
+            flag = 1
+        if flag:
+            com = comrdialog(self.myparent, self.regionmaybe)
+            if self.myparent.dispatcher.push(com):
+                self.myparent.dispatcher.do()
+#            if self.myparent.comlist:
+#                self.myparent.comlist = self.myparent.comlist[:self.myparent.comind+1]
+#            self.myparent.comlist.append(com)
+#            com.do()
+#            self.myparent.menuedit.entryconfig(0, label='Undo %s' % self.myparent.comlist[-1].string, state="normal")
+#            self.myparent.menuedit.entryconfig(1, label="Can't Redo", state="disabled")
+#            self.myparent.comind += 1
+
+#        for notewidget in self.myparent.notewidgetlist:
+#            note = notewidget.note
+#            notewidget.updateregion()
+#        self.myparent.score.itemconfigure(self.myparent.hover.hrnumdisp, fill=self.myparent.regionlist[self.myparent.hover.hregion].color)
+#        self.myparent.score.itemconfigure(self.myparent.hover.hrdendisp, fill=self.myparent.regionlist[self.myparent.hover.hregion].color)
+#        self.myparent.score.itemconfigure(self.myparent.hover.hregiondisp, fill=self.myparent.regionlist[self.myparent.hover.hregion].color)
 
 class region:
     def __init__(self, parent, num, den, color, octave11):
@@ -114,13 +169,14 @@ class regionline:
         self.number = number
         self.frame = tk.Frame(self.myparent.toprow, bd=4, relief='ridge')
         self.frame.grid(row=self.number, column=0, sticky='ew')
-        self.numberwidget = tk.Label(self.frame, text=self.number)
+        self.numberwidget = tk.Label(self.frame, text="Region "+str(self.number))
         self.numberwidget.grid(row=0, column=0, rowspan=2, padx=10)
+        tk.Label(self.frame, text='%d/%d' % (self.region.num, self.region.den)).grid(row=0, column=1, rowspan=2)
         self.color = tk.StringVar()
         self.color.set(self.region.color)
 #        self.color.trace("w", self.colorchange)
         self.colorwidget = tk.Frame(self.frame, width=40, height=40, bg=self.color.get())
-        self.colorwidget.grid(row=0, column=1, rowspan=2, padx=10)
+        self.colorwidget.grid(row=0, column=2, rowspan=2, padx=10)
         self.colorwidget.bind("<Button-1>", self.colorchoose)
 #        self.num = tk.IntVar()
 #        self.num.set(self.region.num)
@@ -176,6 +232,25 @@ class regionline:
 
     def lineadd(self, type):
         pass
+
+class comrdialog(object):
+    def __init__(self, parent, rlist):
+        self.myparent = parent
+        self.rlist = rlist
+        self.string = "Region Changes"
+
+    def do(self):
+        self.myparent.regionlist, self.rlist = self.rlist, self.myparent.regionlist
+        for notewidget in self.myparent.notewidgetlist:
+            note = notewidget.note
+            notewidget.updateregion()
+        self.myparent.score.itemconfigure(self.myparent.hover.hrnumdisp, fill=self.myparent.regionlist[self.myparent.hover.hregion].color)
+        self.myparent.score.itemconfigure(self.myparent.hover.hrdendisp, fill=self.myparent.regionlist[self.myparent.hover.hregion].color)
+        self.myparent.score.itemconfigure(self.myparent.hover.hregiondisp, fill=self.myparent.regionlist[self.myparent.hover.hregion].color)
+
+    def undo(self):
+        self.do()
+
 
 class dummy:
     def __init__(self, parent, out):
