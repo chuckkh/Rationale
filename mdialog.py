@@ -42,6 +42,7 @@ class meterdialog:
 #        self.meterbuttons.add('sort', text='Sort', command=self.reorder)
 #        self.meterbuttons.grid(row=1, column=0, sticky='')
         self.meterbuttons = tk.Frame(self.meterfr, width=400, height=300, relief="raised", bd=1)
+        self.meterbuttons.rowconfigure(0, weight=1)
         tk.Button(self.meterbuttons, text="OK", command=self.ok).grid(row=0, column=0, padx=10)
         tk.Button(self.meterbuttons, text="Cancel", command=self.cancel).grid(row=0, column=1, padx=10)
         tk.Button(self.meterbuttons, text="Apply", command=self.apply).grid(row=0, column=2, padx=10)

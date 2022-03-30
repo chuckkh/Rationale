@@ -23,16 +23,16 @@ import sys
 import socket
 import threading
 #import StringIO
-if sys.platform.count('win32'):
-    try:
-        import win32api, win32process, win32con
-        pid = win32api.GetCurrentProcessId()
-        handle = win32api.OpenProcess(win32con.PROCESS_ALL_ACCESS, True, pid)
-    #    try: win32process.SetPriorityClass(handle, win32process.REALTIME_PRIORITY_CLASS)
-    #    except: win32process.SetPriorityClass(handle, win32process.HIGH_PRIORITY_CLASS)
-        win32process.SetPriorityClass(handle, win32process.HIGH_PRIORITY_CLASS)
-    except: print "Unable to Set Windows Process Priorities"
-elif sys.platform.count('linux'):
+#if sys.platform.count('win32'):
+#    try:
+#        import win32api, win32process, win32con
+#        pid = win32api.GetCurrentProcessId()
+#        handle = win32api.OpenProcess(win32con.PROCESS_ALL_ACCESS, True, pid)
+#    #    try: win32process.SetPriorityClass(handle, win32process.REALTIME_PRIORITY_CLASS)
+#    #    except: win32process.SetPriorityClass(handle, win32process.HIGH_PRIORITY_CLASS)
+#        win32process.SetPriorityClass(handle, win32process.HIGH_PRIORITY_CLASS)
+#    except: print "Unable to Set Windows Process Priorities"
+if sys.platform.count('linux'):
     meaner = True
     while meaner:
         try:
@@ -64,43 +64,53 @@ class rataudioengine(csnd.CppSound):
         self.inputloopthread = threading.Thread(target=self.inputloop)
         self.inputloopthread.start()
 
-    def waitforconnect(self):
-	print "waiting for Input Socket to Connect..."
-        self.insock = self.initsock.accept()[0]
-        print "Input Socket Connected"
-        self.inputflag = 1
-        self.inputloop()
+#    def waitforconnect(self):
+#	print "waiting for Input Socket to Connect..."
+#        self.insock = self.initsock.accept()[0]
+#        print "Input Socket Connected"
+#        self.inputflag = 1
+#        self.inputloop()
 
     def inputloop(self):
         string = ''
-        while self.inputflag ==1:
-            string += self.cbsock.recv(64)
-            while string.count('RATENDMESSAGE'):
-                cmd, string = string.split('RATENDMESSAGE', 1)
-                self.cmddelegate(cmd)
+        try:
+            while self.inputflag ==1:
+                string += self.cbsock.recv(64)
+                while string.count('RATENDMESSAGE'):
+                    cmd, string = string.split('RATENDMESSAGE', 1)
+                    self.cmddelegate(cmd)
+        except:
+            print "Socket problems in audio engine, line 83."
+            print "............................................"
         print "input loop ending"
 #        sys.exit(1)
 
     def scoreloc(self):
         self.flag = 1
-        while self.flag:
+        try:
+            while self.flag:
 #            flag = self.perf.GetStatus()
 #            print 'flag:', flag
-            if self.perf.isRunning():
+                if self.perf.isRunning():
 #                self.cmddelegate('csdstp')
-                self.flag = 0
+                    self.flag = 0
 #                print "sending endcb"
-                try:
-                    self.cbsock.sendall('ENDCB')
+                    try:
+                        self.cbsock.sendall('ENDCB')
 #                    print "end sent"
-                except:
-                    pass
-            else:
-                time.sleep(.125)
-                loc = self.GetChannel("rattime")
+                    except:
+                        print "............................................"
+                        pass
+                else:
+                    time.sleep(.125)
+                    loc = self.GetChannel("rattime")
                 ## prevent score cursor from being reset to beginning when stopped:
-                if loc:
-                    self.cbsock.sendall('%fCB' % loc)
+                    if loc:
+
+                        self.cbsock.sendall('%fCB' % loc)
+        except:
+            print "Socket problems in audio engine, line 110."
+            print "............................................"
         print "scoreloc thread ending"
 
     def cmddelegate(self, cmd):
@@ -124,7 +134,11 @@ class rataudioengine(csnd.CppSound):
                 self.perf.Play()
             else:
                 print "Csound Error"
-                self.cbsock.sendall('ENDCB')
+                try:
+                    self.cbsock.sendall('ENDCB')
+                except:
+                    print "No end!"
+                    print "............................................"
 	    print "Went"
         elif cmd.startswith('csdstp'):
             self.flag = 0

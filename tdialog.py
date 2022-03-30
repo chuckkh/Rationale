@@ -41,6 +41,7 @@ class tempodialog:
 #        self.tempobuttons.add('sort', text='Sort', command=self.reorder)
 
         self.tempobuttons = tk.Frame(self.tempofr, width=480, height=360, relief="raised", bd=1)
+        self.tempobuttons.rowconfigure(0, weight=1)
         tk.Button(self.tempobuttons, text="OK", command=self.ok).grid(row=0, column=0, padx=10)
         tk.Button(self.tempobuttons, text="Cancel", command=self.cancel).grid(row=0, column=1, padx=10)
         tk.Button(self.tempobuttons, text="Apply", command=self.apply).grid(row=0, column=2, padx=10)

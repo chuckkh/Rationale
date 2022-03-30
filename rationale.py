@@ -56,7 +56,6 @@ class rationale(object):
         self.myparent.rowconfigure(0, weight=1)
         self.myparent.columnconfigure(0, weight=1)
 
-
         #note: instr/voice, time, dur, db, num, den, region, bar, selected, guihandle, arb-tuple
         self.notelist = []
         self.notewidgetlist = []
@@ -77,6 +76,8 @@ class rationale(object):
         self.csdimported = ''
         self.outautoload = False
         self.norepeat = 0
+        self.loop = tk.IntVar()
+        self.loop.set(0)
         self.dispatcher = dispatcher(self)
         self.noteid = 0
         self.clipboard = []
@@ -273,6 +274,8 @@ You should have received a copy of the GNU General Public License along with Rat
         self.tempolabel = tk.Label(self.tempos, text="T", anchor='w', font=("Times", h), pady=0, bg="#ddcccc")
         self.tempolabel.grid(row=0, column=0, sticky='w')
         self.bars = tk.Canvas(self.scorewin, height=h, width=self.scorew, scrollregion=(self.minx,0,self.maxx,0), bg="#ccccee", confine="false")
+#        tk.Label(self.bars, text="Loop:", anchor='w', font=("Times", 3*h/4), pady=0, bg="#ccccee").grid(sticky='w')
+        tk.Checkbutton(self.bars, text="Loop:", anchor='w', font=("Times", 2*h/3), pady=0, padx=0, bg="#ccccee", var=self.loop, indicatoron=0).grid(sticky='w')
         self.bars.grid(row=2, column=2, sticky='ew', pady=0)
         scorebg = "#fffff0"
         self.score = tk.Canvas(self.scorewin, width=self.scorew, height=self.scoreh, xscrollcommand=self.xscroll.set, yscrollcommand=self.yscroll.set, scrollregion=(self.minx, self.miny, self.maxx, self.maxy), confine="false", bg=scorebg, cursor=self.scorecursor)
@@ -314,6 +317,16 @@ You should have received a copy of the GNU General Public License along with Rat
 
         self.drawoctaves(self.octave11)
         self.drawlines(1000)
+
+        loop = looppoint(self, 1, 1, 0)
+        self.looplist = [loop]
+        loop = looppoint(self, 2, 1, 0)
+        self.looplist.append(loop)
+        self.loopwidgetlist = []
+        for loop in self.looplist:
+            lw = looppointwidget(self, loop)
+            self.loopwidgetlist.append(lw)
+
         self.hover = hover(self)
 
 ### Score Bindings ###
@@ -330,6 +343,7 @@ You should have received a copy of the GNU General Public License along with Rat
 	    self.score.bind("<Button-3>",self.popup)
         self.score.bind("<Key>",self.keypress)
         self.score.bind("<KeyRelease>",self.keyrelease)
+        self.score.bind('<<PushCursor>>', self.cursorpusher)
         self.scorewin.bind("<Key>",self.keypress)
         self.scorewin.bind("<KeyRelease>",self.keyrelease)
         self.myparent.bind("<Key>",self.keypress)
@@ -387,6 +401,13 @@ You should have received a copy of the GNU General Public License along with Rat
             self.myparent.bind("<Command-D>", self.optionsaudio)
             self.myparent.bind("<Command-b>", self.opennotebankdialog)
             self.myparent.bind("<Command-B>", self.opennotebankdialog)
+            self.myparent.bind("<Command-f>", self.editmodeselectfilter)
+            self.myparent.bind("<Command-F>", self.editmodeselectfilter)
+            self.myparent.bind("<Command-m>", self.editmodeformula)
+            self.myparent.bind("<Command-M>", self.editmodeformula)
+            self.myparent.bind("<Command-l>", self.setloop)
+            self.myparent.bind("<Command-L>", self.setloop)
+
 	else:
             self.myparent.bind("<Control-q>", self.fileexit)
             self.myparent.bind("<Control-Q>", self.fileexit)
@@ -424,6 +445,12 @@ You should have received a copy of the GNU General Public License along with Rat
             self.myparent.bind("<Control-D>", self.optionsaudio)
             self.myparent.bind("<Control-b>", self.opennotebankdialog)
             self.myparent.bind("<Control-B>", self.opennotebankdialog)
+            self.myparent.bind("<Control-f>", self.editmodeselectfilter)
+            self.myparent.bind("<Control-F>", self.editmodeselectfilter)
+            self.myparent.bind("<Control-m>", self.editmodeformula)
+            self.myparent.bind("<Control-M>", self.editmodeformula)
+            self.myparent.bind("<Control-l>", self.setloop)
+            self.myparent.bind("<Control-L>", self.setloop)
         
         self.myparent.bind("<Next>", self.cursor.nextbeat)
         self.myparent.bind("<Prior>", self.cursor.previousbeat)
@@ -474,11 +501,12 @@ You should have received a copy of the GNU General Public License along with Rat
         self.menumode.add_radiobutton(label="Scrub", value=3, variable=self.mode, underline=0, command=self.modeannounce, accelerator="S")
         self.menumode.invoke(0)
         self.menuselect = tk.Menu(self.menuedit, tearoff=0)
-        self.menuselect.add_command(label="All", command=self.editmodeselectall, accelerator="%s-A" % self.ctlacc)
-        self.menuselect.add_command(label="None", command=self.editmodeselectnone)
-        self.menuselect.add_command(label="Start to Cursor", command=self.editmodeselecttocursor)
-        self.menuselect.add_command(label="Cursor to End", command=self.editmodeselectfromcursor)
-        self.menuselect.add_command(label="Filter...", state="disabled")
+        self.menuselect.add_command(label="All", command=self.editmodeselectall, accelerator="%s-A" % self.ctlacc, underline=0)
+        self.menuselect.add_command(label="None", command=self.editmodeselectnone, underline=0)
+        self.menuselect.add_command(label="Start to Cursor", command=self.editmodeselecttocursor, underline=0)
+        self.menuselect.add_command(label="Cursor to End", command=self.editmodeselectfromcursor, underline=10)
+#        self.menuselect.add_command(label="Filter...", state="disabled")
+        self.menuselect.add_command(label="Filter...", command=self.editmodeselectfilter, underline=0)
         self.menuedit.add_cascade(label="Mode", menu=self.menumode, underline=0)
         self.menuedit.add_cascade(label="Select", menu=self.menuselect, underline=0)
         self.menuedit.add_separator()
@@ -531,6 +559,19 @@ You should have received a copy of the GNU General Public License along with Rat
         self.menumain.add_cascade(label="Help", menu=self.menuhelp, underline=0)
         self.poppedup = False
         self.menupopup = tk.Menu(self.myparent, tearoff=0)
+
+        self.menupopupnoteinfo = tk.Menu(self.menupopup, tearoff=0)
+
+        self.menupopupnoteinfo.add_command(label='a')
+        self.menupopupnoteinfo.add_command(label='a')
+        self.menupopupnoteinfo.add_command(label='a')
+        self.menupopupnoteinfo.add_command(label='a')
+        self.menupopupnoteinfo.add_command(label='a')
+        self.menupopupnoteinfo.add_command(label='a')
+        self.menupopupnoteinfo.add_command(label='a')
+        self.menupopupnoteinfo.add_command(label='a')
+        self.menupopupnoteinfo.add_command(label='a')
+
         self.menupopupregion = tk.Menu(self.menupopup, tearoff=0)
         for region in range(0, len(self.regionlist)):
             self.menupopupregion.add_command(label='%d' % region, command=lambda arg1=region: self.editregionassign(arg1))
@@ -541,6 +582,9 @@ You should have received a copy of the GNU General Public License along with Rat
         for voice in range(0, 9):
             self.menupopupvoice.add_command(label='%d' % voice, command=lambda arg1=voice: self.editvoiceassign(arg1))
         self.menupopuparb = tk.Menu(self.menupopup, tearoff=0)
+
+
+        self.menupopup.add_cascade(label="Note Info", menu=self.menupopupnoteinfo)
         self.menupopup.add_cascade(label="Region", menu=self.menupopupregion)
         self.menupopup.add_cascade(label="Instrument", menu=self.menupopupinst)
         self.menupopup.add_cascade(label="Voice", menu=self.menupopupvoice)
@@ -558,6 +602,12 @@ You should have received a copy of the GNU General Public License along with Rat
                 self.filesave()
                 self.write('File Created: %s' % sys.argv[1])
 #                self.write('%s: File Not Found' % sys.argv[1])
+
+    def cursorpusher(self, event):
+        self.cursor.scrollabs(event.x/1000.0)
+
+    def setloop(self, *args):
+        self.loop.set(not self.loop.get())
 
     def statusgrid(self, *args):
         if self.statusbar.winfo_ismapped() and not self.statusshow.get():
@@ -612,6 +662,10 @@ You should have received a copy of the GNU General Public License along with Rat
         self.score.delete("beatline")
         self.barlist[:] = []
         self.drawlines(1000)
+        self.loopwidgetlist = []
+        for loop in self.looplist:
+            lw = looppointwidget(self, loop)
+            self.loopwidgetlist.append(lw)
 
     def drawoctaves(self, new11, resdelta=0):
         y = self.octave11 - 5 * self.octaveres
@@ -638,14 +692,14 @@ You should have received a copy of the GNU General Public License along with Rat
                     self.scorewin.update_idletasks()
             else:
                 for item in self.score.find_withtag("octaveline"):
-                    coords = self.score.coords(item)
-                    cury = coords[1]
-                    diff = (coords[1] - self.octave11)/(self.octaveres - resdelta)
+                    ohbajesus = self.score.coords(item)
+                    cury = ohbajesus[1]
+                    diff = (ohbajesus[1] - self.octave11)/(self.octaveres - resdelta)
                     self.score.move(item, 0, (diff * resdelta))
                 for item in self.octaves.find_withtag("octavetext"):
-                    coords = self.octaves.coords(item)
-                    cury = coords[1]
-                    diff = (coords[1] - self.octave11)/(self.octaveres - resdelta)
+                    ohbajesus = self.octaves.coords(item)
+                    cury = ohbajesus[1]
+                    diff = (ohbajesus[1] - self.octave11)/(self.octaveres - resdelta)
                     self.octaves.move(item, 0, (diff * resdelta))
                 self.scorewin.update_idletasks()
         except:
@@ -687,17 +741,38 @@ You should have received a copy of the GNU General Public License along with Rat
                 try:
                     line += str(note.dict[lineguide[pfield]])
                 except:
-                    line += str(lineguide[pfield])
+                    if lineguide[pfield].startswith('a') and lineguide[pfield][1:].isdigit():
+                        line += '-1'
+                    else:
+                        line += str(lineguide[pfield])
             if include == 1: pnum += 1
         return (line, pnum)
 
 ######## prepare csd file
     def preparecsd(self, instlist, sf2list, method, sr, ksmps, nchnls, amodule, dac, b, B, aifffile, wavfile, commandline, commandlineuse):
+        print "preparing..."
         self.scsort()
         if self.outautoload == True:
             self.csdreload()
-
-        playscore = self.notelist
+        etime = False
+        l1, l2 = self.looplist[0].scobeat, self.looplist[1].scobeat
+        if self.loop.get() and l1 != l2:
+            if l1 < l2:
+		lstart, lend = l1, l2
+            else:
+		lstart, lend = l2, l1
+            etime = lend
+            playscore = []
+            for n in self.notelist:
+		if n.time + n.dur <= lend:
+                    playscore.append(n)
+		elif n.time < lend:
+                    ntmp = copy.copy(n)
+                    ntmp.dur = lend-ntmp.time
+                    playscore.append(ntmp)
+#            playscore = [n for n in self.notelist if n.time < l1 or n.time < l2]
+        else:
+            playscore = self.notelist
         proglist = []
         todict = {}
 
@@ -711,14 +786,35 @@ You should have received a copy of the GNU General Public License along with Rat
         else:
             self.csdsco = ''
         last = playscore[-1]
-        tottime = last.time + abs(last.dur)
+        if self.loop.get() and l1 != l2:
+            if l1 < l2:
+                tottime = l2
+            else:
+                tottime = l1
+        else:
+            tottime = last.time + abs(last.dur)
         if method == 0:
             self.csdsco += 'f0 %f%s' % (tottime+.125, os.linesep)
         if self.cursor.beat == 0:
             self.ratstart = 0
-        else:
+#        else:
 #            self.ratstart = float(self.score.coords(self.barlist[self.cursor.beat])[0])/self.xperquarter
+        elif self.cursor.beat < l1 or self.cursor.beat < l2:
             self.ratstart = float(self.cursor.center)/self.xperquarter
+        elif l1 < l2 and self.loop.get():
+            self.ratstart = l1
+            self.cursor.scrollabs(l1)
+        elif self.loop.get():
+            self.ratstart = l2
+            self.cursor.scrollabs(l2)
+        else:
+            self.ratstart = float(self.cursor.center)/self.xperquarter
+        if self.loop.get():
+            if l1 < l2:
+                self.cursor.beat = int(l1)
+            else:
+                self.cursor.beat = int(l2)
+#        print self.ratstart
         astring = 'a 0 0 %f%s' % (self.ratstart, os.linesep)
         self.csdsco += astring
         self.csdsco += '#define RATSTART #%f#%s' % (self.ratstart, os.linesep)
@@ -765,7 +861,7 @@ You should have received a copy of the GNU General Public License along with Rat
                                         toinst += '''inum = instnum + (p4/1000)
 ;al, ar	subinstr	inum, p7, p8
 event_i "i", inum, 0, p3, p7, p8'''
-                                        for p in range(7, pnum+7):
+                                        for p in range(9, pnum+9):
                                             toinst += ', p%d' % p
                                         toinst += '''
 ;	outc	al, ar
@@ -810,7 +906,10 @@ event_i "i", inum, 0, p3, p7, p8'''
                                         try:
                                             line += str(note.dict[lineguide[pfield]])
                                         except:
-                                            line += str(lineguide[pfield])
+                                            if lineguide[pfield].startswith('a') and lineguide[pfield][1:].isdigit():
+                                                line += '-1'
+                                            else:
+                                                line += str(lineguide[pfield])
                                 line += os.linesep
                                 self.csdsco += line
                                 if outline.noff:
@@ -826,12 +925,15 @@ event_i "i", inum, 0, p3, p7, p8'''
                                             try:
                                                 line += str(note.dict[lineguide[pfield]])
                                             except:
-                                                line += str(lineguide[pfield])
+                                                if lineguide[pfield].startswith('a') and lineguide[pfield][1:].isdigit():
+                                                    line += '-1'
+                                                else:
+                                                    line += str(lineguide[pfield])
                                     line += os.linesep
                                     self.csdsco += line
                     if not instlist[note.inst].outlist:
 #                        line = 'i "ratratdefaulton" %f %f %f [$RATBASE * %d/%d * %d/%d] %d%s' % (note.time, note.dur, note.db, note.num, note.den, self.regionlist[note.region].num, self.regionlist[note.region].den, note.voice, os.linesep)
-                        line = 'i "ratratdefaulton" %f %f %d 0 %f %f [$RATBASE * %d/%d * %d/%d]%s' % (note.time, note.dur, note.voice, note.dur, note.db-6, note.num, note.den, self.regionlist[note.region].num, self.regionlist[note.region].den, os.linesep)
+                        line = 'i "ratratdefaulton" %f %f %d 0 %f %f [$RATBASE * %d/%d * %d/%d]%s' % (note.time, note.dur, note.voice, note.dur, note.db, note.num, note.den, self.regionlist[note.region].num, self.regionlist[note.region].den, os.linesep)
 #                        print line
                         self.csdsco += line
             else:
@@ -847,6 +949,8 @@ event_i "i", inum, 0, p3, p7, p8'''
             while icounter <= tottime:
                 self.csdsco += 'i "ratcounter" %f .125%s' % (icounter, os.linesep)
                 icounter += .125
+        if etime:
+            self.csdsco += 'i "ratbeallendall" %f .1' % etime
 
 #########CsOptions
 ########    (self, instlist, method, sr, ksmps, nchnls, amodule, dac, b, B, aifffile, wavfile, commandline, commandlineuse)
@@ -867,7 +971,9 @@ event_i "i", inum, 0, p3, p7, p8'''
                 self.csdopt += ' -+rtaudio=%s' % amodule
                 if amodule == 'portaudio' or amodule == 'mme':
 #		    print dac
-                    self.csdopt += ' -odac%s' % dac.strip().split(':')[0] 
+                    if dac:
+                        self.csdopt += ' -odac%s' % dac.strip().split(':')[0] 
+                    else: self.csdopt += ' -odac0'
                 elif amodule == 'alsa' or amodule == 'jack':
                 ## everything between first two sets of double-quotes
                     slicestart = dac.find('"') + 1
@@ -993,8 +1099,8 @@ iporttime = idur/16
 ;kamp	init	iamp/0dbfs
 ;kamp	init	1
 ivel	=	127 * ampdb(p4)/0dbfs
+inotenum=	1
 ifreq   =       p5
-inotenum=	69 + int(log(ifreq/440.0)/log(2^(1/12.0)))
 iphs = -1
 iatt	=	0
 idec	=	0
@@ -1035,6 +1141,10 @@ inum = instnum + (p4/1000)
 event_i "i", inum, 0, p3, p6, p7, p8, p9, p10, p11, p12
 ;	outc	al, ar
 endin
+
+instr +ratbeallendall
+exitnow
+endin
 '''
         nothing = '''
 instr +ratsf2default
@@ -1047,8 +1157,8 @@ iporttime = idur/16
 ;iamp	=	ampdb(p4)
 kamp	init	iamp/0dbfs
 ivel	=	127 * iamp/0dbfs
+inotenum=	1
 ifreq   =       p5
-inotenum=	69 + int(log(ifreq/440.0)/log(2^(1/12.0)))
 iphs = -1
 tigoto tiedin
 iamp1 = 0
@@ -1138,15 +1248,18 @@ endin
 
     def csdreload(self):
         if self.outautoload == True and self.csdimport != None:
-            file = open(self.csdimport)
-            self.csdimported = ''
-            for line in file:
-                self.csdimported += line
             try:
-                self.out.csdtext.delete(1.0, "end")
-                self.out.csdtext.insert("end", self.csdimported)
+                file = open(self.csdimport)
+                self.csdimported = ''
+                for line in file:
+                    self.csdimported += line
+                try:
+                    self.out.csdtext.delete(1.0, "end")
+                    self.out.csdtext.insert("end", self.csdimported)
+                except:
+                    pass
             except:
-                pass
+                print "Unable to load Csound file."
 
     def waitforconnect(self, sock, q):
         conn = sock.accept()
@@ -1165,27 +1278,35 @@ endin
 #                    print "END received"
 #                        print "END received"
                         self.stop()
+                        if self.loop.get():
+                            self.play()
                     elif self.outputmethod == 0:
-#                        print 'cb', cb
                         if self.playing == 1:
-                            self.cursor.scrollabs(float(cb))
+                            x = float(cb) * 1000
+                            self.score.event_generate('<<PushCursor>>', when='tail', x=x)
+#                            self.cursor.scrollabs(float(cb))
             except:
-                print "Callback Socket Unavailable"
+#                print "Callback Socket Unavailable:", sys.exc_info()[0]
+#                print sock
+                pass
 
     def delegatescrubcallbacks(self, sock):
 #        print sock.__class__.__name__
 #        print sock
         cbtext = ''
         flag = 1
-        while flag == 1:
-#            if select.select((sock,),(),())[0]:
-            cbtext += sock.recv(32)
-            while cbtext.count('CB'):
-                cb, cbtext = cbtext.split('CB', 1)
-                if cb == 'END':
-                    flag = 0
-                    sock.close()
-                    del sock
+        try:
+            while flag == 1:
+    #            if select.select((sock,),(),())[0]:
+                cbtext += sock.recv(32)
+                while cbtext.count('CB'):
+                    cb, cbtext = cbtext.split('CB', 1)
+                    if cb == 'END':
+                        flag = 0
+                        sock.close()
+                        del sock
+        except:
+            print "No Scrub Callback Socket"
 
     def messagesend(self, dest, msg):
         dest.write(msg.replace(msg.replace(os.linesep, '$RATNEWLINE')))
@@ -1277,7 +1398,7 @@ endin
 #            #Rationale AUdio engine
 #		print "final countdown:", count
 
-            	if hasattr(sys, "frozen"):
+                if hasattr(sys, "frozen"):
                     self.rau = subprocess.Popen(('C:\rationale\dist\rataudio.exe', str(self.cbport)))
                 else:
                     self.rau = subprocess.Popen((sys.executable, 'rataudio.py', str(self.cbport)))
@@ -1321,11 +1442,13 @@ endin
                 self.statusplay.configure(text="Playing")
                 threading.Thread(target=self.delegatecallbacks, args=(self.cbsock,)).start()
 
-                self.cbsock.sendall('csdopt:%sRATENDMESSAGE' % self.csdopt)
-                self.cbsock.sendall('csdorc:%sRATENDMESSAGE' % self.csdinst)
-                self.cbsock.sendall('csdsco:%sRATENDMESSAGE' % self.csdsco)
-                self.cbsock.sendall('csdgozRATENDMESSAGE')
-
+                try:
+                    self.cbsock.sendall('csdopt:%sRATENDMESSAGE' % self.csdopt)
+                    self.cbsock.sendall('csdorc:%sRATENDMESSAGE' % self.csdinst)
+                    self.cbsock.sendall('csdsco:%sRATENDMESSAGE' % self.csdsco)
+                    self.cbsock.sendall('csdgozRATENDMESSAGE')
+                except:
+                    print "Unable to start"
 
     def stop(self):
         if self.playing == 1:
@@ -1345,9 +1468,9 @@ endin
             self.internalstop()
 
 #            if len(self.notelist):
-#                coords = self.score.coords(self.barlist[self.cursor.beat])
-#                self.score.coords(self.cursor.widget, coords[0]-3, self.miny, coords[0]+3, self.maxy)
-#                self.cursor.center = coords[0]
+#                ohbajesus = self.score.coords(self.barlist[self.cursor.beat])
+#                self.score.coords(self.cursor.widget, ohbajesus[0]-3, self.miny, ohbajesus[0]+3, self.maxy)
+#                self.cursor.center = ohbajesus[0]
 #            self.playing = 0
 
     def internalstop(self):
@@ -1357,7 +1480,17 @@ endin
                     os.nice(-5)
                 except: pass
             if len(self.notelist):
-                self.cursor.scrollabs(float(self.score.coords(self.barlist[self.cursor.beat])[0])/self.xperquarter)
+                l1, l2 = self.looplist[0].scobeat, self.looplist[1].scobeat
+                if self.loop.get() and l1 != l2:
+                    if l1 < l2:
+                        ret = l1
+                    else:
+                        ret = l2
+                    self.cursor.beat = int(ret)
+                else:
+                    ret = float(self.score.coords(self.barlist[self.cursor.beat])[0])/self.xperquarter
+            self.cursor.scrollabs(float(self.score.coords(self.barlist[self.cursor.beat])[0])/self.xperquarter)
+#                self.cursor.scrollabs(float(self.score.coords(self.barlist[self.cursor.beat])[0])/self.xperquarter)
                 
 #            try: self.audiodialog.buttons.subwidget('play').configure(text='Play', command=self.audiodialog.play)
             try: self.audiodialog.playbutton.configure(text='Play', command=self.audiodialog.play)
@@ -1418,7 +1551,6 @@ endin
                             com = comeditnumden(self, (self.editreference.note.id,), 1, 1)
                         if self.dispatcher.push(com):
                             self.dispatcher.do()
-
                 else:
                     self.selectbox = selectbox(self, event)
             else:
@@ -1429,11 +1561,19 @@ endin
             except: pass
 
     def durgrab(self, event):
-        self.dragcoords = self.score.coords("durdrag")
-        self.startinit = self.dragcoords[4]
-#        self.leninit = self.dragcoords[8]-self.dragcoords[4]
+#        print "0"
+        self.dragohbajesus = self.score.coords("durdrag")
+#        print "1"
+        self.startinit = self.dragohbajesus[4]
+#        self.leninit = self.dragohbajesus[8]-self.dragohbajesus[4]
 #        self.durinit = self.leninit/self.xperquarter
-        noteid = [nw.note.id for nw in self.notewidgetlist if nw.notewidget in self.score.find_withtag("durdrag")]
+#        print "2"
+        for nw in self.notewidgetlist:
+            if nw.notewidget in self.score.find_withtag("durdrag"):
+                noteid = nw.note.id
+                break
+#        noteid = [nw.note.id for nw in self.notewidgetlist if nw.notewidget in self.score.find_withtag("durdrag")]
+#        print "3"
 #        com = comeditdurmouse(self, noteid)
 #        if self.dispatcher.push(com):
 #            self.dispatcher.do()
@@ -1546,8 +1686,8 @@ endin
         flag = 0
         for match in notes:
             if "note" in self.score.gettags(match):
-                coords = self.score.coords(match)
-                mainxy = (coords[0], coords[1])
+                ohbajesus = self.score.coords(match)
+                mainxy = (ohbajesus[0], ohbajesus[1])
                 maindist = math.sqrt((mainxy[0]-realx)**2 + (mainxy[1]-realy)**2)
                 if maindist < absall:
                     absall = maindist
@@ -1559,6 +1699,8 @@ endin
                 self.score.addtag_withtag("edit", note)
 
     def editseek(self, event):
+        if int(event.type) != 6:
+            return
         self.score.itemconfig("note", stipple="", activefill='', activeoutline='', activewidth=1)
         self.score.dtag("note", "edit")
         widget = event.widget
@@ -1571,9 +1713,9 @@ endin
         flag = 0
         for match in notes:
             if "note" in self.score.gettags(match):
-                coords = self.score.coords(match)
-                mainxy = (coords[0], coords[1])
-                durxy = (coords[8], coords[9])
+                ohbajesus = self.score.coords(match)
+                mainxy = (ohbajesus[0], ohbajesus[1])
+                durxy = (ohbajesus[8], ohbajesus[9])
                 maindist = math.sqrt((mainxy[0]-realx)**2 + (mainxy[1]-realy)**2)
                 durdist = math.sqrt((durxy[0]-realx)**2 + (durxy[1]-realy)**2)
                 if durdist < maindist:
@@ -1642,14 +1784,14 @@ endin
             rden = self.regionlist[region].den
             rcolor = self.regionlist[region].color
             sel = 0
-            arb = []
+            arb = ()
             yloc = self.yadj
             locy2 = yloc
             locy0 = yloc - self.hover.hyoff
             locy1 = yloc + self.hover.hyoff
             ry0 = yloc - 15
             ry1 = yloc + 15
-            noteinfo = [(self.noteid, self.hover.hinst, self.hover.hvoice, time, dur, db, num, den, region, sel)]
+            noteinfo = [(self.noteid, self.hover.hinst, self.hover.hvoice, time, dur, db, num, den, region, sel, arb)]
             com = comaddnotes(self, noteinfo)
             if self.dispatcher.push(com):
                 self.dispatcher.do()
@@ -2356,6 +2498,23 @@ endin
 
     def popup(self,event):
         self.menupopupinst.delete(0, "end")
+        set = self.score.find_withtag("edit")
+        if set:
+            n = [nw.note for nw in self.notewidgetlist if nw.notewidget in set][0]
+            self.menupopup.entryconfig(0, state="active")
+            self.menupopupnoteinfo.entryconfig(0, label="Inst:   %d" % n.inst)
+            self.menupopupnoteinfo.entryconfig(1, label="Voice:  %d" % n.voice)
+            self.menupopupnoteinfo.entryconfig(2, label="Time:   %f" % n.time)
+            self.menupopupnoteinfo.entryconfig(3, label="Dur:    %f" % n.dur)
+            self.menupopupnoteinfo.entryconfig(4, label="Num:    %d" % n.num)
+            self.menupopupnoteinfo.entryconfig(5, label="Den:    %d" % n.den)
+            self.menupopupnoteinfo.entryconfig(6, label="Freq:   %f" % n.freq)
+            self.menupopupnoteinfo.entryconfig(7, label="db:     %d" % n.db)
+            self.menupopupnoteinfo.entryconfig(8, label="Region: %d" % n.region)
+        else:
+            self.menupopup.entryconfig(0, state="disabled")
+                
+
         for inst in range(1, len(self.instlist)):
             self.menupopupinst.add_command(label='%d' % inst, command=lambda arg1=inst: self.editinstassign(arg1))
         self.menupopupregion.delete(0, "end")
@@ -2614,7 +2773,10 @@ endin
             self.write('Loaded Csound File: %s' % str(self.csdimport))
         self.csdimported = pickle.load(input)
         self.outautoload = pickle.load(input)
-        self.sf2list = pickle.load(input)
+        try:
+            self.sf2list = pickle.load(input)
+        except:
+            pass
         for scoreitem in self.score.find_all():
             tags = self.score.gettags(scoreitem)
             if "octaveline" not in tags and "perm11" not in tags and "timecursor" not in tags and "hover" not in tags and "scrubcursor" not in tags:
@@ -2665,6 +2827,7 @@ endin
                 den = test[6]
                 region = test[7]
                 sel = test[8]
+                arb = ()
             elif len(test) == 10:
                 id = test[0]
                 if self.noteid <= id:
@@ -2678,7 +2841,22 @@ endin
                 den = test[7]
                 region = test[8]
                 sel = test[9]
-                
+                arb = ()
+            elif len(test) == 11:
+                id = test[0]
+                if self.noteid <= id:
+                    self.noteid = id + 1
+                inst = test[1]
+                voice =test[2] 
+                time =test[3] 
+                dur =test[4] 
+                db = test[5]
+                num = test[6]
+                den = test[7]
+                region = test[8]
+                sel = test[9]
+                arb = test[10]
+
             entrycolor = '#888888'
             if inst < len(self.instlist):
                 entrycolor = str(self.instlist[inst].color)
@@ -2697,7 +2875,7 @@ endin
             ry0 = yadj - 15
             ry1 = yadj + 15
 
-            noteinstance = note(self, id, inst, voice, time, dur, db, num, den, region, sel)
+            noteinstance = note(self, id, inst, voice, time, dur, db, num, den, region, sel, arb)
             self.notelist.append(noteinstance)
             notewidgetinstance = notewidgetclass(self, noteinstance)
             self.notewidgetlist.append(notewidgetinstance)
@@ -2728,7 +2906,7 @@ endin
             output = open(self.filetosave, 'wb')
             regionlist = self.regionlist
             instlist = self.instlist
-            notelist = [(note.id, note.inst, note.voice, note.time, note.dur, note.db, note.num, note.den, note.region, note.sel) for note in self.notelist]
+            notelist = [(note.id, note.inst, note.voice, note.time, note.dur, note.db, note.num, note.den, note.region, note.sel, note.arb) for note in self.notelist]
             meterlist = [(meter.bar, meter.top, meter.bottom) for meter in self.meterlist]
             tempolist = [(tempo.bar, tempo.beat, tempo.bpm, tempo.unit) for tempo in self.tempolist]
             pickle.dump(regionlist, output)
@@ -2756,7 +2934,7 @@ endin
             self.myparent.title('Rationale %s: %s' % (vs, os.path.basename(filetosave)))
             regionlist = self.regionlist
             instlist = self.instlist
-            notelist = [(note.id, note.inst, note.voice, note.time, note.dur, note.db, note.num, note.den, note.region, note.sel) for note in self.notelist]
+            notelist = [(note.id, note.inst, note.voice, note.time, note.dur, note.db, note.num, note.den, note.region, note.sel, note.arb) for note in self.notelist]
             meterlist = [(meter.bar, meter.top, meter.bottom) for meter in self.meterlist]
             tempolist = [(tempo.bar, tempo.beat, tempo.bpm, tempo.unit) for tempo in self.tempolist]
             pickle.dump(regionlist, output)
@@ -2873,7 +3051,7 @@ endin
                 ry0 = yadj - 15
                 ry1 = yadj + 15
 
-                noteinstance = note(self, id, inst, voice, time, dur, db, num, den, region, sel)
+                noteinstance = note(self, id, inst, voice, time, dur, db, num, den, region, sel, arb)
                 self.notelist.append(noteinstance)
                 notewidgetinstance = notewidgetclass(self, noteinstance)
                 self.notewidgetlist.append(notewidgetinstance)
@@ -3027,18 +3205,21 @@ endin
 
     def scoreyscroll(self, *args):
 #        print args
+#        print "scoreyscroll.........."
         self.score.yview(*args)
         self.octaves.yview(*args)
+#        print "..........scoreyscroll"
 
     def scoreyscrollwheel(self, arg1, event, arg3):
 #        print args
+#        print "scoreyscrollwheel.........."
 	if event.delta > 0:
             self.score.yview(arg1, -1, arg3)
             self.octaves.yview(arg1, -1, arg3)
 	else:
             self.score.yview(arg1, 1, arg3)
             self.octaves.yview(arg1, 1, arg3)
-
+#        print "..........scoreyscrollwheel"
 
 
     def inserttempo(self, event):
@@ -3106,13 +3287,13 @@ endin
             nw.updateconnect()
         self.redrawlines()
 #        for item in self.score.find_withtag("all"):
-#            coords = list(self.score.coords(item))
-#            for xcoord in range(len(coords)/2):
-#                coords[xcoord*2] = int(coords[xcoord*2] * (float(newxperquarter)/self.xperquarter))
-#            newcoords = '%d' % coords[0]
-#            for i in range(1, len(coords)):
-#                newcoords = '%s %d' % (newcoords, coords[i])
-#            self.score.coords(item, newcoords)
+#            ohbajesus = list(self.score.coords(item))
+#            for xcoord in range(len(ohbajesus)/2):
+#                ohbajesus[xcoord*2] = int(ohbajesus[xcoord*2] * (float(newxperquarter)/self.xperquarter))
+#            newohbajesus = '%d' % ohbajesus[0]
+#            for i in range(1, len(ohbajesus)):
+#                newohbajesus = '%s %d' % (newohbajesus, ohbajesus[i])
+#            self.score.coords(item, newohbajesus)
 #        self.xperquarter = newxperquarter
 
     def deleteseek(self, event):
@@ -3127,8 +3308,8 @@ endin
         absall = 20
         for match in notes:
             if "note" in self.score.gettags(match):
-                coords = self.score.coords(match)
-                xy = (coords[2], coords[1])
+                ohbajesus = self.score.coords(match)
+                xy = (ohbajesus[2], ohbajesus[1])
                 abs = math.sqrt((xy[0]-realx)**2 + (xy[1]-realy)**2)
                 if abs < absall:
                     absall = abs
@@ -3229,6 +3410,12 @@ endin
 #        if self.dispatcher.push(com):
 #            self.dispatcher.do()
 
+    def editmodeselectfilter(self, *args):
+        self.filterdialog = filterdialog(self)
+
+    def editmodeformula(self, *args):
+        self.formuladialog = formuladialog(self)
+
     def editmodecopy(self, *args):
 #        self.clipboard = []
         set = self.score.find_withtag("edit")
@@ -3325,10 +3512,10 @@ endin
         noteids = []
         for nw in self.notewidgetlist:
             if nw.note.sel == 1:
-                if nw.note.db <= 84:
+                if nw.note.db <= 89:
                     noteids.append(nw.note.id)
         if noteids:
-            com = comeditdb(self, noteids, 6)
+            com = comeditdb(self, noteids, 1)
             if self.dispatcher.push(com):
                 self.dispatcher.do()
 
@@ -3336,10 +3523,10 @@ endin
         noteids = []
         for nw in self.notewidgetlist:
             if nw.note.sel == 1:
-                if nw.note.db >= 6:
+                if nw.note.db >= 1:
                     noteids.append(nw.note.id)
         if noteids:
-            com = comeditdb(self, noteids, -6)
+            com = comeditdb(self, noteids, -1)
             if self.dispatcher.push(com):
                 self.dispatcher.do()
 
@@ -3391,6 +3578,7 @@ endin
             self.scoreyscroll('moveto', yfrac)
 
     def getaudiodevices(self, module):
+#        return "1" #TEMPORARY WORKAROUND FOR APPARENT CSOUND ERROR
         if hasattr(sys.stdin, 'fileno'):
             childstdin = sys.stdin
         elif hasattr(sys.stdin, '_file') and hasattr(sys.stdin._file, 'fileno'):
@@ -3403,8 +3591,7 @@ endin
         else:
             rau = subprocess.Popen((sys.executable, 'rataudiotester.py', module), stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=childstdin)
         res = rau.communicate()
-#	print 'res0:', res[0], os.linesep, os.linesep
-#	print 'res1:', res[1], os.linesep, os.linesep
+
         if sys.platform.count('win32'):
             lines = res[0].split(os.linesep)[:-1]
         else:
@@ -3420,7 +3607,8 @@ endin
 
         if module == 'portaudio':
             startflag = 'PortAudio: available'
-            endflag = 'error'
+#            endflag = 'error'
+            endflag = 'selected output device'
         if module == 'alsa':
             startflag = '*** ALSA:'
             endflag = 'Failed to initialise'
@@ -3428,7 +3616,9 @@ endin
             startflag = 'available JACK'
             endflag = '*** rtjack:'
         if module == 'mme':
-            return module + os.linesep
+#            return module + os.linesep
+            startflag = 'available output'
+            endflag = 'opening output'
         if module == 'coreaudio':
             return module + os.linesep
 
@@ -3445,7 +3635,6 @@ endin
                     break
                 elif not line.count('detected'):
                     result.append(line)
-
         return result
 #        return rau.communicate()[0].split(os.linesep)[:-1]
 ###     portaudio: 0:... 1:...
@@ -3652,7 +3841,10 @@ endin
                                             onstring += str(note.dict[lineguide[pfield]])
                                     # pass on non-keyword entries
                                         except:
-                                            onstring += str(lineguide[pfield])
+                                            if lineguide[pfield].startswith('a') and lineguide[pfield][1:].isdigit():
+                                                onstring += '-1'
+                                            else:
+                                                onstring += str(lineguide[pfield])
 #                                onstring += os.linesep
 #                                offstring = 'i "ratscrubturneroffer" 0 .1'
                             elif outline.__class__.__name__ == 'sf2out':
@@ -3693,7 +3885,10 @@ endin
                                         try:
                                             onstring += str(note.dict[lineguide[pfield]])
                                         except:
-                                            onstring += str(lineguide[pfield])
+                                            if lineguide[pfield].startswith('a') and lineguide[pfield][1:].isdigit():
+                                                onstring += '-1'
+                                            else:
+                                                onstring += str(lineguide[pfield])
 #                                offstring = ''
                                 if outline.noff:
 #                                    offstring += os.linesep
@@ -3709,7 +3904,10 @@ endin
                                             try:
                                                 offstring += str(note.dict[lineguide[pfield]])
                                             except:
-                                                offstring += str(lineguide[pfield])
+                                                if lineguide[pfield].startswith('a') and lineguide[pfield][1:].isdigit():
+                                                    offstring += '-1'
+                                                else:
+                                                    offstring += str(lineguide[pfield])
 #                                    offstring += ' 0%s' % os.linesep
 #                                offstring += 'i "ratscrubturneroffer" 0 .1'
                                 else:
@@ -3887,9 +4085,8 @@ idur    =       p3
 iamp	=	ampdb(p4)
 kamp	init	iamp/0dbfs
 ivel	=	127 * iamp/0dbfs
-ifreq   =       p5
-kfreq	init	ifreq
-inotenum=	69 + int(log(ifreq/440.0)/log(2^(1/12.0)))
+inotenum=	1
+kfreq	init	p5
 ipreindex=	p6
 iatt    =       p7/1000
 idec    =       p8/1000
@@ -4093,10 +4290,13 @@ endin
                 self.scrubbing = 1
                 threading.Thread(target=self.delegatescrubcallbacks, args=(self.cbscrubsock,)).start()
 
-                self.cbscrubsock.sendall('csdopt:%sRATENDMESSAGE' % self.csdscrubopt)
-                self.cbscrubsock.sendall('csdorc:%sRATENDMESSAGE' % self.csdscrubinst)
-                self.cbscrubsock.sendall('csdsco:%sRATENDMESSAGE' % self.csdscrubsco)
-                self.cbscrubsock.sendall('csdgozRATENDMESSAGE')
+                try:
+                    self.cbscrubsock.sendall('csdopt:%sRATENDMESSAGE' % self.csdscrubopt)
+                    self.cbscrubsock.sendall('csdorc:%sRATENDMESSAGE' % self.csdscrubinst)
+                    self.cbscrubsock.sendall('csdsco:%sRATENDMESSAGE' % self.csdscrubsco)
+                    self.cbscrubsock.sendall('csdgozRATENDMESSAGE')
+                except:
+                    print "Unable to start scrubbing"
         else:
             self.scrubtimelist = []
 
@@ -4350,7 +4550,7 @@ class audiodialog(tk.Toplevel):
         self.nchnlsvar.set(self.myparent.nchnls)
 #        self.widget = tk.Toplevel(self.myparent.myparent, width=340, height=400)
         self.title("Audio Options")
-        self.rowconfigure(4, weight=1)
+        self.rowconfigure(5, weight=1)
         self.columnconfigure(0, weight=1)
         self.banner = tk.Label(self, text="Audio Options")
 #        self.banner.grid(row=0, column=0, sticky='ew')
@@ -4365,6 +4565,8 @@ class audiodialog(tk.Toplevel):
         self.ratefr.columnconfigure(0, weight=0)
         self.ratefr.columnconfigure(4, weight=1)
         self.ratefr.grid(row=3, column=0, sticky='ew')
+        self.midiinfr = tk.Frame(self, bd=2, relief="ridge")
+        self.midiinfr.grid(row=4, column=0, sticky='ew')
 #--------------------------outputfr
         tk.Label(self.outputfr, text="Output", bg="#aaaaaa").grid(row=0, column=0, sticky='w')
         self.outputmethod = tk.IntVar()
@@ -4464,6 +4666,9 @@ class audiodialog(tk.Toplevel):
         self.nchnlslb = tk.Label(self.nchnlsfr, text="Number of Audio Channels")
         self.nchnlslb.grid(row=0, column=1, sticky='w')
 
+#----------------------midiinfr
+
+
 #----------------------buttons
         self.buttons = tk.Frame(self, width=300, height=80, borderwidth=1, relief="raised")
         tk.Button(self.buttons, text="OK", command=self.ok).grid(row=0, column=0, padx=10)
@@ -4471,7 +4676,7 @@ class audiodialog(tk.Toplevel):
 #        tk.Button(self.buttons, text="Test Tone", command=self.test).grid(row=0, column=2, padx=10)
         self.playbutton = tk.Button(self.buttons, text="Play", command=self.play)
         self.playbutton.grid(row=0, column=3, padx=10)
-        self.buttons.grid(row=5, column=0, columnspan=6, sticky='s', ipady=20)
+        self.buttons.grid(row=6, column=0, columnspan=6, sticky='s', ipady=20)
         self.lift()
         self.focus_set()
 
@@ -4540,7 +4745,9 @@ class audiodialog(tk.Toplevel):
             for dac in daclist:
                 if not dac.count('detected'):
                     self.dacselectormenu.add_command(label=str(dac).strip(), command=lambda arg1=dac: self.changedac(arg1))
-        else: self.dacvar.set('')
+        else:
+            self.dacvar.set('')
+#            self.myparent.dac = 1
         self.dacselector['menu'] = self.dacselectormenu
         tk.Label(self.audiomodulefr, text="DAC:").grid(row=0, column=2, sticky='e')
         self.dacselector.grid(row=0, column=3, sticky='w')
@@ -4570,8 +4777,8 @@ class notewidgetclass(object):
         self.purex = self.note.time * self.myparent.xperquarter
         self.purey = self.myparent.regionlist[self.note.region].octave11 - ((math.log(float(self.note.num)/float(self.note.den))/self.myparent.log2) * self.myparent.octaveres)
 #        print self.purey
-        self.yoff = self.note.db/6.0
-        self.xoff = self.yoff/2.0
+        self.yoff = self.note.db/6
+        self.xoff = self.yoff/2
         self.durx = self.purex + abs(self.note.dur) * self.myparent.xperquarter
         if self.note.inst >= len(self.myparent.instlist):
             self.color = '#888888'
@@ -4610,8 +4817,8 @@ class notewidgetclass(object):
         self.myparent.score.coords(self.voicedisp, self.purex+6,self.purey)
 
     def updatedb(self):
-        self.yoff = self.note.db/6.0
-        self.xoff = self.yoff/2.0
+        self.yoff = self.note.db/6
+        self.xoff = self.yoff/2
         self.myparent.score.coords(self.notewidget, self.purex+self.xoff,self.purey,self.purex,self.purey-self.yoff,self.purex,self.purey+self.yoff,self.purex+self.xoff,self.purey,self.durx,self.purey)
 
     def updatedur(self):
@@ -4712,7 +4919,7 @@ class notewidgetclass(object):
         pass
 
 class note(object):
-    def __init__(self, parent, id, inst, voice, time, dur, db, num, den, region, sel):
+    def __init__(self, parent, id, inst, voice, time, dur, db, num, den, region, sel, arb):
         self.myparent = parent
         self.id = id
         self.inst = inst
@@ -4724,13 +4931,15 @@ class note(object):
         self.den = den
         self.region = region
         self.sel = sel
-        self.arb = ()
+        self.arb = arb
         self.scrubonscruboff = None
         rnum = self.myparent.regionlist[self.region].num
         rden = self.myparent.regionlist[self.region].den
         self.freq = (float(rnum * self.num))/(float(rden * self.den)) * self.myparent.basefreq
         self.sdur = 0
         self.dict = {'inst': self.inst, 'voice': self.voice, 'time': self.time, 'dur': self.dur, 'sdur': self.sdur, 'db': self.db, 'num': self.num, 'den': self.den, 'region': self.region, 'freq': self.freq}
+        for n, a in enumerate(self.arb):
+            self.dict['a%d' % (n+1)] = a
 
     def updateinst(self, inst):
         self.inst = inst
@@ -4977,33 +5186,48 @@ class hover(object):
             pass
 
     def increase(self, event):
-        if self.hdb <= 84:
-            self.hdb = self.hdb + 6
+        if self.hdb <= 89:
+            self.hdb = self.hdb + 1
             self.hyoff = self.hdb / 6
             self.hxoff = self.hyoff/2
             self.hovx2 = self.posx + self.hxoff
-            self.hovy0 -= 1
-            self.hovy1 += 1
-            self.hovy3 -= 1
+            self.hovy0 = self.hovy2 - self.hyoff
+            self.hovy1 = self.hovy2 + self.hyoff
+            self.hovy3 = self.hovy2 - self.hyoff
+#       if self.hdb <= 84:
+#           self.hdb = self.hdb + 6
+#           self.hyoff = self.hdb / 6
+#           self.hxoff = self.hyoff/2
+#           self.hovx2 = self.posx + self.hxoff
+#           self.hovy0 -= 1
+#           self.hovy1 += 1
+#           self.hovy3 -= 1
             self.myparent.score.coords(self.widget,self.posx,self.hovy0,self.posx,self.hovy1,self.posx+self.hxoff,self.hovy2,self.posx,self.hovy3)
-            self.hcrossy0 = self.hovy2 - 16
-            self.hcrossy1 = self.hovy2 + 16
-            self.myparent.score.coords(self.hcross1,self.hovx0,self.hcrossy0,self.hovx0,self.hcrossy1)
+#            self.hcrossy0 = self.hovy2 - 16
+#            self.hcrossy1 = self.hovy2 + 16
+#            self.myparent.score.coords(self.hcross1,self.hovx0,self.hcrossy0,self.hovx0,self.hcrossy1)
 
     def decrease(self, event):
-        if self.hdb >= 6:
-            self.hdb = self.hdb - 6
+        if self.hdb >= 1:
+            self.hdb = self.hdb - 1
             self.hyoff = self.hdb / 6
             self.hxoff = self.hyoff/2
             self.hovx2 = self.posx + self.hxoff
-            self.hovy0 += 1
-            self.hovy1 -= 1
-            self.hovy3 += 1
+            self.hovy0 = self.hovy2 + self.hyoff
+            self.hovy1 = self.hovy2 - self.hyoff
+            self.hovy3 = self.hovy2 + self.hyoff
+#       if self.hdb >= 6:
+#           self.hdb = self.hdb - 6
+#           self.hyoff = self.hdb / 6
+#           self.hxoff = self.hyoff/2
+#           self.hovx2 = self.posx + self.hxoff
+#           self.hovy0 += 1
+#           self.hovy1 -= 1
+#           self.hovy3 += 1
             self.myparent.score.coords(self.widget,self.posx,self.hovy0,self.posx,self.hovy1,self.posx+self.hxoff,self.hovy2,self.posx,self.hovy3)
-            self.hcrossy0 = self.hovy2 - 16
-            self.hcrossy1 = self.hovy2 + 16
-            self.myparent.score.coords(self.hcross1,self.hovx0,self.hcrossy0,self.hovx0,self.hcrossy1)
-
+#            self.hcrossy0 = self.hovy2 - 16
+#            self.hcrossy1 = self.hovy2 + 16
+#            self.myparent.score.coords(self.hcross1,self.hovx0,self.hcrossy0,self.hovx0,self.hcrossy1)
 
 class cursor(object):
     def __init__(self, parent):
@@ -5031,7 +5255,9 @@ class cursor(object):
         pos = float(time) * self.myparent.xperquarter
 #        print pos
         self.center = pos
+#        print "scrollabs............"
         self.myparent.score.coords("timecursor", pos-3, self.myparent.miny, pos+3, self.myparent.maxy)
+#        print "............scrollabs"
 #        print 'pos', pos
         self.checkautoscroll(pos)
 #        print pos
@@ -5052,8 +5278,8 @@ class cursor(object):
         for i in range(int(self.beat), len(self.myparent.barlist)):
             self.beat = int(self.beat + 1)
             if "barline" in self.myparent.score.gettags(self.myparent.barlist[self.beat]):
-                oldcoords = self.myparent.score.coords(self.myparent.barlist[self.beat])
-                self.center = oldcoords[0]
+                oldohbajesus = self.myparent.score.coords(self.myparent.barlist[self.beat])
+                self.center = oldohbajesus[0]
                 self.myparent.score.coords(self.widget, self.center-3, self.myparent.miny, self.center+3, self.myparent.maxy)
                 self.checkautoscroll(self.center)
                 break
@@ -5062,8 +5288,8 @@ class cursor(object):
         for i in range(0, int(self.beat)):
             self.beat = int(self.beat - 1)
             if "barline" in self.myparent.score.gettags(self.myparent.barlist[self.beat]):
-                oldcoords = self.myparent.score.coords(self.myparent.barlist[self.beat])
-                self.center = oldcoords[0]
+                oldohbajesus = self.myparent.score.coords(self.myparent.barlist[self.beat])
+                self.center = oldohbajesus[0]
                 self.myparent.score.coords(self.widget, self.center-3, self.myparent.miny, self.center+3, self.myparent.maxy)
                 self.checkautoscroll(self.center)
                 break
@@ -5071,16 +5297,16 @@ class cursor(object):
     def nextbeat(self, *args):
         if self.beat < len(self.myparent.barlist)-1:
             self.beat = int(self.beat + 1)
-            oldcoords = self.myparent.score.coords(self.myparent.barlist[self.beat])
-            self.center = oldcoords[0]
+            oldohbajesus = self.myparent.score.coords(self.myparent.barlist[self.beat])
+            self.center = oldohbajesus[0]
             self.myparent.score.coords(self.widget, self.center-3, self.myparent.miny, self.center+3, self.myparent.maxy)
             self.checkautoscroll(self.center)
 
     def previousbeat(self, *args):
         if self.beat > 0:
             self.beat = int(self.beat - 1)
-            oldcoords = self.myparent.score.coords(self.myparent.barlist[self.beat])
-            self.center = oldcoords[0]
+            oldohbajesus = self.myparent.score.coords(self.myparent.barlist[self.beat])
+            self.center = oldohbajesus[0]
             self.myparent.score.coords(self.widget, self.center-3, self.myparent.miny, self.center+3, self.myparent.maxy)
             self.checkautoscroll(self.center)
 
@@ -5257,6 +5483,7 @@ class pastedialog(tk.Toplevel):
         self.bottom = tk.Frame(self, bd=1, relief="raised")
         self.bottom.grid(row=2, column=0, sticky='we')
         self.buttons = tk.Frame(self, width=300, height=80, borderwidth=1, relief="raised")
+        self.buttons.rowconfigure(0, weight=1)
         tk.Button(self.buttons, text="OK", command=self.ok).grid(row=0, column=0, padx=10)
         tk.Button(self.buttons, text="Cancel", command=self.cancel).grid(row=0, column=1, padx=10)
         tk.Button(self.buttons, text="Apply", command=self.apply).grid(row=0, column=2, padx=10)
@@ -5319,7 +5546,7 @@ class pastedialog(tk.Toplevel):
         noteinfo = []
         for rep in range(self.timesvar.get()):
             for orig in self.myparent.clipboard:
-                noteinstance = (self.myparent.noteid, orig.inst, orig.voice, orig.time+pastebeat, orig.dur, orig.db, orig.num, orig.den, orig.region, 1)
+                noteinstance = (self.myparent.noteid, orig.inst, orig.voice, orig.time+pastebeat, orig.dur, orig.db, orig.num, orig.den, orig.region, 1, orig.arb)
                 self.myparent.noteid += 1
                 noteinfo.append(noteinstance)
 #                self.myparent.notelist.append(noteinstance)
@@ -5345,6 +5572,7 @@ class arbdialog(tk.Toplevel):
         if sys.platform.count("win32"):
             try: self.iconbitmap('img/rat32.ico')
             except: pass
+        self.title("Arbitrary")
         self.string = tk.StringVar()
         self.string.set('')
 #        print self.mynote.arb
@@ -5355,7 +5583,7 @@ class arbdialog(tk.Toplevel):
             else:
                 self.string.set(str(pf))
 #        print self.mynote.arb
-        self.arbdisp = tk.Entry(self, textvariable=self.string)
+        self.arbdisp = tk.Entry(self, textvariable=self.string, width=22)
         self.okbutton = tk.Button(self, text="OK", command=self.ok)
         self.cancelbutton = tk.Button(self, text="Cancel", command=self.cancel)
         self.rowconfigure(0, weight=0)
@@ -5387,11 +5615,168 @@ class arbdialog(tk.Toplevel):
 
     def apply(self):
         com = comarbchange(self.myparent, self.mynote.id, self.string.get())
-        if self.dispatcher.push(com):
-            self.dispatcher.do()
+        if self.myparent.dispatcher.push(com):
+            self.myparent.dispatcher.do()
 #        if not self.myparent.unsaved: self.myparent.unsaved = True
         self.myparent.poppedup = False
 	self.altkey = 0
+
+class filterdialog(tk.Toplevel):
+    def __init__(self, parent):
+        tk.Toplevel.__init__(self, width=500, height=400)
+        self.grid_propagate(False)
+        self.myparent = parent
+        self.mynote = note
+        if sys.platform.count("win32"):
+            try: self.iconbitmap('img/rat32.ico')
+            except: pass
+        self.title("Select by Filter")
+        self.rowconfigure(3, weight=1)
+        self.columnconfigure(0, weight=1)
+        self.bind("<Return>", self.ok)
+        self.bind("<Escape>", self.cancel)
+        self.top = tk.Frame(self, bd=1, relief="raised")
+        self.top.grid(row=0, column=0, sticky='we')
+        self.middle = tk.Frame(self, bd=1, relief="raised")
+        self.middle.grid(row=1, column=0, sticky='we')
+        self.bottom = tk.Frame(self, bd=1, relief="raised")
+        self.bottom.grid(row=2, column=0, sticky='we')
+
+        tk.Label(self.top, text="Select every note where...").grid(row=0, column=0)
+
+
+
+        self.buttons = tk.Frame(self, width=300, height=80, borderwidth=1, relief="raised")
+        self.buttons.rowconfigure(0, weight=1)
+        tk.Button(self.buttons, text="OK", command=self.ok).grid(row=0, column=0, padx=10)
+        tk.Button(self.buttons, text="Cancel", command=self.cancel).grid(row=0, column=1, padx=10)
+        tk.Button(self.buttons, text="Apply", command=self.apply).grid(row=0, column=2, padx=10)
+        self.buttons.grid(row=4, column=0, sticky='s', ipady=20)
+        self.lift()
+        self.focus_set()
+
+    def ok(self, *args):
+        self.apply()
+        self.cancel()
+
+    def cancel(self, *args):
+        self.myparent.poppedup = False
+        self.altkey = 0
+        self.destroy()
+
+    def apply(self, *args):
+        pass
+
+class formuladialog(tk.Toplevel):
+    def __init__(self, parent):
+        tk.Toplevel.__init__(self)
+        self.myparent = parent
+        self.mynote = note
+        if sys.platform.count("win32"):
+            try: self.iconbitmap('img/rat32.ico')
+            except: pass
+        self.title("Apply Formula")
+        self.rowconfigure(3, weight=1)
+        self.columnconfigure(0, weight=1)
+        self.bind("<Return>", self.ok)
+        self.bind("<Escape>", self.cancel)
+        self.top = tk.Frame(self, bd=1, relief="raised")
+        self.top.grid(row=0, column=0, sticky='we')
+        self.middle = tk.Frame(self, bd=1, relief="raised")
+        self.middle.grid(row=1, column=0, sticky='we')
+        self.bottom = tk.Frame(self, bd=1, relief="raised")
+        self.bottom.grid(row=2, column=0, sticky='we')
+
+
+        self.buttons = tk.Frame(self, width=300, height=80, borderwidth=1, relief="raised")
+        self.buttons.rowconfigure(0, weight=1)
+        tk.Button(self.buttons, text="OK", command=self.ok).grid(row=0, column=0, padx=10)
+        tk.Button(self.buttons, text="Cancel", command=self.cancel).grid(row=0, column=1, padx=10)
+        tk.Button(self.buttons, text="Apply", command=self.apply).grid(row=0, column=2, padx=10)
+
+        self.buttons.grid(row=4, column=0, sticky='s', ipady=20)
+        self.lift()
+        self.focus_set()
+
+    def ok(self, *args):
+        self.apply()
+        self.cancel()
+
+    def cancel(self, *args):
+        self.myparent.poppedup = False
+        self.altkey = 0
+        self.destroy()
+
+    def apply(self, *args):
+        pass
+
+class looppoint(object):
+    def __init__(self, parent, bar, beat, tick):
+        self.myparent = parent
+        self.bar = bar
+        self.beat = beat
+        self.tick = tick
+        self.findcsdbeat()
+
+    def findcsdbeat(self):
+        sum = m = 0
+        top = bottom = 4
+        for b in range(1, self.bar):
+            if m < len(self.myparent.meterlist):
+                if self.myparent.meterlist[m].bar == b:
+                    top, bottom = self.myparent.meterlist[m].top, self.myparent.meterlist[m].bottom
+                    m += 1
+            sum += 4.0 * top / bottom
+        try:
+#            print self.myparent.meterlist, m
+            if self.myparent.meterlist[m].bar == self.bar:
+                bottom = self.myparent.meterlist[m].bottom
+        except: pass
+        sum += 4.0 * (self.beat-1) / bottom
+        self.scobeat = sum
+#        print sum
+
+class looppointwidget(object):
+    def __init__(self, parent, looppoint):
+        self.myparent = parent
+        self.looppoint = looppoint
+        baridx = [bar for bar in self.myparent.barlist if "barline" in self.myparent.score.gettags(bar)][self.looppoint.bar-1]
+        beatidx = baridx + self.looppoint.beat-1
+        self.x = self.myparent.score.coords(beatidx)[0]
+        self.point = self.myparent.bars.create_oval(self.x-3, 5, self.x+3, 10, fill="#884422")
+        self.myparent.bars.tag_bind(self.point, "<B1-Motion>", self.move)
+
+    def move(self, event):
+        x = self.myparent.bars.canvasx(event.x)
+        lpbar = 0
+        lpbeat = 1
+        for bar in self.myparent.barlist:
+            if abs(self.myparent.score.coords(bar)[0]-x) < abs(self.x-x):
+                self.x = self.myparent.score.coords(bar)[0]
+                self.myparent.bars.coords(self.point, self.x-3, 5, self.x+3, 10)
+                break
+            elif self.myparent.score.coords(bar)[0] > x:
+                break
+        for bar in self.myparent.barlist:
+            if self.x >= self.myparent.score.coords(bar)[0]:
+                if "barline" in self.myparent.score.gettags(bar):
+                    lpbeat = 1
+                    lpbar += 1
+                else:
+                    lpbeat += 1
+            else: break
+#            if "barline" in self.myparent.score.gettags(bar):
+#                lpbeat = 1
+#                if self.x >= self.myparent.score.coords(bar)[0]:
+#                    lpbar += 1
+#                else: break
+#            else:
+#                lpbeat += 1
+        self.looppoint.bar = lpbar
+        self.looppoint.beat = lpbeat
+        self.looppoint.findcsdbeat()
+#        print lpbar, lpbeat
+
 
 class dispatcher(object):
     def __init__(self, parent):
@@ -5485,7 +5870,8 @@ class comaddnotes(object):
             den = ni[7]
             region = ni[8]
             sel = ni[9]
-            noteinstance = note(self.myparent, id, inst, voice, time, dur, db, num, den, region, sel)
+            arb = ni[10]
+            noteinstance = note(self.myparent, id, inst, voice, time, dur, db, num, den, region, sel, arb)
             self.myparent.notelist.append(noteinstance)
             notewidgetinstance = notewidgetclass(self.myparent, noteinstance)
             self.myparent.notewidgetlist.append(notewidgetinstance)
@@ -5500,7 +5886,7 @@ class comaddnotes(object):
         listtoremove = []
         for nw in self.myparent.notewidgetlist:
             if nw.note.id in self.noteinfo:
-                self.noteinfo[self.noteinfo.index(nw.note.id)] = (nw.note.id, nw.note.inst, nw.note.voice, nw.note.time, nw.note.dur, nw.note.db, nw.note.num, nw.note.den, nw.note.region, nw.note.sel)
+                self.noteinfo[self.noteinfo.index(nw.note.id)] = (nw.note.id, nw.note.inst, nw.note.voice, nw.note.time, nw.note.dur, nw.note.db, nw.note.num, nw.note.den, nw.note.region, nw.note.sel, nw.note.arb)
                 inst, voice = nw.note.inst, nw.note.voice
                 nw.undraw()
                 if nw not in listtoremove:
@@ -6167,11 +6553,14 @@ class comeditdurmouse(object):
             if nw.note.id == self.noteid:
                 self.dur = nw.note.dur
                 diff = (int((x - (nw.note.time * self.myparent.xperquarter))/self.myparent.xpxquantize + .5) * self.myparent.xpxquantize)/self.myparent.xperquarter
-                if diff > 0:
-                    if self.dur > 0: sign = 1
-                    else: sign = -1
-                    nw.note.updatedur(sign * diff)
-                    nw.updatedur()
+                if nw.note.dur < 0: sign = -1
+                else: sign = 1
+                self.dur = sign * diff
+#                if diff > 0:
+#                    if self.dur > 0: sign = 1
+#                    else: sign = -1
+#                    nw.note.updatedur(sign * diff)
+#                    nw.updatedur()
                 break
         self.finalized = False
         self.string = "Edit Durations"

@@ -30,13 +30,10 @@ rtmodule = sys.argv[1]
 #oldstderr = sys.stderr
 #sys.stdout = csdout
 #sys.stderr = csderr
-command = 'csound -+rtaudio=' + rtmodule + ' -odac999 test.orc test.sco'
+command = 'csound -+rtaudio=' + rtmodule + ' -odac0 test.orc test.sco'
 csd = '''
 <CsoundSynthesizer>
 <CsInstruments>
-sr = 44100
-ksmps = 16
-nchnls = 2
 
         instr 11
         endin

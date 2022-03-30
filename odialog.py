@@ -73,6 +73,7 @@ class outputdialog:
 #        self.outputbuttons.add('play', text='Play', command=self.audition)
 #        self.outputbuttons.add('newinst', text='New Instrument', command=self.newinstrument)
         self.outputbuttons = tk.Frame(self.outputfr, width=self.w, height=80, borderwidth=1, relief="raised")
+        self.outputbuttons.rowconfigure(0, weight=1)
         tk.Button(self.outputbuttons, text="OK", command=self.ok).grid(row=0, column=0, padx=10)
         tk.Button(self.outputbuttons, text="Cancel", command=self.cancel).grid(row=0, column=1, padx=10)
         tk.Button(self.outputbuttons, text="Apply", command=self.apply).grid(row=0, column=2, padx=10)
@@ -116,19 +117,15 @@ class outputdialog:
             for out in inst.outlist:
                 if out.__class__.__name__ == 'csdout':
                     newline = csdline(newpage, out)
-                    newpage.linelist.append(newline)
-                    newpage.scrolladjust()
-                    newpage.canvas.yview_moveto(1.0)
                 elif out.__class__.__name__ == 'sf2out':
                     newline = sf2line(newpage, out)
-                    newpage.linelist.append(newline)
-                    newpage.scrolladjust()
-                    newpage.canvas.yview_moveto(1.0)
                 elif out.__class__.__name__ == 'oscout':
                     newline = oscline(newpage, out)
-                    newpage.linelist.append(newline)
-                    newpage.scrolladjust()
-                    newpage.canvas.yview_moveto(1.0)
+                elif out.__class__.__name__ == 'midout':
+                    newline = midline(newpage, out)
+                newpage.linelist.append(newline)
+                newpage.scrolladjust()
+                newpage.canvas.yview_moveto(1.0)
         self.loadfr = tk.Frame(self.csdpage)
         self.loadfr.grid(row=3, column=0, sticky='ew', columnspan=2)
         self.csdloadbutton = tk.Button(self.loadfr, text="Load", command=self.csdload)
@@ -222,13 +219,16 @@ class outputdialog:
 
     def csdloadwork(self, filetoopen):
         if filetoopen:
-            file = open(filetoopen)
-            if file:
-                self.myparent.csdimported = ''
-                for line in file:
-                    self.myparent.csdimported += line
-                self.csdtext.delete(1.0, "end")
-                self.csdtext.insert("end", self.myparent.csdimported)
+            try:
+                file = open(filetoopen)
+                if file:
+                    self.myparent.csdimported = ''
+                    for line in file:
+                        self.myparent.csdimported += line
+                    self.csdtext.delete(1.0, "end")
+                    self.csdtext.insert("end", self.myparent.csdimported)
+            except:
+                print "Unable to load Csound file"
 
     def addinstpage(self, inst):
         newpage = instrumentpage(self, inst)
@@ -522,6 +522,13 @@ class instrumentpage:
                 self.linelist.append(newline)
                 self.scrolladjust()
                 self.canvas.yview_moveto(1.0)
+#            elif type == 'm' or type == 'M':
+#                newout = midout(self.myinst)
+#                self.myinst.outlist.append(newout)
+#                newline = midline(self, newout)
+#                self.linelist.append(newline)
+#                self.scrolladjust()
+#                self.canvas.yview_moveto(1.0)
             self.blank.delete(0,last='end')
 
 class sf2out:
@@ -1172,13 +1179,304 @@ class csdline:
 #        print self.page.linelist
 #        del self.page.linelist[index]
 
+class midout:
+    '''Created only by 'm' type selection.
+
+    ...Not quite implemented!
+    '''
+    def __init__(self, parent, et=12, base=60, mpcl=[], msgl=[], pd={}, file=None, bank=None, program=None):
+        self.instrument = parent
+	self.ET = et
+        self.base = base
+        self.round = True
+	self.modportchnlist = mpcl
+	self.messagelist = msgl
+	self.primedict = pd
+        self.mute = 0
+        self.solo = 0
+        self.volume = 0
+
+class midline:
+    def __init__(self, parent, out):
+        self.page = parent
+        self.out = out
+        self.flag = 'm'
+        self.place = self.out.instrument.outlist.index(self.out)
+        self.ET = tk.IntVar()
+	self.ET.set(self.out.ET)
+	self.base = tk.IntVar()
+	self.base.set(self.out.base)
+        self.round = tk.BooleanVar()
+        self.round.set(self.out.round)
+        self.mpcwidgetlist = []
+        self.mute = tk.BooleanVar()
+        self.mute.set(self.out.mute)
+        self.mute.trace("w", self.mutechange)
+        self.solo = tk.BooleanVar()
+        self.solo.set(self.out.solo)
+        self.solo.trace("w", self.solochange)
+        self.volume = tk.DoubleVar()
+        self.volume.set(self.out.volume)
+        self.volume.trace("w", self.volumechange)
+        self.frame = tk.Frame(self.page.midrow, bd=5, relief="ridge")
+        self.frame.grid(row=self.place, column=0, columnspan=2, sticky='ew')
+        self.frame.columnconfigure(0, weight=0)
+        self.frame.columnconfigure(1, weight=0)
+        self.frame.columnconfigure(2, weight=0)
+        self.frame.columnconfigure(3, weight=0)
+        self.frame.columnconfigure(4, weight=0)
+        self.frame.columnconfigure(5, weight=0)
+        self.frame.columnconfigure(6, weight=0)
+        self.frame.columnconfigure(7, weight=0)
+        self.frame.columnconfigure(8, weight=0)
+        self.frame.columnconfigure(9, weight=1)
+        self.frame.columnconfigure(10, weight=0)
+        self.field1 = tk.Entry(self.frame, width=2)
+        self.field1.grid(row=0, column=0, sticky='w', pady=10, padx=20)
+        self.field1.insert(0, 'm')
+        self.field1.configure(state='disabled')
+        self.mutewidget = tk.Checkbutton(self.frame, height=1, width=1, variable=self.mute, bg='#ffaaaa', selectcolor='#996666', padx=2, pady=0, indicatoron=0, activebackground='#ff8888')
+        self.mutewidget.grid(row=0, column=1, rowspan=1)
+        self.solowidget = tk.Checkbutton(self.frame, height=1, width=1, variable=self.solo, bg='#aaffaa', selectcolor='#669966', padx=2, pady=0, indicatoron=0, activebackground='#88ff88')
+        self.solowidget.grid(row=0, column=2, rowspan=1)
+        tk.Label(self.frame, text="ET:").grid(row=0, column=3, rowspan=1, columnspan=1, sticky='w')
+
+
+        self.field2 = tk.Entry(self.frame, width=10, textvariable=self.ET)
+        self.field2.grid(row=0, column=4, rowspan=1, columnspan=1, sticky='w', padx=0)
+        self.field2.focus_set()
+
+        tk.Label(self.frame, text="     1/1 Note Number:").grid(row=0, column=5, rowspan=1, columnspan=1, sticky='w')
+
+        self.field3 = tk.Spinbox(self.frame, from_=0, to=127, width=5)
+        self.field3.grid(row=0, column=6, rowspan=1, columnspan=1, sticky='w')
+
+        tk.Label(self.frame, text="  1/1 Port/Channel:").grid(row=0, column=7, rowspan=1, columnspan=1, sticky='w')
+
+        self.portdevice11 = tk.StringVar()
+        self.portdevice11.set("--")
+        self.field4 = tk.OptionMenu(self.frame, self.portdevice11, "--")
+        self.field4.grid(row=0, column=8, sticky='w')
+
+
+        self.x = tk.Button(self.frame, text="x", command=self.remove)
+        self.x.grid(row=0, column=10, sticky='e', padx=40)
+
+        tk.Label(self.frame, text="MIDI Output    ").grid(row=1, column=0, sticky='w')
+
+	self.modportchnfr = tk.Frame(self.frame, bd=2, relief="ridge")
+	self.mpcexpand = tk.StringVar()
+	self.mpcexpand.set("+")
+	self.mpcbox = tk.Button(self.modportchnfr, textvariable=self.mpcexpand, padx=0, pady=0, command=self.mpcexpcon, font=("Times", 6), width=1)
+	self.mpcbox.grid(row=0, column=0)
+	self.modportchnfr.columnconfigure(6, weight=1)
+	tk.Label(self.modportchnfr, text="Port/Channel Combinations", bd=2, relief="ridge", anchor='w').grid(row=0, column=1, columnspan=6, sticky='ew')
+        tk.Checkbutton(self.modportchnfr, text="Round Robin", variable=self.round).grid(row=0, column=7)
+	nothing = tk.Label(self.modportchnfr, text="Module/Port/Channel combinations go here.", anchor='w')
+	nothing.grid(row=1, column=1, columnspan=7, sticky='w')
+	nothing.grid_remove()
+        for mpc in self.out.modportchnlist:
+            temp = midimpcwidget(self, mpc)
+            self.mpcwidgetlist.append(temp)
+        for mpcw in self.mpcwidgetlist:
+            print mpcw.mpc.port
+	self.mpcrow = 1
+	self.mpcpopulate()
+
+	self.msgfr = tk.Frame(self.frame, bd=2, relief="ridge")
+	self.msgexpand = tk.StringVar()
+	self.msgexpand.set("+")
+	self.msgbox = tk.Button(self.msgfr, textvariable=self.msgexpand, padx=0, pady=0, command=self.msgexpcon, font=("Times", 6), width=1)
+	self.msgbox.grid(row=0, column=0)
+	self.msgfr.columnconfigure(6, weight=1)
+	tk.Label(self.msgfr, text="MIDI Messages", bd=2, relief="ridge", anchor='w').grid(row=0, column=1, columnspan=7, sticky='ew')
+
+	self.primefr = tk.Frame(self.frame, bd=2, relief="ridge")
+	self.primeexpand = tk.StringVar()
+	self.primeexpand.set("+")
+	self.primebox = tk.Button(self.primefr, textvariable=self.primeexpand, padx=0, pady=0, command=self.primeexpcon, font=("Times", 6), width=1)
+	self.primebox.grid(row=0, column=0)
+	self.primefr.columnconfigure(6, weight=1)
+	tk.Label(self.primefr, text="Prime Equivalents (Advanced)", bd=2, relief="ridge", anchor='w').grid(row=0, column=1, columnspan=7, sticky='ew')
+
+	self.modportchnfr.grid(row=1, column=1, columnspan=7, sticky='ew')
+	self.msgfr.grid(row=2, column=1, columnspan=7, sticky='ew')
+	self.primefr.grid(row=3, column=1, columnspan=7, sticky='ew')
+
+
+        self.volumewidget = tk.Scale(self.frame, orient="horizontal", width=7, fg='#552288', sliderlength=10, sliderrelief='raised', tickinterval=10, from_=-90, to=10, resolution=.1, variable=self.volume)
+        self.volumewidget.grid(row=4, column=0, columnspan=11, sticky='ew', pady=2)
+
+    def mpcpopulate(self, *args):
+	todestroy = []
+	for child in self.modportchnfr.winfo_children():
+            try:
+                if int(child.grid_info()['row']):
+                    child.grid_forget()
+                    todestroy.append(child)
+            except:
+		pass
+	for dest in todestroy:
+            dest.destroy()
+	for mpc in self.out.modportchnlist:
+            pass
+
+    def msgpopulate(self, *args):
+	pass
+
+    def primepopulate(self, *args):
+	pass
+
+    def mpcexpcon(self, *args):
+	if self.mpcexpand.get() == "+":
+            self.mpcexpand.set("-")
+            for wid in self.modportchnfr.winfo_children():
+		try:
+                    if int(wid.grid_info()['row']):
+                        wid.grid()
+		except:
+                    wid.grid()
+	else:
+            self.mpcexpand.set("+")
+            for wid in self.modportchnfr.winfo_children():
+		if int(wid.grid_info()['row']):
+#                    print wid.grid_info()['row']
+                    wid.grid_remove()
+#	for wid in self.modportchnfr.winfo_children():
+#            print wid.grid_info()['row']
+
+    def msgexpcon(self, *args):
+	if self.msgexpand.get() == "+":
+            self.msgexpand.set("-")
+            for wid in self.msgfr.winfo_children():
+		try:
+                    if int(wid.grid_info()['row']):
+                        wid.grid()
+		except:
+                    wid.grid()
+	else:
+            self.msgexpand.set("+")
+            for wid in self.msgfr.winfo_children():
+		if int(wid.grid_info()['row']):
+                    wid.grid_remove()
+
+    def primeexpcon(self, *args):
+	if self.primeexpand.get() == "+":
+            self.primeexpand.set("-")
+            for wid in self.msgfr.winfo_children():
+		try:
+                    if int(wid.grid_info()['row']):
+                        wid.grid()
+		except:
+                    wid.grid()
+	else:
+            self.primeexpand.set("+")
+            for wid in self.msgfr.winfo_children():
+		if int(wid.grid_info()['row']):
+                    wid.grid_remove()
+
+    def roundchange(self, *args):
+        pass
+
+    def basechange(self, *args):
+        pass
+
+    def ETchange(self, *args):
+        pass
+
+    def mutechange(self, *args):
+        self.out.mute = self.mute.get()
+
+    def solochange(self, *args):
+        self.out.solo = self.solo.get()
+
+        if self.out.solo == 0:
+            s = 0
+            for o in self.page.myinst.outlist:
+                if o.solo:
+                    s = 1
+                    break
+            self.page.myinst.gsolo = s
+        else:
+            self.page.myinst.gsolo = 1
+
+    def volumechange(self, *args):
+        self.out.volume = self.volume.get()
+
+    def remove(self):
+        index = self.place
+        self.frame.destroy()
+        for line in self.page.linelist:
+            if line.place > index:
+                line.place -= 1
+                line.frame.grid(row=line.place)
+#        print self.page.myinst.outlist
+        del self.page.myinst.outlist[index]
+#        print self.page.myinst.outlist
+        self.page.widget.update_idletasks()
+        if len(self.page.linelist) > 1:
+            bottomy = self.page.midrow.winfo_reqheight()
+        else:
+            bottomy=0
+        self.page.canvas.coords(self.page.botrowoncanvas, 0, bottomy)
+        self.page.scrolladjust()
+
+#        print self.page.linelist
+#        print index
+        del self.page.linelist[index]
+#        print self.page.linelist
+
+class midimpc:
+    def __init__(self, module="portmidi", port="0", channel=(1,16), base=False):
+	self.module = module
+	self.port = port
+	self.channel = channel
+	self.base = base
+
+class midimpcwidget(tk.Frame):
+    def __init__(self, parent, mpc):
+        tk.Frame.__init__(self)
+        self.myparent = parent
+        self.mpc = mpc
+
+class midimsg:
+    def __init__(self, code="cc", msb=0, lsb=0, offset=0, pernote=True):
+	self.code = code
+	self.msb = msb
+	self.lsb = lsb
+	self.offset = offset
+	self.pernote = pernote
+
+class midimsgwidget:
+    def __init__(self, parent, msg):
+        self.myparent = parent
+        self.msg = msg
+        self.csdstring = tk.StringVar()
+        self.string = ''
+
+    def csdstringchange(self, *args):
+        self.stringupdate(self)
+        self.out.pfields = self.csdstring.get()
+
+    def stringchange(self, *args):
+        self.out.string = self.string.get()
+
+    def stringupdate(self, *args):
+        instnum = self.instnum.get()
+        try:
+            inst = instnum.split()[0]
+            csdstring = self.csdstring.get()
+            self.out.string = '%s%s%s' % (inst, ' time dur ', csdstring)
+        except:
+            pass
+
+
 class sf2file:
     def __init__(self, filename):
         self.filename = filename
         self.basename = os.path.basename(filename)
         self.proglist = {}
         self.getpresets()
-
 
     def getpresets(self):
         try:

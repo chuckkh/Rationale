@@ -41,11 +41,12 @@ class regiondialog:
 #        self.regionbuttons.add('apply', text='Apply', command=self.apply)
 
         self.regionbuttons = tk.Frame(self.regionfr, width=640, height=80, relief="raised", bd=1)
+        self.regionbuttons.rowconfigure(0, weight=1)
         tk.Button(self.regionbuttons, text="OK", command=self.ok).grid(row=0, column=0, padx=10)
         tk.Button(self.regionbuttons, text="Cancel", command=self.cancel).grid(row=0, column=1, padx=10)
         tk.Button(self.regionbuttons, text="Apply", command=self.apply).grid(row=0, column=2, padx=10)
 
-        self.regionbuttons.grid(row=1, column=0, sticky='ew', ipady=20)
+        self.regionbuttons.grid(row=1, column=0, sticky='', ipady=20)
         self.canvas = tk.Canvas(self.regionfr)
         self.canvas.grid(row=0, column=0, sticky='nesw')
         self.canvas.rowconfigure(2, weight=1)

@@ -121,6 +121,7 @@ class notebankdialog(tk.Toplevel):
 
         self.buttonfr = tk.Frame(self, width=640, height=80, borderwidth=1, relief="raised")
         self.buttonfr.grid(row=4, column=0, sticky='', ipady=20)
+        self.buttonfr.rowconfigure(0, weight=1)
         tk.Button(self.buttonfr, text="OK", command=self.ok).grid(row=0, column=0, padx=10)
         tk.Button(self.buttonfr, text="Cancel", command=self.cancel).grid(row=0, column=1, padx=10)
         tk.Button(self.buttonfr, text="Apply", command=self.apply).grid(row=0, column=2, padx=10)
