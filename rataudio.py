@@ -59,7 +59,11 @@ class rataudioengine(csnd.CppSound):
         self.inputflag = 1
         self.cbport = int(cbport)
         self.cbsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.cbsock.connect(('127.0.0.1', self.cbport))
+        try:
+            self.cbsock.connect(('127.0.0.1', self.cbport))
+        except:
+            print "Unable to connect audio engine to main program"
+            return
 
         self.inputloopthread = threading.Thread(target=self.inputloop)
         self.inputloopthread.start()

@@ -1,4 +1,4 @@
-##    Copyright 2008, 2009 Charles S. Hubbard, Jr.
+##    Copyright 2008, 2009, 2010 Charles S. Hubbard, Jr.
 ##
 ##    This file is part of Rationale.
 ##
@@ -209,7 +209,14 @@ class outputdialog:
         self.instmaybe.append(newinst)
 
     def csdload(self):
-        filetoopen = tkfd.askopenfilename()
+        if self.myparent.csdimport:
+            base = os.path.dirname(self.myparent.csdimport)
+        else:
+            base = False
+        if base and os.path.realpath(base):
+            filetoopen = tkfd.askopenfilename(filetypes=[('Csound', ".csd"), ("All", "*")], initialdir=base)
+        else:
+            filetoopen = tkfd.askopenfilename(filetypes=[('Csound', ".csd"), ("All", "*")])
         if filetoopen:
             self.myparent.csdimport = filetoopen
             self.csdloadwork(filetoopen)
@@ -218,17 +225,14 @@ class outputdialog:
             self.csdlabel.configure(text=lab[1])
 
     def csdloadwork(self, filetoopen):
-        if filetoopen:
-            try:
-                file = open(filetoopen)
-                if file:
-                    self.myparent.csdimported = ''
-                    for line in file:
-                        self.myparent.csdimported += line
-                    self.csdtext.delete(1.0, "end")
-                    self.csdtext.insert("end", self.myparent.csdimported)
-            except:
-                print "Unable to load Csound file"
+        if filetoopen and os.path.exists(filetoopen):
+            file = open(filetoopen)
+            if file:
+                self.myparent.csdimported = ''
+                for line in file:
+                    self.myparent.csdimported += line
+                self.csdtext.delete(1.0, "end")
+                self.csdtext.insert("end", self.myparent.csdimported)
 
     def addinstpage(self, inst):
         newpage = instrumentpage(self, inst)
@@ -522,13 +526,13 @@ class instrumentpage:
                 self.linelist.append(newline)
                 self.scrolladjust()
                 self.canvas.yview_moveto(1.0)
-#            elif type == 'm' or type == 'M':
-#                newout = midout(self.myinst)
-#                self.myinst.outlist.append(newout)
-#                newline = midline(self, newout)
-#                self.linelist.append(newline)
-#                self.scrolladjust()
-#                self.canvas.yview_moveto(1.0)
+            elif type == 'm' or type == 'M':
+                newout = midout(self.myinst)
+                self.myinst.outlist.append(newout)
+                newline = midline(self, newout)
+                self.linelist.append(newline)
+                self.scrolladjust()
+                self.canvas.yview_moveto(1.0)
             self.blank.delete(0,last='end')
 
 class sf2out:
@@ -685,7 +689,14 @@ class sf2line:
         self.program.set(prog)
 
     def load(self):
-        newfile = tkfd.askopenfilename(title="Load Soundfont", filetypes=[("Soundfont 2", ".sf2")])
+        if self.page.myparent.sf2list:
+            base = os.path.dirname(self.page.myparent.sf2list[-1])
+        else:
+            base = False
+        if base and os.path.realpath(base):
+            newfile = tkfd.askopenfilename(title="Load Soundfont", filetypes=[("Soundfont 2", ".sf2")], initialdir=base)
+        else:
+            newfile = tkfd.askopenfilename(title="Load Soundfont", filetypes=[("Soundfont 2", ".sf2")])
 #            print newfile
         if newfile and os.path.basename(newfile) != self.sf2file.get():
             base = os.path.basename(newfile)
@@ -1189,6 +1200,7 @@ class midout:
 	self.ET = et
         self.base = base
         self.round = True
+	self.mod = 'portmidi'
 	self.modportchnlist = mpcl
 	self.messagelist = msgl
 	self.primedict = pd
@@ -1229,8 +1241,10 @@ class midline:
         self.frame.columnconfigure(6, weight=0)
         self.frame.columnconfigure(7, weight=0)
         self.frame.columnconfigure(8, weight=0)
-        self.frame.columnconfigure(9, weight=1)
+        self.frame.columnconfigure(9, weight=0)
         self.frame.columnconfigure(10, weight=0)
+        self.frame.columnconfigure(11, weight=1)
+        self.frame.columnconfigure(12, weight=0)
         self.field1 = tk.Entry(self.frame, width=2)
         self.field1.grid(row=0, column=0, sticky='w', pady=10, padx=20)
         self.field1.insert(0, 'm')
@@ -1239,31 +1253,46 @@ class midline:
         self.mutewidget.grid(row=0, column=1, rowspan=1)
         self.solowidget = tk.Checkbutton(self.frame, height=1, width=1, variable=self.solo, bg='#aaffaa', selectcolor='#669966', padx=2, pady=0, indicatoron=0, activebackground='#88ff88')
         self.solowidget.grid(row=0, column=2, rowspan=1)
-        tk.Label(self.frame, text="ET:").grid(row=0, column=3, rowspan=1, columnspan=1, sticky='w')
 
+	tk.Label(self.frame, text="Module:").grid(row=0, column=3, rowspan=1, columnspan=1, sticky='w')
+        if sys.platform.count("win32"):
+            self.midimodules = ['portmidi', 'mme', 'winmm']
+        elif sys.platform.count("linux"):
+            self.midimodules = ['portmidi', 'alsa']
+        elif sys.platform.count("darwin"):
+            self.midimodules = ['portmidi']
+	self.midimodule = tk.StringVar()
+	self.midimodule.set("portmidi")
+	self.field2 = tk.Menubutton(self.frame, textvariable=self.midimodule, bg="#bbbbaa", activebackground="#ccccaa", width=8, relief="raised", padx=0, indicatoron=1)
+	self.field2menu = tk.Menu(self.field2, tearoff=0)
+#	self.field2 = tk.OptionMenu(self.frame, self.midimodule, "portmidi")
+	for module in self.midimodules:
+            self.field2menu.add_command(label=module, command=lambda arg1=module: self.changemidimodule(arg1))
+        self.field2['menu'] = self.field2menu
+	self.field2.grid(row=0, column=4, rowspan=1, columnspan=1, sticky='w', padx=0)
+	self.field2.focus_set()
 
-        self.field2 = tk.Entry(self.frame, width=10, textvariable=self.ET)
-        self.field2.grid(row=0, column=4, rowspan=1, columnspan=1, sticky='w', padx=0)
-        self.field2.focus_set()
+        tk.Label(self.frame, text="ET:").grid(row=0, column=5, rowspan=1, columnspan=1, sticky='w')
+        self.field3 = tk.Entry(self.frame, width=5, textvariable=self.ET)
+        self.field3.grid(row=0, column=6, rowspan=1, columnspan=1, sticky='w', padx=0)
 
-        tk.Label(self.frame, text="     1/1 Note Number:").grid(row=0, column=5, rowspan=1, columnspan=1, sticky='w')
+        tk.Label(self.frame, text="  1/1:").grid(row=0, column=7, rowspan=1, columnspan=1, sticky='w')
+        self.field4 = tk.Spinbox(self.frame, from_=0, to=127, width=5, textvariable=self.base)
+        self.field4.grid(row=0, column=8, rowspan=1, columnspan=1, sticky='w')
 
-        self.field3 = tk.Spinbox(self.frame, from_=0, to=127, width=5)
-        self.field3.grid(row=0, column=6, rowspan=1, columnspan=1, sticky='w')
-
-        tk.Label(self.frame, text="  1/1 Port/Channel:").grid(row=0, column=7, rowspan=1, columnspan=1, sticky='w')
-
+        tk.Label(self.frame, text="  1/1 Port/Channel:").grid(row=0, column=9, rowspan=1, columnspan=1, sticky='w')
         self.portdevice11 = tk.StringVar()
         self.portdevice11.set("--")
-        self.field4 = tk.OptionMenu(self.frame, self.portdevice11, "--")
-        self.field4.grid(row=0, column=8, sticky='w')
+        self.field5 = tk.OptionMenu(self.frame, self.portdevice11, "--")
+        self.field5.grid(row=0, column=10, sticky='w')
 
 
         self.x = tk.Button(self.frame, text="x", command=self.remove)
-        self.x.grid(row=0, column=10, sticky='e', padx=40)
+        self.x.grid(row=0, column=12, sticky='e', padx=16)
 
         tk.Label(self.frame, text="MIDI Output    ").grid(row=1, column=0, sticky='w')
 
+####### PORT/CHANNEL #######
 	self.modportchnfr = tk.Frame(self.frame, bd=2, relief="ridge")
 	self.mpcexpand = tk.StringVar()
 	self.mpcexpand.set("+")
@@ -1272,7 +1301,7 @@ class midline:
 	self.modportchnfr.columnconfigure(6, weight=1)
 	tk.Label(self.modportchnfr, text="Port/Channel Combinations", bd=2, relief="ridge", anchor='w').grid(row=0, column=1, columnspan=6, sticky='ew')
         tk.Checkbutton(self.modportchnfr, text="Round Robin", variable=self.round).grid(row=0, column=7)
-	nothing = tk.Label(self.modportchnfr, text="Module/Port/Channel combinations go here.", anchor='w')
+	nothing = tk.Label(self.modportchnfr, text="Port/Channel combinations go here.", anchor='w')
 	nothing.grid(row=1, column=1, columnspan=7, sticky='w')
 	nothing.grid_remove()
         for mpc in self.out.modportchnlist:
@@ -1283,6 +1312,7 @@ class midline:
 	self.mpcrow = 1
 	self.mpcpopulate()
 
+####### MESSAGE #######
 	self.msgfr = tk.Frame(self.frame, bd=2, relief="ridge")
 	self.msgexpand = tk.StringVar()
 	self.msgexpand.set("+")
@@ -1290,7 +1320,16 @@ class midline:
 	self.msgbox.grid(row=0, column=0)
 	self.msgfr.columnconfigure(6, weight=1)
 	tk.Label(self.msgfr, text="MIDI Messages", bd=2, relief="ridge", anchor='w').grid(row=0, column=1, columnspan=7, sticky='ew')
+	nothing2 = tk.Label(self.msgfr, text="MIDI messages go here.", anchor='w')
+	nothing2.grid(row=1, column=1, columnspan=7, sticky='w')
+	nothing2.grid_remove()
+	for msg in self.out.messagelist:
+            temp = midimsgwidget(self, msg)
+	self.msgrow = 1
+	self.msgpopulate()
 
+
+####### PRIME EQUIVALENTS #######
 	self.primefr = tk.Frame(self.frame, bd=2, relief="ridge")
 	self.primeexpand = tk.StringVar()
 	self.primeexpand.set("+")
@@ -1299,13 +1338,18 @@ class midline:
 	self.primefr.columnconfigure(6, weight=1)
 	tk.Label(self.primefr, text="Prime Equivalents (Advanced)", bd=2, relief="ridge", anchor='w').grid(row=0, column=1, columnspan=7, sticky='ew')
 
-	self.modportchnfr.grid(row=1, column=1, columnspan=7, sticky='ew')
-	self.msgfr.grid(row=2, column=1, columnspan=7, sticky='ew')
-	self.primefr.grid(row=3, column=1, columnspan=7, sticky='ew')
+####### GRID 'EM, GET WID 'EM #######
+	self.modportchnfr.grid(row=1, column=1, columnspan=9, sticky='ew')
+	self.msgfr.grid(row=2, column=1, columnspan=9, sticky='ew')
+	self.primefr.grid(row=3, column=1, columnspan=9, sticky='ew')
 
 
         self.volumewidget = tk.Scale(self.frame, orient="horizontal", width=7, fg='#552288', sliderlength=10, sliderrelief='raised', tickinterval=10, from_=-90, to=10, resolution=.1, variable=self.volume)
         self.volumewidget.grid(row=4, column=0, columnspan=11, sticky='ew', pady=2)
+
+    def changemidimodule(self, module):
+	print "Change MIDI module to", module
+	self.midimodule.set("%s" % module)
 
     def mpcpopulate(self, *args):
 	todestroy = []
@@ -1318,8 +1362,11 @@ class midline:
 		pass
 	for dest in todestroy:
             dest.destroy()
+	mpcrow = 0
 	for mpc in self.out.modportchnlist:
-            pass
+            temp = midimpcwidget(self, mpc)
+            temp.grid(row=row, column=0, sticky='we')
+            mpcrow += 1            
 
     def msgpopulate(self, *args):
 	pass
@@ -1363,7 +1410,7 @@ class midline:
     def primeexpcon(self, *args):
 	if self.primeexpand.get() == "+":
             self.primeexpand.set("-")
-            for wid in self.msgfr.winfo_children():
+            for wid in self.primefr.winfo_children():
 		try:
                     if int(wid.grid_info()['row']):
                         wid.grid()
@@ -1371,7 +1418,7 @@ class midline:
                     wid.grid()
 	else:
             self.primeexpand.set("+")
-            for wid in self.msgfr.winfo_children():
+            for wid in self.primefr.winfo_children():
 		if int(wid.grid_info()['row']):
                     wid.grid_remove()
 

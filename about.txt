@@ -4,7 +4,7 @@ version %s
 
 http://rationale.sourceforge.net
 
-Copyright 2008-2009 Charles S. Hubbard, Jr.
+Copyright 2008-2011 Charles S. Hubbard, Jr.
 chuckk@badmuthahubbard.com
 
 Released under GPL v3
