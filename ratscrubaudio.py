@@ -93,11 +93,13 @@ class ratscrubaudioengine(csnd.CppSound):
                 print "Csound Error"
                 self.cbsock.sendall('ENDCB')
         elif cmd.startswith('csdstp'):
+#            print "stopping scrub..."
             self.inputflag = 0
             try:
                 self.perf.Stop()
                 self.perf.Join()
                 self.cbsock.sendall('ENDCB')
+#		print "stopped"
             except: print "No Performance Thread"
             self.cleanup()
         elif cmd.startswith('csdcln'):

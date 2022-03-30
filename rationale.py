@@ -35,6 +35,7 @@ import socket
 #import select
 import Queue
 #import time
+#import pdb
 ####NOT ALWAYS PRESENT
 #import Tix as tk
 import csnd
@@ -44,6 +45,9 @@ import ndialog
 import odialog
 import rdialog
 import tdialog
+if sys.platform.count("win32"):
+    try: import win32process
+    except: pass
 
 class rationale(object):
     def __init__(self, parent, version):
@@ -137,8 +141,9 @@ class rationale(object):
         self.curden = 1
         self.log2 = math.log(2)
 	if sys.platform.count("darwin"):
-	    self.control, self.ctlacc, self.alt, self.altacc = "Alt_L", "Cmd", "Control_L", "Ctl"
-	else: self.control, self.ctlacc, self.alt, self.altacc = "Control", "Ctl", "Alt", "Alt"
+            self.control, self.ctlacc, self.alt, self.altacc = "Alt_L", "Cmd", "Control_L", "Ctl"
+	else:
+            self.control, self.ctlacc, self.alt, self.altacc = "Control", "Ctl", "Alt", "Alt"
         self.ctlkey = self.shiftkey = self.altkey = self.numkey = self.rkey = self.vkey = self.bkey = 0
         self.hinstch = 0
         self.hide = 0
@@ -480,8 +485,8 @@ You should have received a copy of the GNU General Public License along with Rat
         self.menuedit.add_command(label="Output...", command=self.openoutputdialog, underline=0, accelerator="O")
         self.menuedit.add_command(label="Tempos...", command=self.opentempodialog, underline=0, accelerator="P")
         self.menuedit.add_command(label="Meters...", command=self.openmeterdialog, underline=1, accelerator="M")
-        self.menuedit.add_command(label="Regions...", command=self.openregiondialog, underline=0, accelerator="R")
-        self.menuedit.add_command(label="Notebanks", command=self.opennotebankdialog, underline=0, accelerator="%s-B" % self.ctlacc)
+        self.menuedit.add_command(label="Regions...", command=self.openregiondialog, underline=0, accelerator="N")
+        self.menuedit.add_command(label="Notebanks...", command=self.opennotebankdialog, underline=0, accelerator="%s-B" % self.ctlacc)
         self.menuedit.add_separator()
         self.menuedit.add_command(label="Cut", command=self.editmodecut, accelerator="%s-X" % self.ctlacc)
         self.menuedit.add_command(label="Copy", command=self.editmodecopy, underline=0, accelerator="%s-C" % self.ctlacc)
@@ -491,8 +496,27 @@ You should have received a copy of the GNU General Public License along with Rat
         self.statusshow = tk.BooleanVar()
         self.statusshow.set(True)
         self.statusshow.trace("w", self.statusgrid)
+	self.menutransport = tk.Menu(self.menumain, tearoff=0)
+	self.menutransport.add_command(label="Play/Stop", command=self.play, underline=0, accelerator="Space")
+	self.menutransport.add_command(label="Beginning", command=self.cursor.home, underline=0, accelerator="Home")
+	self.menutransport.add_command(label="End", command=self.cursor.end, underline=0, accelerator="End")
+	self.menutransport.add_command(label="Next Beat", command=self.cursor.nextbeat, underline=0, accelerator="Page Down")
+	self.menutransport.add_command(label="Previous Beat", command=self.cursor.previousbeat, underline=1, accelerator="Page Up")
+	self.menutransport.add_command(label="Next Bar", command=self.cursor.nextbar, underline=2, accelerator='%s-PgDn' % self.ctlacc)
+	self.menutransport.add_command(label="Previous Bar", command=self.cursor.previousbar, underline=3, accelerator='%s-PgUp' % self.ctlacc)
+	self.menumain.add_cascade(label="Transport", menu=self.menutransport, underline=0)
         self.menuview = tk.Menu(self.menumain, tearoff=0)
         self.menuview.add_command(label="Maximize", command=lambda arg1= self.myparent: self.max(arg1), underline=0)
+	self.menuvertzoom = tk.Menu(self.menuview, tearoff=0)
+	self.menuvertzoom.add_command(label="Vert In", command=lambda arg1="in", arg2="True": self.zoom(arg1, arg2), underline=5, accelerator="%s-+" % self.ctlacc)
+	self.menuvertzoom.add_command(label="Vert Out", command=lambda arg1="out", arg2="True": self.zoom(arg1, arg2), underline=5, accelerator="%s--" % self.ctlacc)
+	self.menuvertzoom.add_command(label="Vert Reset", command=lambda arg1="reset", arg2="True": self.zoom(arg1, arg2), underline=5, accelerator="%s-Backspace" % self.ctlacc)
+	self.menuview.add_cascade(label="Vertical Zoom", underline=0, menu=self.menuvertzoom)
+	self.menuhorizoom = tk.Menu(self.menuview, tearoff=0)
+	self.menuhorizoom.add_command(label="Horiz In", command=lambda arg1="in": self.zoom(arg1), underline=6, accelerator="+")
+	self.menuhorizoom.add_command(label="Horiz Out", command=lambda arg1="out": self.zoom(arg1), underline=6, accelerator="-")
+	self.menuhorizoom.add_command(label="Horiz Reset", command=lambda arg1="reset": self.zoom(arg1), underline=6, accelerator="Backspace")
+	self.menuview.add_cascade(label="Horizontal Zoom", underline=0, menu=self.menuhorizoom)
         self.menuview.add_checkbutton(label="Status Bar", variable=self.statusshow)
         self.menuview.add_separator()
         self.menuview.add_command(label="Show All", command=self.showall, accelerator="%s-S" % self.altacc)
@@ -739,11 +763,12 @@ You should have received a copy of the GNU General Public License along with Rat
                                         toinst = '%sinstr +rat%son%s' % (os.linesep, lineguide[0].strip('"'), os.linesep)
                                         toinst += 'instnum nstrnum "%s"%s' % (lineguide[0].strip('"'), os.linesep)
                                         toinst += '''inum = instnum + (p4/1000)
-al, ar	subinstr	inum, p7, p8'''
+;al, ar	subinstr	inum, p7, p8
+event_i "i", inum, 0, p3, p7, p8'''
                                         for p in range(7, pnum+7):
                                             toinst += ', p%d' % p
                                         toinst += '''
-	outc	al, ar
+;	outc	al, ar
         endin
 '''
                                         todict[lineguide[0]] = (pnum, toinst)
@@ -806,7 +831,7 @@ al, ar	subinstr	inum, p7, p8'''
                                     self.csdsco += line
                     if not instlist[note.inst].outlist:
 #                        line = 'i "ratratdefaulton" %f %f %f [$RATBASE * %d/%d * %d/%d] %d%s' % (note.time, note.dur, note.db, note.num, note.den, self.regionlist[note.region].num, self.regionlist[note.region].den, note.voice, os.linesep)
-                        line = 'i "ratratdefaulton" %f %f %d 0 %f %f [$RATBASE * %d/%d * %d/%d]%s' % (note.time, note.dur, note.voice, note.dur, note.db, note.num, note.den, self.regionlist[note.region].num, self.regionlist[note.region].den, os.linesep)
+                        line = 'i "ratratdefaulton" %f %f %d 0 %f %f [$RATBASE * %d/%d * %d/%d]%s' % (note.time, note.dur, note.voice, note.dur, note.db-6, note.num, note.den, self.regionlist[note.region].num, self.regionlist[note.region].den, os.linesep)
 #                        print line
                         self.csdsco += line
             else:
@@ -950,8 +975,9 @@ instr +ratratdefaulton
 instnum nstrnum "ratdefault"
 inum = instnum + (p4/1000)
 ;event_i "i", inum, 0, p6, p7, p8
-al, ar	subinstr	inum, p7, p8
-	outc	al, ar
+;al, ar	subinstr	inum, p7, p8
+event_i "i", inum, 0, p3, p7, p8
+;	outc	al, ar
 endin
 
 instr +ratsf2default
@@ -967,8 +993,8 @@ iporttime = idur/16
 ;kamp	init	iamp/0dbfs
 ;kamp	init	1
 ivel	=	127 * ampdb(p4)/0dbfs
-inotenum=	1
 ifreq   =       p5
+inotenum=	69 + int(log(ifreq/440.0)/log(2^(1/12.0)))
 iphs = -1
 iatt	=	0
 idec	=	0
@@ -1005,8 +1031,9 @@ instr +ratratsf2defaulton
 instnum nstrnum "ratsf2default"
 inum = instnum + (p4/1000)
 ;event_i "i", inum, 0, p5, p6, p7, p8, p9, p10, p11, p12
-al, ar	subinstr	inum, p6, p7, p8, p9, p10, p11, p12
-	outc	al, ar
+;al, ar	subinstr	inum, p6, p7, p8, p9, p10, p11, p12
+event_i "i", inum, 0, p3, p6, p7, p8, p9, p10, p11, p12
+;	outc	al, ar
 endin
 '''
         nothing = '''
@@ -1020,8 +1047,8 @@ iporttime = idur/16
 ;iamp	=	ampdb(p4)
 kamp	init	iamp/0dbfs
 ivel	=	127 * iamp/0dbfs
-inotenum=	1
 ifreq   =       p5
+inotenum=	69 + int(log(ifreq/440.0)/log(2^(1/12.0)))
 iphs = -1
 tigoto tiedin
 iamp1 = 0
@@ -1164,10 +1191,39 @@ endin
         dest.write(msg.replace(msg.replace(os.linesep, '$RATNEWLINE')))
 
 ### Play ###
-    def play(self, instlist, sf2list, method, sr, ksmps, nchnls, amodule, dac, b, B, aifffile, wavfile, commandline, commandlineuse):
+    def play(self, instlist=None, sf2list=None, method=None, sr=None, ksmps=None, nchnls=None, amodule=None, dac=None, b=None, B=None, aifffile=None, wavfile=None, commandline=None, commandlineuse=None):
         '''A hot mess...
 
         Lots of workarounds added that could probably be replaced by more efficient code, but it appears to work as expected at this point, and there's music to be written.'''
+
+	if instlist == None:
+            instlist = self.instlist
+	if sf2list == None:
+            sf2list = self.sf2list
+	if method == None:
+            method = self.outputmethod
+	if sr == None:
+            sr = self.sr
+	if ksmps == None:
+            ksmps = self.ksmps
+	if nchnls == None:
+            nchnls = self.nchnls
+	if amodule == None:
+            amodule = self.audiomodule
+	if dac == None:
+            dac = self.dac
+	if b == None:
+            b = self.b
+	if B == None:
+            B = self.B
+	if aifffile == None:
+            aifffile = self.aifffile
+	if wavfile == None:
+            wavfile = self.wavfile
+	if commandline == None:
+            commandline = self.csdcommandline
+	if commandlineuse == None:
+            commandlineuse = self.csdcommandlineuse
 
         if len(self.notelist) and self.mode.get() != 3 and self.allowed2play:
             self.allowed2play = 0
@@ -1179,6 +1235,7 @@ endin
 #                            cstart = 1
 #                            break
             if cstart:
+		self.menutransport.entryconfigure(0, command=self.stop)
                 tottime = self.preparecsd(instlist, sf2list, method, sr, ksmps, nchnls, amodule, dac, b, B, aifffile, wavfile, commandline, commandlineuse)
 #                print self.csdsco
 
@@ -1219,7 +1276,12 @@ endin
 #                        del tmpsoc
 #            #Rationale AUdio engine
 #		print "final countdown:", count
-                self.rau = subprocess.Popen((sys.executable, 'rataudio.py', str(self.cbport)))
+
+            	if hasattr(sys, "frozen"):
+                    self.rau = subprocess.Popen(('C:\rationale\dist\rataudio.exe', str(self.cbport)))
+                else:
+                    self.rau = subprocess.Popen((sys.executable, 'rataudio.py', str(self.cbport)))
+#                self.rau = subprocess.Popen(('rataudio.exe', str(self.cbport)))
                 if sys.platform.count("linux"):
                     try:
                         os.nice(-1)
@@ -1306,6 +1368,7 @@ endin
             self.playing = 0
             self.statusplay.configure(text="Stopped")
         self.allowed2play = 1
+	self.menutransport.entryconfigure(0, command=self.play)
 
 ### Tonality Change###
 #    def tonchange(self, innum, inden):
@@ -1519,7 +1582,7 @@ endin
                 else:
                     abs = maindist
                     tempflag = 0
-                if abs < absall:
+                if abs <= absall:
                     absall = abs
                     note = match
                     flag = tempflag
@@ -1832,7 +1895,8 @@ endin
             if event.keysym == "space" and event.serial != self.norepeat:
                 if self.numkey == 0:
                     if self.playing == 0:
-                        self.play(self.instlist, self.sf2list, self.outputmethod, self.sr, self.ksmps, self.nchnls, self.audiomodule, self.dac, self.b, self.B, self.aifffile, self.wavfile, self.csdcommandline, self.csdcommandlineuse)
+			self.play()
+#                        self.play(self.instlist, self.sf2list, self.outputmethod, self.sr, self.ksmps, self.nchnls, self.audiomodule, self.dac, self.b, self.B, self.aifffile, self.wavfile, self.csdcommandline, self.csdcommandlineuse)
                     else:
                         self.stop()
             # "space" while holding number sets dotted value of duration #
@@ -1992,6 +2056,8 @@ endin
                     lastcom = self.dispatcher.comlist[-1]
                     if lastcom.__class__.__name__ == 'comeditdurarrows':
                         lastcom.finalized = True
+#		for nw in self.notewidgetlist:
+#                    print nw.note.dur, nw.note.dict['dur']
             self.shiftkey = 0
         elif event.keysym.count(self.control):
             self.ctlkey = 0
@@ -2029,7 +2095,7 @@ endin
             self.numkey = 0
 
     def hideshow(self):
-#        print "hideshow"
+#        print "hideshow", self.hide
         if self.hide >= len(self.instlist):
             return
 #            self.hide = len(self.instlist) - 1
@@ -2061,7 +2127,7 @@ endin
         if not text: text = 'None '
         text += 'Hidden'
         self.statushidden.configure(text=text)
-        ind = self.hide + 3
+        ind = self.hide + 5
         self.menuview.entryconfigure(ind, label='%s i%d' % (menutext, self.hide), command=lambda arg1=self.hide: self.hidethis(arg1), accelerator='%s-%d' % (self.altacc, self.hide))
         self.hide = 0
 
@@ -2072,7 +2138,7 @@ endin
         else:
             label = "Show"
         self.hideshow()
-        self.menuview.entryconfigure(number+3, label="%s %d" % (label, number))
+        self.menuview.entryconfigure(number+5, label="%s %d" % (label, number))
 
     def showall(self):
 #        print self.hidden
@@ -2086,7 +2152,7 @@ endin
                         voicelist.append(nw.note.voice)
             for voice in voicelist:
                 self.tiedraw(i, voice)
-            self.menuview.entryconfigure(i+3, label="Hide i%d" % i)
+            self.menuview.entryconfigure(i+5, label="Hide i%d" % i)
         self.hidden = []
 #            inst.show = 1
         self.hide = 0
@@ -2394,9 +2460,10 @@ endin
     def removehidemenu(self):
         for ind, i in enumerate(self.instlist):
             if ind:
-                self.menuview.delete(ind+3)
+                self.menuview.delete(ind+5)
 
     def createhidemenu(self):
+#	print 'createhidemenu'
         for ind, inst in enumerate(self.instlist):
             if ind:
                 if ind in self.hidden:
@@ -2407,6 +2474,7 @@ endin
                     
 
     def filenew(self, *args):
+#	print sys._getframe().f_code.co_name
         if not self.allowed2play:
             return
         if self.unsaved:
@@ -2415,12 +2483,13 @@ endin
                 confirm = tkmb.askquestion("Save File?", message='Save %s?' % os.path.basename(self.filetosave), type=tkmb.YESNOCANCEL, icon=tkmb.QUESTION, default=tkmb.CANCEL)
             else:
                 confirm = tkmb.askquestion("Save File?", message="Save Current File?", type=tkmb.YESNOCANCEL, icon=tkmb.QUESTION, default=tkmb.CANCEL)
-            if confirm == 'yes':
+            if str(confirm) == 'yes':
                 saved = self.filesaveas()
                 if not saved:
                     self.ctlkey = 0
                     return
-            elif confirm.__class__.__name__ != 'str' or confirm == 'cancel':
+#            elif confirm.__class__.__name__ != 'str' or confirm == 'cancel':
+            elif str(confirm) != 'no': 
                 self.ctlkey = 0
                 return
 
@@ -2491,10 +2560,12 @@ endin
         self.unsaved = 0
         del self.dispatcher
         self.dispatcher = dispatcher(self)
+	self.menuedit.entryconfig(0, label="Can't Undo", state="disabled")	
         self.titleset()
         self.write("File->New")
 
     def fileopen(self, *args):
+#	print sys._getframe().f_code.co_name
         if not self.allowed2play:
             return
         if self.unsaved:
@@ -2504,24 +2575,28 @@ endin
                 confirm = tkmb.askquestion("Save File?", message='Save %s?' % os.path.basename(self.filetosave), type=tkmb.YESNOCANCEL, icon=tkmb.QUESTION, default=tkmb.CANCEL)
             else:
                 confirm = tkmb.askquestion("Save File?", message="Save Current File?", type=tkmb.YESNOCANCEL, icon=tkmb.QUESTION, default=tkmb.CANCEL)
-            if confirm == 'yes':
+            if str(confirm) == 'yes':
                 saved = self.filesaveas()
                 if not saved:
                     self.ctlkey = 0
                     return
 #                self.filesaveas()
-            elif confirm.__class__.__name__ != 'str' or confirm == 'cancel':
+#            elif confirm.__class__.__name__ != 'str' or confirm == 'cancel':
+            elif str(confirm) != 'no':
                 self.ctlkey = 0
                 return
+#            self.unsaved = False
 
         file = tkfd.askopenfilename(title="Open", filetypes=[('Rationale %s' % self.version, ".rat"), ("All", "*")])
         if file:
+            self.unsaved = False
             self.fileopenwork(file)
 #        else:
         self.ctlkey = 0
 #        self.unsaved = False
 
     def fileopenwork(self, file):
+#	print sys._getframe().f_code.co_name
 #        self.unsaved = 0
 #        self.titleset()
         self.filenew()
@@ -2643,8 +2718,8 @@ endin
             self.scrubtimelist = []
             self.scrubplay()
 
-
     def filesave(self, *args):
+#	print sys._getframe().f_code.co_name
         if not self.filetosave or self.filetosave == None:
             self.filetosave = tkfd.asksaveasfilename(master=self.myparent, title="Save As", defaultextension=".rat")
         if self.filetosave:
@@ -2674,10 +2749,11 @@ endin
             output.close()
 
     def filesaveas(self, *args):
+#	print sys._getframe().f_code.co_name
         filetosave = tkfd.asksaveasfilename(master=self.myparent, title="Save As", filetypes=[('Rationale %s: New Score' % self.version, ".rat")])
         if filetosave:
             output = open(filetosave, 'wb')
-            self.myparent.title('Rationale %s: %s' % (vs, os.path.basename(self.filetosave)))
+            self.myparent.title('Rationale %s: %s' % (vs, os.path.basename(filetosave)))
             regionlist = self.regionlist
             instlist = self.instlist
             notelist = [(note.id, note.inst, note.voice, note.time, note.dur, note.db, note.num, note.den, note.region, note.sel) for note in self.notelist]
@@ -2694,7 +2770,7 @@ endin
             pickle.dump(self.sf2list, output)
 #            if self.unsaved:
             self.unsaved = 0
-            file = os.path.basename(self.filetosave)
+            file = os.path.basename(filetosave)
             self.myparent.title('*Rationale %s: %s' % (vs, file))
             self.write('File->Save As: %s' % filetosave)
             self.filetosave = filetosave
@@ -2708,6 +2784,7 @@ endin
         self.ctlkey = 0
 
     def filereload(self, *args):
+#	print sys._getframe().f_code.co_name
         if not self.allowed2play:
             return
         if self.filetosave:
@@ -2721,6 +2798,7 @@ endin
 #                    self.myparent.title('Rationale %s: %s' % (vs, os.path.basename(self.filetosave)))
 
     def fileimport(self, *args):
+#	print sys._getframe().f_code.co_name
         if not self.allowed2play:
             return
         self.write("File->Import .ji")
@@ -2810,6 +2888,7 @@ endin
 #                self.tempolist.append(test)
 
     def fileexport(self, *args):
+#	print sys._getframe().f_code.co_name
         filetoexport = tkfd.asksaveasfilename(master=self.myparent, title="Export Csound", filetypes=[("Csound Unified Format", ".csd")])
         if filetoexport:
             self.preparecsd(self.instlist, self.sf2list, self.outputmethod, self.sr, self.ksmps, self.nchnls, self.audiomodule, self.dac, self.b, self.B, self.aifffile, self.wavfile, self.csdcommandline, self.csdcommandlineuse)
@@ -2820,6 +2899,7 @@ endin
             self.write('File->Export: %s' % filetoexport)
 
     def fileexit(self, *args):
+#	print sys._getframe().f_code.co_name
         if not self.allowed2play:
             return
         # to confirm save before exiting
@@ -2830,17 +2910,21 @@ endin
                 confirm = tkmb.askquestion("Save File?", message='Save %s?' % os.path.basename(self.filetosave), type=tkmb.YESNOCANCEL, icon=tkmb.QUESTION, default=tkmb.CANCEL)
             else:
                 confirm = tkmb.askquestion("Save File?", message="Save Current File?", type=tkmb.YESNOCANCEL, icon=tkmb.QUESTION, default=tkmb.CANCEL)
-            if confirm == 'yes':
+#            print confirm.__class__.__name__, confirm
+#            print str(confirm)
+            if str(confirm) == 'yes':
                 saved = self.filesaveas()
                 if not saved:
                     self.ctlkey = 0
                     return
-            elif confirm.__class__.__name__ != 'str' or confirm == 'cancel':
+#            elif confirm.__class__.__name__ != 'str' or confirm == 'cancel':
+            elif str(confirm) != 'no':
                 self.ctlkey = 0
                 return
         self.exit(self, *args)
 
     def exit(self, *args):
+#	print sys._getframe().f_code.co_name
         #exit without confirmation
         if self.mode.get() == 3:
             try:
@@ -2891,6 +2975,7 @@ endin
             tempdur = (int(self.hover.entrydur * self.quant) + 1)/self.quant
             self.durupdate(tempdur)
         elif self.mode.get() == 1:
+#            print self.quant
             if self.dispatcher.comlist and self.dispatcher.comlist[-1].__class__.__name__ == 'comeditdurarrows' and not self.dispatcher.comlist[-1].finalized:
                 self.dispatcher.increment('comeditdurarrows', self.quant)
             else:
@@ -2971,6 +3056,9 @@ endin
 
     def zoom(self, which, vert=False):
         if vert:
+            permcenter = self.score.coords(self.perm11)[1]
+#            print "permcenter:", permcenter
+            offset = float(self.octave11 - permcenter) / self.octaveres
             if which == "in":
                 self.octaveres += 20
                 resdelta = 20
@@ -2982,10 +3070,16 @@ endin
             elif which == "reset":
                 resdelta = 240 - self.octaveres
                 self.octaveres = 240
+            tempoctave11 = offset*self.octaveres + permcenter
+            self.drawoctaves(tempoctave11)
+            self.octave11 = tempoctave11
             self.drawoctaves(self.octave11, resdelta)
+#            self.drawoctaves(tempoctave11, resdelta)
 #                    self.score.move("octaveline", 0, yincr)
 #                    self.octaves.move("octavetext", 0, yincr)
 #                    self.scorewin.update_idletasks()
+            for region in self.regionlist:
+		region.octave11 = (region.octave11-float(permcenter))/(self.octaveres-resdelta) * self.octaveres + permcenter
             for nw in self.notewidgetlist:
                 nw.updatedb()
                 nw.updateheight()
@@ -3007,7 +3101,9 @@ endin
                 nw.updatetime()
             self.durupdate(self.hover.entrydur)
 
-        self.drawoctaves(self.octave11)
+            self.drawoctaves(self.octave11)
+	for nw in self.notewidgetlist:
+            nw.updateconnect()
         self.redrawlines()
 #        for item in self.score.find_withtag("all"):
 #            coords = list(self.score.coords(item))
@@ -3295,7 +3391,17 @@ endin
             self.scoreyscroll('moveto', yfrac)
 
     def getaudiodevices(self, module):
-        rau = subprocess.Popen((sys.executable, 'rataudiotester.py', module), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if hasattr(sys.stdin, 'fileno'):
+            childstdin = sys.stdin
+        elif hasattr(sys.stdin, '_file') and hasattr(sys.stdin._file, 'fileno'):
+            childstdin = sys.stdin._file
+        else:
+            childStdinPath = 'nul'
+            childstdin = file(childStdinPath, 'a')
+        if sys.platform.count("win32"):
+            rau = subprocess.Popen((sys.executable, 'rataudiotester.py', module), stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=childstdin, creationflags=win32process.CREATE_NO_WINDOW)
+        else:
+            rau = subprocess.Popen((sys.executable, 'rataudiotester.py', module), stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=childstdin)
         res = rau.communicate()
 #	print 'res0:', res[0], os.linesep, os.linesep
 #	print 'res1:', res[1], os.linesep, os.linesep
@@ -3781,8 +3887,9 @@ idur    =       p3
 iamp	=	ampdb(p4)
 kamp	init	iamp/0dbfs
 ivel	=	127 * iamp/0dbfs
-inotenum=	1
-kfreq	init	p5
+ifreq   =       p5
+kfreq	init	ifreq
+inotenum=	69 + int(log(ifreq/440.0)/log(2^(1/12.0)))
 ipreindex=	p6
 iatt    =       p7/1000
 idec    =       p8/1000
@@ -3872,7 +3979,7 @@ endin
                         self.csdscrubinst += offer
 
                     elif outline.__class__.__name__ == 'csdout':
-                        if not outline.instnum.isdigit():
+                        if not outline.instnum.isdigit() and not outline.instnum == "ratdefault" and not outline.instnum == '"ratdefault"':
                             pnum = scrubdict[outline.instnum]
 #                            onner = '%sinstr +ratscrub%son%s' % (os.linesep, outline.instnum[1:-2], os.linesep)
                             onner = '%sinstr +ratscrub%son%s' % (os.linesep, outline.instnum.strip('"'), os.linesep)
@@ -3920,7 +4027,7 @@ event_i "i", inum, 0, .1
 endin
 '''
 #        print [soso.onstring for soso in st.sosolist for st in self.scrubtimelist]
-        print [st.x for st in self.scrubtimelist]
+#        print [st.x for st in self.scrubtimelist]
 
     def scrubplay(self):
         '''Copied from play().
@@ -4838,7 +4945,8 @@ class hover(object):
             if self.yloc >= self.myparent.octaveres:
                 prenum *= 2**int((self.yloc)/self.myparent.octaveres)
             elif self.yloc < 0:
-                preden *= 2**(0-((int(self.yloc)/self.myparent.octaveres)))
+		### math.floor saved us from endless wrong notes here:
+                preden *= 2**(0-((int(math.floor(self.yloc))/self.myparent.octaveres)))
             hratio = self.myparent.ratioreduce(prenum,preden,self.myparent.primelimit)
             self.hnum = hratio[0]
             self.hden = hratio[1]
@@ -4908,11 +5016,13 @@ class cursor(object):
         realw = self.myparent.score.winfo_width()
         relw = self.myparent.score.canvasx(realw)
         rel0 = self.myparent.score.canvasx(0)
-        if relw-x < 40:
+        if relw-x < 0:
             self.myparent.scorexscroll('scroll', '1', "pages")
-        elif x-rel0 < 40 and rel0 > 0:
-            self.myparent.scorexscroll('scroll', '-1', "pages")
-        rel0 = self.myparent.score.canvasx(0)
+        else:
+            while x-rel0 < 40 and rel0 > 0:
+            	self.myparent.scorexscroll('scroll', '-1', "pages")
+	    	rel0 = self.myparent.score.canvasx(0)
+	rel0 = self.myparent.score.canvasx(0)
         if rel0 < -30:
 #            print 'rel0', rel0
             self.myparent.scorexscroll('moveto', 0.00242072)
@@ -4938,7 +5048,7 @@ class cursor(object):
 #            print toscroll
 #            self.myparent.scorexscroll('moveto', toscroll)
 
-    def nextbar(self, event):
+    def nextbar(self, *args):
         for i in range(int(self.beat), len(self.myparent.barlist)):
             self.beat = int(self.beat + 1)
             if "barline" in self.myparent.score.gettags(self.myparent.barlist[self.beat]):
@@ -4948,7 +5058,7 @@ class cursor(object):
                 self.checkautoscroll(self.center)
                 break
 
-    def previousbar(self, event):
+    def previousbar(self, *args):
         for i in range(0, int(self.beat)):
             self.beat = int(self.beat - 1)
             if "barline" in self.myparent.score.gettags(self.myparent.barlist[self.beat]):
@@ -4958,7 +5068,7 @@ class cursor(object):
                 self.checkautoscroll(self.center)
                 break
 
-    def nextbeat(self, event):
+    def nextbeat(self, *args):
         if self.beat < len(self.myparent.barlist)-1:
             self.beat = int(self.beat + 1)
             oldcoords = self.myparent.score.coords(self.myparent.barlist[self.beat])
@@ -4966,7 +5076,7 @@ class cursor(object):
             self.myparent.score.coords(self.widget, self.center-3, self.myparent.miny, self.center+3, self.myparent.maxy)
             self.checkautoscroll(self.center)
 
-    def previousbeat(self, event):
+    def previousbeat(self, *args):
         if self.beat > 0:
             self.beat = int(self.beat - 1)
             oldcoords = self.myparent.score.coords(self.myparent.barlist[self.beat])
@@ -4980,7 +5090,7 @@ class cursor(object):
         self.myparent.score.coords(self.widget, -3, self.myparent.miny, 3, self.myparent.maxy)
         self.myparent.scorexscroll("moveto", 0.00242072)
 
-    def end(self, event):
+    def end(self, *args):
         if len(self.myparent.notelist):
             self.myparent.scsort()
             loc = (self.myparent.notelist[-1].time + abs(self.myparent.notelist[-1].dur)) * self.myparent.xperquarter
@@ -5133,7 +5243,7 @@ class pastedialog(tk.Toplevel):
             beatlinex = self.myparent.score.coords(beatline)[0]
             if beatlinex <= self.myparent.cursor.center and "barline" in self.myparent.score.gettags(beatline):
                 self.bar += 1
-                self.beat = self.myparent.cursor.beat - ind
+                self.beat = self.myparent.cursor.beat - ind + 1
 #        print self.bar, self.beat
         self.rowconfigure(3, weight=1)
         self.columnconfigure(0, weight=1)
@@ -5158,7 +5268,7 @@ class pastedialog(tk.Toplevel):
         self.barfield = tk.Spinbox(self.top, width=5, textvariable=self.barvar, from_=0, to=100000)
         self.barfield.grid(row=1, column=0, sticky='')
         self.beatvar = tk.IntVar(value=self.beat)
-        self.beatfield = tk.Spinbox(self.top, width=5, textvariable=self.beatvar, from_=0, to=40, wrap=1)
+        self.beatfield = tk.Spinbox(self.top, width=5, textvariable=self.beatvar, from_=1, to=40, wrap=1)
         self.beatfield.grid(row=1, column=1, sticky='')
         self.tickvar = tk.IntVar(value=0)
         self.tickfield = tk.Spinbox(self.top, width=5, textvariable=self.tickvar, from_=0, to=119, wrap=1)
@@ -5196,7 +5306,7 @@ class pastedialog(tk.Toplevel):
         beat = self.beatvar.get()
         tick = self.tickvar.get()
         barcount = 1
-        beatcount = 1
+        beatcount = 2
         pastex = 0
         for beatline in self.myparent.barlist:
             if "barline" in self.myparent.score.gettags(beatline) and barcount <= bar:
@@ -5209,7 +5319,7 @@ class pastedialog(tk.Toplevel):
         noteinfo = []
         for rep in range(self.timesvar.get()):
             for orig in self.myparent.clipboard:
-                noteinstance = (self.myparent.noteid, orig.inst, orig.voice, orig.time+pastebeat, orig.dur, orig.db, orig.num, orig.den, orig.region, orig.sel)
+                noteinstance = (self.myparent.noteid, orig.inst, orig.voice, orig.time+pastebeat, orig.dur, orig.db, orig.num, orig.den, orig.region, 1)
                 self.myparent.noteid += 1
                 noteinfo.append(noteinstance)
 #                self.myparent.notelist.append(noteinstance)
@@ -5719,6 +5829,7 @@ class cominstnew(object):
             self.myparent.write(str(self.myparent.hover.hinst))
             self.myparent.hover.colorupdate(self.myparent)
         self.myparent.instlist.pop()
+	self.myparent.menuview.delete(len(self.myparent.instlist)+5)
         ## remove instpage from odialog??
 
 class comarbchange(object):
@@ -5977,7 +6088,7 @@ class comeditdurarrows(object):
             if note.id in noteids:
 ##      change this to record *new* durations!
 #                tempdur = int(abs(note.dur)*24+.5)
-                tempdur = int(abs(note.dur)*mod+.5)
+                tempdur = int(abs(note.dur)*abs(mod)+.5)
                 if mod < 0:
                     tempdur -= 1
 #                    while tempdur % mod:
@@ -5987,7 +6098,7 @@ class comeditdurarrows(object):
 #                    while tempdur % mod:
 #                        tempdur += 1
 #                tempdur /= 24.0
-                tempdur /= mod
+                tempdur /= abs(mod)
                 if note.dur < 0:
                     tempdur *= -1
                 if abs(tempdur) > 0:
@@ -6012,21 +6123,40 @@ class comeditdurarrows(object):
             mod = args[0]
             for nw in self.myparent.notewidgetlist:
                 if 'n%d' % nw.note.id in self.durdict.keys():
-                    tempdur = int(abs(nw.note.dur)*24+.5)
+                    tempdur = int(abs(nw.note.dur)*abs(mod)+.5)
                     if mod < 0:
                         tempdur -= 1
-                        while tempdur % mod:
-                            tempdur -= 1
                     else:
                         tempdur += 1
-                        while tempdur % mod:
-                            tempdur += 1
-                    tempdur /= 24.0
+                    tempdur /= abs(mod)
                     if nw.note.dur < 0:
                         tempdur *= -1
-                    if abs(tempdur) > 0:
-                        nw.note.updatedur(tempdur)
-                        nw.updatedur()
+#                    if abs(tempdur) > 0:
+#                        self.durdict['n%d' % nw.note.id] = tempdur
+#                    else:
+#                        self.durdict['n%d' % nw.note.id] = note.dur
+                    nw.note.updatedur(tempdur)
+                    nw.updatedur()
+
+#
+#                    tempdur = int(abs(nw.note.dur)*24+.5)
+#                    print "orig:", tempdur
+#                    if mod < 0:
+#                        tempdur -= 1
+#                        while tempdur % mod:
+#                            tempdur -= 1
+#                    else:
+#                        tempdur += 1
+#                        while tempdur % mod:
+#                            tempdur += 1
+#			print tempdur
+#                    tempdur /= 24.0
+#                    print "tempdur:", tempdur
+#                    if nw.note.dur < 0:
+#                        tempdur *= -1
+#                    if abs(tempdur) > 0:
+#                        nw.note.updatedur(tempdur)
+#                        nw.updatedur()
 
 class comeditdurmouse(object):
     def __init__(self, parent, noteid, x):
@@ -6111,7 +6241,7 @@ class comcut(comcopy, comdeletenotes):
 
 
 if __name__ == "__main__":
-    vs = '0.2'
+    vs = '0.2.1'
     root = tk.Tk()
     root.geometry('1040x600+200+100')
     root.title('Rationale %s: New Score' % vs)
