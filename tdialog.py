@@ -59,12 +59,13 @@ class tempodialog:
         self.addunit = tk.IntVar()
         self.blankbar = tk.Entry(self.botrow, width=4, textvariable=self.addbar)
         self.blankbar.focus_set()
+        self.blankbar.select_range(0, "end")
         self.blankbar.grid(padx=10, sticky='')
         self.blankbeat = tk.Entry(self.botrow, width=3, textvariable=self.addbeat)
         self.blankbeat.grid(row=0, column=1, padx=10, sticky='')
         self.blankbpm = tk.Entry(self.botrow, width=5, textvariable=self.addbpm)
         self.blankbpm.grid(row=0, column=2, padx=10, sticky='')
-        self.blankunit = tk.ComboBox(self.botrow, editable=0, variable=self.addunit)
+        self.blankunit = tk.ComboBox(self.botrow, editable=1, variable=self.addunit, listwidth=8)
         self.blankunit.entry.configure(width=3)
         self.blankunit.append_history(1)
         self.blankunit.append_history(2)
@@ -89,14 +90,16 @@ class tempodialog:
         beat = self.addbeat.get()
         bpm = self.addbpm.get()
         unit = self.addunit.get()
-        newtempo = tempo(self.myparent, bar, beat, bpm, unit)
-        self.addtempoline(newtempo, number)
-        self.tempomaybe.append(newtempo)
-        self.addbar.set(0)
-        self.addbeat.set(0)
-        self.addbpm.set(0)
-        self.addunit.set(4)
-        self.blankbar.focus_set()
+        if bar > 0 and beat > 0 and bpm > 0 and unit > 0:
+            newtempo = tempo(self.myparent, bar, beat, bpm, unit)
+            self.addtempoline(newtempo, number)
+            self.tempomaybe.append(newtempo)
+#            self.addbar.set(0)
+#            self.addbeat.set(0)
+#            self.addbpm.set(0)
+#            self.addunit.set(4)
+            self.blankbar.focus_set()
+            self.blankbar.select_range(0, "end")
 
     def addtempoline(self, tempo, number):
         newline = tempoline(self, tempo, tempo.bar, tempo.beat, tempo.bpm, tempo.unit, number)
@@ -268,9 +271,14 @@ class tempoline:
         todel2 = self.myparent.tempolinelist.pop(num)
         del todel1
         self.myparent.tempofr.update_idletasks()
-        bottomy = self.myparent.toprow.winfo_reqheight()
+        if len(self.myparent.tempolinelist) > 0:
+            bottomy = self.myparent.toprow.winfo_reqheight()
+        else:
+            bottomy=0
+#        bottomy = self.myparent.toprow.winfo_reqheight()
+        print 'bottomy', bottomy
         self.myparent.canvas.coords(self.myparent.botrowoncanvas, 0, bottomy)
-        
+
         del todel2
 
 

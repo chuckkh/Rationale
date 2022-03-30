@@ -92,10 +92,9 @@ class regiondialog:
 
     def apply(self):
         self.myparent.regionlist = copy.deepcopy(self.regionmaybe)
-        for note in self.myparent.notelist:
-            widget = note.widget + 3
-            for i in range(0, 3):
-                self.myparent.score.itemconfigure(widget+i, fill=self.myparent.regionlist[note.region].color)
+        for notewidget in self.myparent.notewidgetlist:
+            note = notewidget.note
+            notewidget.updateregion()
         self.myparent.score.itemconfigure(self.myparent.hover.hrnumdisp, fill=self.myparent.regionlist[self.myparent.hover.hregion].color)
         self.myparent.score.itemconfigure(self.myparent.hover.hrdendisp, fill=self.myparent.regionlist[self.myparent.hover.hregion].color)
         self.myparent.score.itemconfigure(self.myparent.hover.hregiondisp, fill=self.myparent.regionlist[self.myparent.hover.hregion].color)
@@ -287,7 +286,11 @@ class dummy:
                 line.frame.grid(row=line.place)
         del self.page.myinst.outlist[index]
         self.page.widget.update_idletasks()
-        bottomy = self.page.toprow.winfo_reqheight()
+        if len(self.page.linelist) > 0:
+            bottomy = self.page.toprow.winfo_reqheight()
+        else:
+            bottomy=0
+#        bottomy = self.page.toprow.winfo_reqheight()
         self.page.canvas.coords(self.page.botrowoncanvas, 0, bottomy)
         if self.page.scroll.winfo_ismapped():
             self.page.canvas.config(scrollregion=self.page.canvas.bbox("all"))

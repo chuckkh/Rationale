@@ -54,10 +54,14 @@ class meterdialog:
             newline = self.addmeterline(meter, number)
 
         self.addbar = tk.IntVar()
+        self.addbar.set(1)
         self.addtop = tk.IntVar()
+        self.addtop.set(4)
         self.addbottom = tk.IntVar()
+        self.addbottom.set(4)
         self.blankbar = tk.Entry(self.botrow, width=4, textvariable=self.addbar)
         self.blankbar.focus_set()
+        self.blankbar.select_range(0, "end")
         self.blankbar.grid(padx=10, sticky='')
         self.blanktop = tk.Entry(self.botrow, width=3, textvariable=self.addtop)
         self.blanktop.grid(row=0, column=1, padx=10, sticky='')
@@ -235,7 +239,10 @@ class meterline:
         todel2 = self.myparent.meterlinelist.pop(num)
         del todel1
         self.myparent.meterfr.update_idletasks()
-        bottomy = self.myparent.toprow.winfo_reqheight()
+        if len(self.myparent.meterlinelist) > 0:
+            bottomy = self.myparent.toprow.winfo_reqheight()
+        else:
+            bottomy=0
         self.myparent.canvas.coords(self.myparent.botrowoncanvas, 0, bottomy)
         
         del todel2

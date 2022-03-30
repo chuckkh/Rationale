@@ -32,6 +32,8 @@ class outputdialog:
             self.myroot = self.myparent.myparent
             self.instmaybe = copy.deepcopy(self.myparent.instlist)
             self.outputfr = tk.Toplevel(self.myroot, width=640, height=480)
+            self.outputfr.bind("<Return>", self.ok)
+            self.outputfr.bind("<Escape>", self.cancel)
             self.outputfr.title("Output")
             self.outputfr.rowconfigure(0, weight=1)
             self.outputfr.rowconfigure(1, weight=0)
@@ -115,13 +117,9 @@ class outputdialog:
         self.myparent.outautoload = self.autoload.get()
         self.myparent.csdimported = self.csdtext.get(0.0, "end")
         self.myparent.instlist = copy.deepcopy(self.instmaybe)
-        for note in self.myparent.notelist:
-            widget = note.widget
-            color = self.myparent.instlist[note.inst].color
-            self.myparent.score.itemconfigure(widget, fill=color, outline=color)
-            self.myparent.score.itemconfigure(widget+1, fill=color)
-            self.myparent.score.itemconfigure(widget+2, fill=color)
-            self.myparent.score.itemconfigure(widget+6, fill=color)
+        for notewidget in self.myparent.notewidgetlist:
+            note = notewidget.note
+            notewidget.updateinst()
         color = self.myparent.instlist[self.myparent.hover.hinst].color
         self.myparent.hover.entrycolor = color
         self.myparent.score.itemconfigure(self.myparent.hover.widget, fill=color)
@@ -233,8 +231,8 @@ class instrumentpage:
         bottomy = self.midrow.winfo_reqheight()
 #        print bottomy
         self.botrowoncanvas = self.canvas.create_window(0, bottomy, window=self.botrow, anchor="nw")
-        self.widget.bind("<Return>", self.myparent.ok)
-        self.widget.bind_all("<Escape>", self.myparent.cancel)
+#        self.myparent.outputfr.bind("<Return>", self.myparent.ok)
+#        self.myparent.outputfr.bind("<Escape>", self.myparent.cancel)
 
     def mutechange(self, *args):
         self.myinst.mute = self.mute.get()
@@ -406,7 +404,10 @@ class sf2line:
                 line.frame.grid(row=line.place)
         del self.page.myinst.outlist[index]
         self.page.widget.update_idletasks()
-        bottomy = self.page.midrow.winfo_reqheight()
+        if len(self.page.linelist) > 1:
+            bottomy = self.page.midrow.winfo_reqheight()
+        else:
+            bottomy=0
         self.page.canvas.coords(self.page.botrowoncanvas, 0, bottomy)
         if self.page.scroll.winfo_ismapped():
             self.page.canvas.config(scrollregion=self.page.canvas.bbox("all"))
@@ -535,7 +536,10 @@ class csdline:
                 line.frame.grid(row=line.place)
         del self.page.myinst.outlist[index]
         self.page.widget.update_idletasks()
-        bottomy = self.page.midrow.winfo_reqheight()
+        if len(self.page.linelist) > 1:
+            bottomy = self.page.midrow.winfo_reqheight()
+        else:
+            bottomy=0
         self.page.canvas.coords(self.page.botrowoncanvas, 0, bottomy)
         if self.page.scroll.winfo_ismapped():
             self.page.canvas.config(scrollregion=self.page.canvas.bbox("all"))

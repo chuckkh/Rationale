@@ -9,7 +9,7 @@ import math
 import os
 import threading
 import sys
-from PIL import Image, ImageTk
+#from PIL import Image, ImageTk
 import csnd
 import notestorage
 import odialog
@@ -26,6 +26,7 @@ class rationaleApp:
         self.myparent.columnconfigure(0, weight=1)
         #note: instr/voice, time, dur, db, num, den, region, bar, selected, guihandle, arb-tuple
         self.notelist = []
+        self.notewidgetlist = []
         #meter: bar, beats, count
         self.meterlist = []
 #        self.meterlist = [[3,3,4],[5,6,8],[7,4,4]]
@@ -47,8 +48,13 @@ class rationaleApp:
         self.ties = {}
         self.barlist = []
         self.primelimit = 13
-        self.shiftnum1 = [19, 10, 11, 12, 13, 14, 15, 16, 17, 18]
-        self.shiftnum2 = [90, 87, 88, 89, 83, 84, 85, 79, 80, 81]
+        self.editreference = None
+        if sys.platform.count("win32"):
+            self.shiftnum1 = [48, 49, 50, 51, 52, 53, 54, 55, 56, 57]
+            self.shiftnum2 = [96, 97, 98, 99, 100, 101, 102, 103, 104, 105]
+        else:
+            self.shiftnum1 = [19, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+            self.shiftnum2 = [90, 87, 88, 89, 83, 84, 85, 79, 80, 81]
         self.basefreq = 261.265
         self.curnum = 1
         self.curden = 1
@@ -153,13 +159,11 @@ class rationaleApp:
         self.drawoctaves(self.octave11)
         self.drawlines(1000)
 #        self.score.create_rectangle(-3,self.miny,3,self.maxy, fill="#99cccc", outline="#555555", stipple="gray25", tags=("timecursor", "all"))
-
         self.hover = hover(self)
 
 ### Score Bindings ###
         self.score.bind("<Button-1>", self.buttondown)
         self.score.bind("<B1-Motion>", self.buttonmotion)
-#        self.score.bind("<Motion>",self.hover.hovermotion)
         self.score.bind("<Motion>",self.normalmotion)
         self.score.bind("<ButtonRelease-1>",self.buttonup)
         self.score.bind("<Button-3>",self.popup)
@@ -254,6 +258,12 @@ class rationaleApp:
         self.menupopup.add_cascade(label="Instrument", menu=self.menupopupinst)
         self.menupopup.add_cascade(label="Voice", menu=self.menupopupvoice)
         self.menupopup.add_command(label="Copy", command=self.editmodecopy)
+
+        if len(sys.argv) > 1:
+            try:
+                self.fileopenwork(sys.argv[1])
+            except:
+                self.write('%s: File Not Found' % sys.argv[1])
 
     def ratioreduce(self, num, den, lim):
         for factor in range(2,lim+1):
@@ -548,20 +558,14 @@ endin
         for i in range(0,len(self.notelist)):
             if self.notelist[i].region == self.hover.hregion:
                 note = self.notelist[i]
+                notewidget = self.notewidgetlist[i]
                 num = note.num * inden
                 den = note.den * innum
                 ratio = self.ratioreduce(num,den,self.primelimit)
                 note.num = ratio[0]
                 note.den = ratio[1]
                 self.notelist[i] = note
-                notedisp = note.widget + 1
-                self.score.itemconfigure(notedisp,text=str(note.num))
-                notedisp += 1
-                self.score.itemconfigure(notedisp,text=str(note.den))
-                notedisp += 1
-                self.score.itemconfigure(notedisp,text=str(self.curnum))
-                notedisp += 1
-                self.score.itemconfigure(notedisp,text=str(self.curden))
+                notewidget.updateregion()
         self.score.itemconfigure(self.hover.hrnumdisp, text=str(self.curnum))
         self.score.itemconfigure(self.hover.hrdendisp, text=str(self.curden))
         hnum = self.hover.hnum * inden
@@ -586,34 +590,46 @@ endin
 #        self.score.lower("temptext")
 #        t = threading.Timer(0.0625, self.getbigger)
 #        t.start()
-
-    def ton11(self):
-        region = self.hover.hregion
-        num = self.curden
-        den = self.curnum
-        hnum = self.hover.hnum * num
-        hden = self.hover.hden * den
-        hratio = self.ratioreduce(hnum, hden, self.primelimit)
-        for i in range(len(self.notelist)):
-            if self.notelist[i].region == self.hover.hregion:
-                note = self.notelist[i]
-        self.score.itemconfigure(self.hover.hnumdisp, text=str(hratio[0]))
-        self.score.itemconfigure(self.hover.hdendisp, text=str(hratio[1]))
-        self.score.itemconfigure(self.hover.hrnumdisp, text='1')
-        self.score.itemconfigure(self.hover.hrdendisp, text='1')
+#
+#    def ton11(self):
+#        region = self.hover.hregion
+#        num = self.curden
+#        den = self.curnum
+#        hnum = self.hover.hnum * num
+#        hden = self.hover.hden * den
+#        hratio = self.ratioreduce(hnum, hden, self.primelimit)
+#        for i in range(len(self.notelist)):
+#            if self.notelist[i].region == self.hover.hregion:
+#                note = self.notelist[i]
+#        self.score.itemconfigure(self.hover.hnumdisp, text=str(hratio[0]))
+#        self.score.itemconfigure(self.hover.hdendisp, text=str(hratio[1]))
+#        self.score.itemconfigure(self.hover.hrnumdisp, text='1')
+#        self.score.itemconfigure(self.hover.hrdendisp, text='1')
 
 ### Sort extant score notes ###
     def scsort(self):
-        sc = self.notelist
-        sorter=[(s.time,s) for s in sc]
+        sc = self.notewidgetlist
+        sorter=[(s.purex,s) for s in sc]
         sorter.sort()
-        self.notelist[:]=[t[1] for t in sorter]
+        self.notewidgetlist[:]=[t[1] for t in sorter]
+        self.notelist = [notewidget.note for notewidget in self.notewidgetlist]
 
     def buttondown(self, event):
         self.menupopup.unpost()
         if self.mode.get() == 1:
             if self.overdur == 0:
-                self.selectbox = selectbox(self, event)
+                if self.editreference != None:
+                    if self.editreference.note.sel == 1:
+                        pass
+                    else:
+                        for notewidget in self.notewidgetlist:
+                            notewidget.note.sel = 0
+                            outline = self.score.itemcget(notewidget.notewidget, "fill")
+                            self.score.itemconfig(notewidget.notewidget, width=1, outline=outline)
+                        self.score.itemconfig(self.editreference.notewidget, width=3, outline='#ff6670')
+                        self.editreference.note.sel = 1
+                else:
+                    self.selectbox = selectbox(self, event)
             else:
                 self.durgrab(event)
 
@@ -624,22 +640,65 @@ endin
         self.durinit = self.leninit/self.xperquarter
 
     def durdrag(self, event):
-        for note in self.notelist:
-            if "durdrag" in self.score.gettags(note.widget):
-                newpurx = self.score.canvasx(event.x) - self.startinit
-                if newpurx > 0:
-                    newdurx = math.ceil(newpurx/self.xpxquantize) * self.xpxquantize
-                    newcoords = (self.dragcoords[0:8])
-                    newcoords.append(newdurx + self.startinit)
-                    newcoords.append(self.dragcoords[9])
-                    self.score.coords(note.widget, tuple(newcoords))
-                    note.dur = float(newdurx)/self.xperquarter
-                    note.dict['dur'] = note.dur
+        todrag = self.score.find_withtag("durdrag")[0]
+        newpurx = self.score.canvasx(event.x) - self.startinit
+        if newpurx > 0:
+            newdurx = math.ceil(newpurx/self.xpxquantize) * self.xpxquantize
+#            newcoords = (self.dragcoords[0:8])
+#            newcoords.append(newdurx + self.startinit)
+#            newcoords.append(self.dragcoords[9])
+#            self.score.coords(todrag, tuple(newcoords))
+            for notewidget in self.notewidgetlist:
+                 if notewidget.notewidget == todrag:
+                    notewidget.note.dur = float(newdurx)/self.xperquarter
+                    notewidget.note.dict['dur'] = notewidget.note.dur
+                    notewidget.updatedur()
+
+#        for note in self.notelist:
+#            if "durdrag" in self.score.gettags(note.widget):
+#                newpurx = self.score.canvasx(event.x) - self.startinit
+#                if newpurx > 0:
+#                    newdurx = math.ceil(newpurx/self.xpxquantize) * self.xpxquantize
+#                    newcoords = (self.dragcoords[0:8])
+#                    newcoords.append(newdurx + self.startinit)
+#                    newcoords.append(self.dragcoords[9])
+#                    self.score.coords(note.widget, tuple(newcoords))
+#                    note.dur = float(newdurx)/self.xperquarter
+#                    note.dict['dur'] = note.dur
 
     def buttonmotion(self, event):
         if self.mode.get() == 1:
             if self.overdur == 0:
-                self.selectbox.adjust(event)
+                if self.editreference == None:
+                    self.selectbox.adjust(event)
+                else:
+##############
+                    widget = event.widget
+                    realy = widget.canvasy(event.y)
+                    yloc = self.regionlist[self.editreference.note.region].octave11 - realy
+                    ynotestorage = int(yloc * 240 / self.octaveres) % self.octaveres
+                    prenum = notestorage.notebank[ynotestorage][1]
+                    preden = notestorage.notebank[ynotestorage][2]
+                    if yloc > self.octaveres:
+                        prenum *= 2**int((yloc)/self.octaveres)
+                    elif yloc < 0:
+                        preden *= 2**(0-((int(yloc)/self.octaveres)))
+#                    ratio = self.ratioreduce(prenum,preden,self.primelimit)
+#                    num = ratio[0]
+#                    den = ratio[1]
+                    numdelta = prenum * self.editreference.note.den
+                    dendelta = preden * self.editreference.note.num
+                    for notewidget in self.notewidgetlist:
+                        if notewidget.note.sel == 1:
+                            note = notewidget.note
+                            ratio = self.ratioreduce(note.num*numdelta, note.den*dendelta, self.primelimit)
+                            note.num = ratio[0]
+                            note.den = ratio[1]
+                            self.score.itemconfig(notewidget.numwidget, text=str(note.num))
+                            self.score.itemconfig(notewidget.denwidget, text=str(note.den))
+                            notewidget.updateheight()
+                            self.tiedraw(note.inst, note.voice)
+##############
             else:
                 self.durdrag(event)
 
@@ -652,6 +711,56 @@ endin
         elif self.mode.get() == 2:
             self.deleteseek(event)
 
+    def editseek(self, event):
+        self.score.itemconfig("note", stipple="")
+        self.score.dtag("note", "edit")
+        widget = event.widget
+        realx = widget.canvasx(event.x)
+        realy = widget.canvasy(event.y)
+        notes = self.score.find_overlapping(realx-10, realy-10, realx+10, realy+10)
+        note = 0
+        absall = 10
+        tempflag = 0
+        flag = 0
+        for match in notes:
+            if "note" in self.score.gettags(match):
+                coords = self.score.coords(match)
+                mainxy = (coords[0], coords[1])
+                durxy = (coords[8], coords[9])
+                maindist = math.sqrt((mainxy[0]-realx)**2 + (mainxy[1]-realy)**2)
+                durdist = math.sqrt((durxy[0]-realx)**2 + (durxy[1]-realy)**2)
+                if durdist < maindist:
+                    abs = durdist
+                    tempflag = 1
+                else:
+                    abs = maindist
+                    tempflag = 0
+                if abs < absall:
+                    absall = abs
+                    note = match
+                    flag = tempflag
+        if note == 0:
+            self.overdur = 0
+            self.score.configure(cursor="pencil")
+            self.score.dtag("note", "durdrag")
+            self.editreference = None
+        else:
+            if flag == 1:
+                self.overdur = 1
+                self.score.configure(cursor="right_side")
+                self.score.addtag_withtag("durdrag", note)
+            if flag == 0:
+                self.overdur = 0
+                self.score.configure(cursor="sb_v_double_arrow")
+                self.score.itemconfig(note, stipple="gray50")
+                for notewidget in self.notewidgetlist:
+                    if notewidget.notewidget == note:
+                        self.editreference = notewidget
+
+#                self.score.addtag_withtag("editreference", note)
+#                self.selectbox = selectbox(self, event)
+#                if 
+                
 ### Add a Note ###
     def buttonup(self, event):
         winfo = (str(self.scorewin.winfo_name()))
@@ -683,20 +792,21 @@ endin
             locy1 = yloc + self.hover.hyoff
             ry0 = yloc - 15
             ry1 = yloc + 15
-            newnote = self.score.create_polygon(self.hover.hovx2,locy2,self.hover.hovx0,locy0,self.hover.hovx1,locy1,self.hover.hovx2,locy2,self.hover.hcrossx3,locy2,fill=self.hover.entrycolor,outline=self.hover.entrycolor, tags=("note", "all"))
-            newnotenum = self.score.create_text(self.hover.hovx0,locy2,anchor="se",fill=self.hover.entrycolor,text=str(self.hover.hnum), tags="all")
-            newnoteden = self.score.create_text(self.hover.hovx0,locy2,anchor="ne",fill=self.hover.entrycolor,text=str(self.hover.hden), tags="all")
-            regionnum = self.score.create_text(self.hover.hovx2,ry0,anchor="se",fill=rcolor,text=str(rnum),font=("Times",10), tags="all")
-            regionden = self.score.create_text(self.hover.hovx2,ry1,anchor="ne",fill=rcolor,text=str(rden),font=("Times",10), tags="all")
-            regiondisp = self.score.create_text(self.hover.hovx2, locy2, anchor="sw", fill=rcolor, text='r' + str(region), font=("Times",10), tags="all")
-            voicedisp = self.score.create_text(self.hover.hovx2, locy2, anchor="nw", fill=self.hover.entrycolor, text=str(voice), font=("Times", 10), tags="all")
-#            self.notelist.extend([[self.hover.hinst,time,dur,db,num,den,region,sel,newnote]])
-            noteinstance = note(self, self.hover.hinst, self.hover.hvoice, time, dur, db, num, den, region, sel, newnote)
+#            newnote = self.score.create_polygon(self.hover.hovx2,locy2,self.hover.hovx0,locy0,self.hover.hovx1,locy1,self.hover.hovx2,locy2,self.hover.hcrossx3,locy2,fill=self.hover.entrycolor,outline=self.hover.entrycolor, tags=("note", "all"))
+#            newnotenum = self.score.create_text(self.hover.hovx0,locy2,anchor="se",fill=self.hover.entrycolor,text=str(self.hover.hnum), tags="all")
+#            newnoteden = self.score.create_text(self.hover.hovx0,locy2,anchor="ne",fill=self.hover.entrycolor,text=str(self.hover.hden), tags="all")
+#            regionnum = self.score.create_text(self.hover.hovx2,ry0,anchor="se",fill=rcolor,text=str(rnum),font=("Times",10), tags="all")
+#            regionden = self.score.create_text(self.hover.hovx2,ry1,anchor="ne",fill=rcolor,text=str(rden),font=("Times",10), tags="all")
+#            regiondisp = self.score.create_text(self.hover.hovx2, locy2, anchor="sw", fill=rcolor, text='r' + str(region), font=("Times",10), tags="all")
+#            voicedisp = self.score.create_text(self.hover.hovx2, locy2, anchor="nw", fill=self.hover.entrycolor, text=str(voice), font=("Times", 10), tags="all")
+            noteinstance = note(self, self.hover.hinst, self.hover.hvoice, time, dur, db, num, den, region, sel)
             self.notelist.append(noteinstance)
-            self.tiedraw(self.hover.hinst, self.hover.hvoice)
+            notewidgetinstance = notewidgetclass(self, noteinstance)
+            self.notewidgetlist.append(notewidgetinstance)
+#            self.tiedraw(self.hover.hinst, self.hover.hvoice)
 
         elif winfocus != None and self.mode.get() == 1:
-            if self.overdur == 0:
+            if self.overdur == 0 and self.editreference == None:
                 self.score.delete(self.selectbox.widget)
                 del self.selectbox
 
@@ -705,16 +815,16 @@ endin
             deletematch = self.score.find_withtag("delete")
             if deletematch:
                 todel = deletematch[0]
-                for notemember in range(len(self.notelist)):
-                    if self.notelist[notemember].widget == todel:
+                for notemember in range(len(self.notewidgetlist)):
+                    if self.notewidgetlist[notemember].notewidget == todel:
+                        notewidget = self.notewidgetlist[notemember]
                         tieinst = self.notelist[notemember].inst
                         tievoice = self.notelist[notemember].voice
+                        notewidget.undraw()
+                        del self.notewidgetlist[notemember]
                         del self.notelist[notemember]
+                        self.tiedraw(tieinst, tievoice)
                         break
-                for i in range(7):
-                    self.score.delete(todel)
-                    todel += 1
-                self.tiedraw(tieinst, tievoice)
 
     def write(self,s):
         self.stdouttxt.configure(state='normal')
@@ -783,8 +893,10 @@ endin
         if self.shiftkey == 1 and self.ctlkey == self.rkey == self.vkey == 0:
             if event.keycode in self.shiftnum1:
 #############################################
+#                print event.keycode
                 self.hinstch = self.hinstch * 10 + self.shiftnum1.index(event.keycode)
             elif event.keycode in self.shiftnum2:
+                print event.keycode
                 self.hinstch = self.hinstch * 10 + self.shiftnum2.index(event.keycode)
         if self.ctlkey == self.shiftkey == self.rkey == self.vkey == 0:
             if event.keysym == "comma" or event.keysym == "less":
@@ -907,7 +1019,7 @@ endin
                 self.tiedraw(self.hover.hinst, self.hover.hvoice)
                 self.write(str(self.hover.hinst))
                 self.hover.colorupdate(self)
-                self.shiftkey = 0
+            self.shiftkey = 0
         elif event.keysym.count("Control"):
             self.ctlkey = 0
         if event.keysym == "r" or event.keysym.count == "R":
@@ -1028,6 +1140,7 @@ endin
                 self.score.itemconfigure(self.hover.hrdendisp, state='normal')
                 self.score.itemconfigure(self.hover.hregiondisp, state='normal')
                 self.score.itemconfigure(self.hover.hvoicedisp, state='normal')
+            self.editselectnone()
             self.tiedraw(self.hover.hinst, self.hover.hvoice)
             self.write("Now in Add Mode")
         elif mode == 1:
@@ -1059,6 +1172,7 @@ endin
                 self.score.itemconfigure(self.hover.hrdendisp, state='hidden')
                 self.score.itemconfigure(self.hover.hregiondisp, state='hidden')
                 self.score.itemconfigure(self.hover.hvoicedisp, state='hidden')
+            self.editselectnone()
             self.tiedraw(self.hover.hinst, self.hover.hvoice)
             self.write("Now in Delete Mode")
         elif mode == 3:
@@ -1073,6 +1187,7 @@ endin
                 self.score.itemconfigure(self.hover.hrdendisp, state='hidden')
                 self.score.itemconfigure(self.hover.hregiondisp, state='hidden')
                 self.score.itemconfigure(self.hover.hvoicedisp, state='hidden')
+            self.editselectnone()
             self.tiedraw(self.hover.hinst, self.hover.hvoice)
             self.write("Now in Scrub Mode")
 
@@ -1089,7 +1204,8 @@ endin
 
     def editregionassign(self, region):
         color = self.regionlist[region].color
-        for note in self.notelist:
+        for notewidget in self.notewidgetlist:
+            note = notewidget.note
             if note.sel == 1:
                 oldrnum = self.regionlist[note.region].num
                 oldrden = self.regionlist[note.region].den
@@ -1099,51 +1215,40 @@ endin
                 ratio = self.ratioreduce(note.num * oldrnum * rden, note.den * oldrden * rnum, self.primelimit)
                 note.num = ratio[0]
                 note.den = ratio[1]
-                widget = note.widget + 1
-                self.score.itemconfig(widget, text=str(note.num))
-                widget += 1
-                self.score.itemconfig(widget, text=str(note.den))
-                widget += 1
-                self.score.itemconfig(widget, text=str(rnum), fill=color)
-                widget += 1
-                self.score.itemconfig(widget, text=str(rden), fill=color)
-                widget += 1
-                self.score.itemconfig(widget, text=('r' + str(region)), fill=color)
+                notewidget.updateregion()
 
     def editvoiceassign(self, voice):
 #        print voice
-        for note in self.notelist:
+        for notewidget in self.notewidgetlist:
+            note = notewidget.note
             if note.sel == 1:
                 inst = note.inst
                 oldvoice = note.voice
                 note.voice = voice
                 self.tiedraw(inst, voice)
-                widget = note.widget + 6
                 self.tiedraw(inst, oldvoice)
-                self.score.itemconfigure(widget, text=str(voice))
+                notewidget.updatevoice()
 
     def editinstassign(self, inst):
 #        print inst
-        for note in self.notelist:
+        for notewidget in self.notewidgetlist:
+            note = notewidget.note
             if note.sel == 1:
                 voice = note.voice
                 oldinst = note.inst
                 note.inst = inst
                 self.tiedraw(oldinst, voice)
                 self.tiedraw(inst, voice)
-                color = str(self.instlist[inst].color)
-#                print color
-                widget = note.widget
-                self.score.itemconfigure(widget, fill=color)
-                widget += 1
-                self.score.itemconfigure(widget, fill=color)
-                widget += 1
-                self.score.itemconfigure(widget, fill=color)
-                widget += 4
-                self.score.itemconfigure(widget, fill=color)
+                notewidget.updateinst()
 
     def editselect(self):
         self.write("Edit->Select")
+
+    def editselectnone(self, *args):
+        for notewidget in self.notewidgetlist:
+            notewidget.note.sel = 0
+            outline = self.score.itemcget(notewidget.notewidget, "fill")
+            self.score.itemconfig(notewidget.notewidget, outline=outline, width=1)
 
     def editcut(self, *args):
         self.write("Edit->Cut")
@@ -1155,90 +1260,117 @@ endin
         self.write("Edit->Paste")
 
     def filenew(self, *args):
+        for i in range(len(self.notewidgetlist)):
+            self.notewidgetlist[0].undraw()
+            del self.notewidgetlist[0]
+        for i in range(len(self.notelist)):
+            del self.notelist[0]
         self.notelist = []
+        self.notewidgetlist = []
         initregion = rdialog.region(self, 1, 1, '#999999', 240)
+        for i in range(len(self.regionlist)):
+            del self.regionlist[0]
         self.regionlist = [initregion]
+        for i in range(len(self.instlist)):
+            del self.instlist[0]
+        self.instlist = [0]
+        for i in range(len(self.tempolist)):
+            del self.tempolist[0]
+        self.tempolist = []
+        for i in range(len(self.meterlist)):
+            del self.meterlist[0]
+        self.meterlist = []
+        self.redrawlines()
+        self.filetosave = None
+        self.csdimport = None
+        self.csdimported = ''
+        self.outautoload = False
         self.write("File->New")
 
     def fileopen(self, *args):
         file = tkfd.askopenfilename(title="Open", filetypes=[("Rationale 0.1", ".rat")])
         if file:
-            self.filetosave = file
-            self.write('File->Open: %s' % str(file))
-            input = open(file, 'rb')
-            regionlistin = pickle.load(input)
-            instlistin = pickle.load(input)
-            notelistin = pickle.load(input)
-            meterlistin = pickle.load(input)
-            tempolistin = pickle.load(input)
-            self.csdimport = pickle.load(input)
-            self.csdimported = pickle.load(input)
-            self.outautoload = pickle.load(input)
+            fileopenwork(file)
+#        else:
+        self.ctlkey = 0
+
+    def fileopenwork(self, file):
+        self.filetosave = file
+        self.write('File->Open: %s' % str(file))
+        input = open(file, 'rb')
+        regionlistin = pickle.load(input)
+        instlistin = pickle.load(input)
+        notelistin = pickle.load(input)
+        meterlistin = pickle.load(input)
+        tempolistin = pickle.load(input)
+        self.csdimport = pickle.load(input)
+        self.csdimported = pickle.load(input)
+        self.outautoload = pickle.load(input)
 #        self.score.delete("all")
-            for scoreitem in self.score.find_all():
-                tags = self.score.gettags(scoreitem)
-                if "octaveline" not in tags and "perm11" not in tags and "timecursor" not in tags and "hover" not in tags:
-                    self.score.delete(scoreitem)
+        for scoreitem in self.score.find_all():
+            tags = self.score.gettags(scoreitem)
+            if "octaveline" not in tags and "perm11" not in tags and "timecursor" not in tags and "hover" not in tags:
+                self.score.delete(scoreitem)
 #        self.drawoctaves(self.octave11)
-            self.regionlist = []
-            self.notelist = []
-            self.meterlist = []
-            self.tempolist = []
+        self.regionlist = []
+        self.notelist = []
+        self.meterlist = []
+        self.tempolist = []
 #            for region in regionlistin:
 #                newregion = rdialog.region(self, region[0], region[1], region[2], region[3])
 #                self.regionlist.append(newregion)
-            self.regionlist = regionlistin
+        self.regionlist = regionlistin
 #            for reg in self.regionlist:
 #                reg.color = '#' + str(reg.color)
-            self.instlist = instlistin
-            for test in notelistin:
-                inst = test[0]
-                voice = test[1]
-                time = test[2]
-                dur = test[3]
-                db = test[4]
-                num = test[5]
-                den = test[6]
-                region = test[7]
-                sel = test[8]
-                entrycolor = '#888888'
-                if inst < len(self.instlist):
-                    entrycolor = str(self.instlist[inst].color)
-                rnum = self.regionlist[region].num
-                rden = self.regionlist[region].den
-                rcolor = str(self.regionlist[region].color)
-                posx = time * self.xperquarter
-                yadj = self.octave11 - ((math.log(float(num)/float(den))/self.log2) * self.octaveres)
-                x2 = posx + db/12
-                y2 = yadj
-                x0 = posx
-                y0 = yadj - db/6
-                x1 = posx
-                y1 = yadj + db/6
-                crossx3 = posx + dur * self.xperquarter
-                ry0 = yadj - 15
-                ry1 = yadj + 15
+        self.instlist = instlistin
+        for test in notelistin:
+            inst = test[0]
+            voice = test[1]
+            time = test[2]
+            dur = test[3]
+            db = test[4]
+            num = test[5]
+            den = test[6]
+            region = test[7]
+            sel = test[8]
+            entrycolor = '#888888'
+            if inst < len(self.instlist):
+                entrycolor = str(self.instlist[inst].color)
+            rnum = self.regionlist[region].num
+            rden = self.regionlist[region].den
+            rcolor = str(self.regionlist[region].color)
+            posx = time * self.xperquarter
+            yadj = self.octave11 - ((math.log(float(num)/float(den))/self.log2) * self.octaveres)
+            x2 = posx + db/12
+            y2 = yadj
+            x0 = posx
+            y0 = yadj - db/6
+            x1 = posx
+            y1 = yadj + db/6
+            crossx3 = posx + dur * self.xperquarter
+            ry0 = yadj - 15
+            ry1 = yadj + 15
 
-                newnote = self.score.create_polygon(x2,y2,x0,y0,x1,y1,x2,y2,crossx3,y2,fill=entrycolor,outline=entrycolor, tags=("note", "all"))
-                newnotenum = self.score.create_text(x0,y2,anchor="se",fill=entrycolor,text=str(num), tags="all")
-                newnoteden = self.score.create_text(x0,y2,anchor="ne",fill=entrycolor,text=str(den), tags="all")
-                regionnum = self.score.create_text(x2,ry0,anchor="se",fill=rcolor,text=str(rnum),font=("Times",10), tags="all")
-                regionden = self.score.create_text(x2,ry1,anchor="ne",fill=rcolor,text=str(rden),font=("Times",10), tags="all")
-                regiondisp = self.score.create_text(x2, y2, anchor="sw", fill=rcolor, text='r' + str(region), font=("Times",10), tags="all")
-                voicedisp = self.score.create_text(x2, y2, anchor="nw", fill=entrycolor, text=str(voice), tags="all")
-                noteinstance = note(self, inst, voice, time, dur, db, num, den, region, sel, newnote)
-                self.notelist.append(noteinstance)
+#                newnote = self.score.create_polygon(x2,y2,x0,y0,x1,y1,x2,y2,crossx3,y2,fill=entrycolor,outline=entrycolor, tags=("note", "all"))
+#                newnotenum = self.score.create_text(x0,y2,anchor="se",fill=entrycolor,text=str(num), tags="all")
+#                newnoteden = self.score.create_text(x0,y2,anchor="ne",fill=entrycolor,text=str(den), tags="all")
+#                regionnum = self.score.create_text(x2,ry0,anchor="se",fill=rcolor,text=str(rnum),font=("Times",10), tags="all")
+#                regionden = self.score.create_text(x2,ry1,anchor="ne",fill=rcolor,text=str(rden),font=("Times",10), tags="all")
+#                regiondisp = self.score.create_text(x2, y2, anchor="sw", fill=rcolor, text='r' + str(region), font=("Times",10), tags="all")
+#                voicedisp = self.score.create_text(x2, y2, anchor="nw", fill=entrycolor, text=str(voice), tags="all")
+            noteinstance = note(self, inst, voice, time, dur, db, num, den, region, sel)
+            self.notelist.append(noteinstance)
+            notewidgetinstance = notewidgetclass(self, noteinstance)
+            self.notewidgetlist.append(notewidgetinstance)
+            self.tiedraw(inst, voice)
+        for i in meterlistin:
+            test = mdialog.meter(self, i[0], i[1], i[2])
+            self.meterlist.append(test)
+        self.redrawlines()
+        for i in tempolistin:
+            test = tdialog.tempo(self, i[0], i[1], i[2], i[3])
+            self.tempolist.append(test)
 
-                self.tiedraw(inst, voice)
-            for i in meterlistin:
-                test = mdialog.meter(self, i[0], i[1], i[2])
-                self.meterlist.append(test)
-            self.redrawlines()
-            for i in tempolistin:
-                test = tdialog.tempo(self, i[0], i[1], i[2], i[3])
-                self.tempolist.append(test)
-#        else:
-        self.ctlkey = 0
 
     def filesave(self, *args):
         if not self.filetosave or self.filetosave == None:
@@ -1306,14 +1438,19 @@ endin
                     flag1 = 1
 #            meterlistin = pickle.load(input)
 #            tempolistin = pickle.load(input)
-            for scoreitem in self.score.find_all():
-                tags = self.score.gettags(scoreitem)
-                if "octaveline" not in tags and "perm11" not in tags and "timecursor" not in tags and "hover" not in tags:
-                    self.score.delete(scoreitem)
-            self.regionlist = [[1,1,999999,240]]
-            self.notelist = []
-            self.meterlist = []
-            self.tempolist = []
+            self.filenew()
+#            for scoreitem in self.score.find_all():
+#                tags = self.score.gettags(scoreitem)
+#                if "octaveline" not in tags and "perm11" not in tags and "timecursor" not in tags and "hover" not in tags:
+#                    self.score.delete(scoreitem)
+#            initregion = rdialog.region(self, 1, 1, '#999999', 240)
+#            for i in range(len(self.regionlist)):
+#                del self.regionlist[i]
+#            self.regionlist = [initregion]
+##            self.regionlist = [[1,1,999999,240]]
+#            self.notelist = []
+#            self.meterlist = []
+#            self.tempolist = []
             instset = [0]
             for test in notelistin:
                 jiinst = test[8]
@@ -1349,15 +1486,17 @@ endin
                 ry0 = yadj - 15
                 ry1 = yadj + 15
 
-                newnote = self.score.create_polygon(x2,y2,x0,y0,x1,y1,x2,y2,crossx3,y2,fill=entrycolor,outline=entrycolor, tags=("note", "all"))
-                newnotenum = self.score.create_text(x0,y2,anchor="se",fill=entrycolor,text=str(num), tags="all")
-                newnoteden = self.score.create_text(x0,y2,anchor="ne",fill=entrycolor,text=str(den), tags="all")
-                regionnum = self.score.create_text(x2,ry0,anchor="se",fill=rcolor,text=str(rnum),font=("Times",10), tags="all")
-                regionden = self.score.create_text(x2,ry1,anchor="ne",fill=rcolor,text=str(rden),font=("Times",10), tags="all")
-                regiondisp = self.score.create_text(x2, y2, anchor="sw", fill=rcolor, text='r' + str(region), font=("Times",10), tags="all")
-                voicedisp = self.score.create_text(x2, y2, anchor="nw", fill=entrycolor, text=str(voice), tags="all")
-                noteinstance = note(self, inst, voice, time, dur, db, num, den, region, sel, newnote)
+#                newnote = self.score.create_polygon(x2,y2,x0,y0,x1,y1,x2,y2,crossx3,y2,fill=entrycolor,outline=entrycolor, tags=("note", "all"))
+#                newnotenum = self.score.create_text(x0,y2,anchor="se",fill=entrycolor,text=str(num), tags="all")
+#                newnoteden = self.score.create_text(x0,y2,anchor="ne",fill=entrycolor,text=str(den), tags="all")
+#                regionnum = self.score.create_text(x2,ry0,anchor="se",fill=rcolor,text=str(rnum),font=("Times",10), tags="all")
+#                regionden = self.score.create_text(x2,ry1,anchor="ne",fill=rcolor,text=str(rden),font=("Times",10), tags="all")
+#                regiondisp = self.score.create_text(x2, y2, anchor="sw", fill=rcolor, text='r' + str(region), font=("Times",10), tags="all")
+#                voicedisp = self.score.create_text(x2, y2, anchor="nw", fill=entrycolor, text=str(voice), tags="all")
+                noteinstance = note(self, inst, voice, time, dur, db, num, den, region, sel)
                 self.notelist.append(noteinstance)
+                notewidgetinstance = notewidgetclass(self, noteinstance)
+                self.notewidgetlist.append(notewidgetinstance)
 
                 self.tiedraw(inst, voice)
 #            for i in meterlistin:
@@ -1422,11 +1561,11 @@ endin
     def tiedraw(self, inst, voice):
         if voice != 0:
             loclist = []
-            for n in self.notelist:
-                if n.inst == inst and n.voice == voice:
-                    notehandle = n.widget
-                    notex = (self.score.coords(notehandle)[2])
-                    notey = (self.score.coords(notehandle)[1])
+            for notewidget in self.notewidgetlist:
+                note = notewidget.note
+                if note.inst == inst and note.voice == voice:
+                    notex = notewidget.purex
+                    notey = notewidget.purey
                     loclist.append([notex,notey])
             if self.hover.hinst == inst and self.hover.hvoice == voice and self.score.itemcget(self.hover.widget, 'state') != 'hidden':
                 loclist.append([self.hover.hovx0,self.hover.hovy2])
@@ -1440,6 +1579,11 @@ endin
                 loctie = self.score.create_line(loclist,width=5,fill="#ffcccc",tags="all")
                 self.score.lower(loctie)
                 self.ties['%s-%.30d-%.30d' % ('key',inst,voice)] = loctie
+            else:
+                if '%s-%.30d-%.30d' % ('key',inst,voice) in self.ties:
+                    tiehandle = self.ties['%s-%.30d-%.30d' % ('key',inst,voice)]
+                    self.score.delete(tiehandle)
+                    del self.ties['%s-%.30d-%.30d' % ('key',inst,voice)]
 
     def hupdate(self):
         pass
@@ -1479,30 +1623,6 @@ endin
         elif which == "out":
 #            self.score.scale("all", 200, 200, .9, .9)
             pass
-
-    def editseek(self, event):
-        widget = event.widget
-        realx = widget.canvasx(event.x)
-        realy = widget.canvasy(event.y)
-        notes = self.score.find_overlapping(realx-10, realy-10, realx+10, realy+10)
-        note = 0
-        absall = 10
-        for match in notes:
-            if "note" in self.score.gettags(match):
-                coords = self.score.coords(match)
-                xy = (coords[8], coords[9])
-                abs = math.sqrt((xy[0]-realx)**2 + (xy[1]-realy)**2)
-                if abs < absall:
-                    absall = abs
-                    note = match
-        if note == 0:
-            self.overdur = 0
-            self.score.configure(cursor="pencil")
-            self.score.dtag("note", "durdrag")
-        else:
-            self.overdur = 1
-            self.score.configure(cursor="sb_h_double_arrow")
-            self.score.addtag_withtag("durdrag", note)
 
     def deleteseek(self, event):
         self.score.itemconfig("note", stipple="")
@@ -1585,9 +1705,11 @@ endin
         print 'paste'
 
     def editmodedur(self, dur):
-        for note in self.notelist:
+        for notewidget in self.notewidgetlist:
+            note = notewidget.note
             if note.sel == 1:
                 note.dur = dur
+                notewidget.updatedur()
         print 'durations edited'
 
     def editmodetranspose(self, num, den):
@@ -1600,9 +1722,11 @@ endin
         print 'assigned to inst %d' % inst
 
     def editmodevoice(self, voice):
-        for note in self.notelist:
+        for notewidget in self.notewidgetlist:
+            note = notewidget.note
             if note.sel == 1:
                 note.voice = voice
+                notewidget.updatevoice()
         print 'assigned to voice %d' % voice
 
     def editmodeslide(self, bars, beats, ticks):
@@ -1624,23 +1748,110 @@ endin
             yfrac = float(ydrag) / self.yrange + self.yscrwas
             self.scorexscroll('moveto', xfrac)
             self.scoreyscroll('moveto', yfrac)
-        
 
-class notewidget:
+class notewidgetclass:
     def __init__(self, parent, note):
+        self.myparent = parent
         self.note = note
-        self.notewidget = self.score.create_polygon(self.hover.hovx2,locy2,self.hover.hovx0,locy0,self.hover.hovx1,locy1,self.hover.hovx2,locy2,self.hover.hcrossx3,locy2,fill=self.hover.entrycolor,outline=self.hover.entrycolor, tags=("note", "all"))
-        self.notenum = self.score.create_text(self.hover.hovx0,locy2,anchor="se",fill=self.hover.entrycolor,text=str(self.hover.hnum), tags="all")
-        self.noteden = self.score.create_text(self.hover.hovx0,locy2,anchor="ne",fill=self.hover.entrycolor,text=str(self.hover.hden), tags="all")
-        self.regionnum = self.score.create_text(self.hover.hovx2,ry0,anchor="se",fill=rcolor,text=str(rnum),font=("Times",10), tags="all")
-        self.regionden = self.score.create_text(self.hover.hovx2,ry1,anchor="ne",fill=rcolor,text=str(rden),font=("Times",10), tags="all")
-        self.regiondisp = self.score.create_text(self.hover.hovx2, locy2, anchor="sw", fill=rcolor, text='r' + str(region), font=("Times",10), tags="all")
+        self.purex = self.note.time * self.myparent.xperquarter
+        self.purey = self.myparent.octave11 - ((math.log(float(self.note.num)/float(self.note.den))/self.myparent.log2) * self.myparent.octaveres)
+#        print self.purey
+        self.yoff = self.note.db/6.0
+        self.xoff = self.yoff/2.0
+        self.durx = self.purex + self.note.dur * self.myparent.xperquarter
+        if self.note.inst >= len(self.myparent.instlist):
+            self.color = '#888888'
+        else:
+            self.color = self.myparent.instlist[self.note.inst].color
+        self.rcolor = self.myparent.regionlist[self.note.region].color
+        self.rnum = self.myparent.regionlist[self.note.region].num
+        self.rden = self.myparent.regionlist[self.note.region].den
+        self.rstring = 'r' + str(self.note.region)
+        if self.note.voice == 0:
+            self.vstring = ''
+        else:
+            self.vstring = str(self.note.voice)
+
+        self.notewidget = self.myparent.score.create_polygon(self.purex+self.xoff,self.purey,self.purex,self.purey-self.yoff,self.purex,self.purey+self.yoff,self.purex+self.xoff,self.purey,self.durx,self.purey,fill=self.color,outline=self.color, tags=("note", "all"))
+        self.numwidget = self.myparent.score.create_text(self.purex,self.purey,anchor="se",fill=self.color,text=str(self.note.num), tags="all")
+        self.denwidget = self.myparent.score.create_text(self.purex,self.purey,anchor="ne",fill=self.color,text=str(self.note.den), tags="all")
+        self.rnumwidget = self.myparent.score.create_text(self.purex+6,self.purey-12,anchor="se",fill=self.rcolor,text=str(self.rnum),font=("Times",10), tags="all")
+        self.rdenwidget = self.myparent.score.create_text(self.purex+6,self.purey+12,anchor="ne",fill=self.rcolor,text=str(self.rden),font=("Times",10), tags="all")
+        self.regiondisp = self.myparent.score.create_text(self.purex+6, self.purey, anchor="sw", fill=self.rcolor, text=self.rstring, font=("Times",10), tags="all")
+        self.voicedisp = self.myparent.score.create_text(self.purex+6, self.purey, anchor="nw", fill=self.color, text=self.vstring, font=("Times",10), tags="all")
+
+    def updatetime(self):
+        self.purex = self.note.time * self.myparent.xperquarter
+        self.durx = self.purex + self.note.dur * self.myparent.xperquarter
+        self.myparent.score.coords(self.notewidget, self.purex+self.xoff,self.purey,self.purex,self.purey-self.yoff,self.purex,self.purey+self.yoff,self.purex+self.xoff,self.purey,self.durx,self.purey)
+        self.myparent.score.coords(self.numwidget, self.purex,self.purey)
+        self.myparent.score.coords(self.denwidget, self.purex,self.purey)
+        self.myparent.score.coords(self.rnumwidget, self.purex+6,self.purey-12)
+        self.myparent.score.coords(self.rdenwidget, self.purex+6,self.purey+12)
+        self.myparent.score.coords(self.regiondisp, self.purex+6,self.purey)
+        self.myparent.score.coords(self.voicedisp, self.purex+6,self.purey)
+
+    def updateheight(self):
+        self.purey = self.myparent.regionlist[self.note.region].octave11 - ((math.log(float(self.note.num)/float(self.note.den))/self.myparent.log2) * self.myparent.octaveres)
+        self.myparent.score.coords(self.notewidget, self.purex+self.xoff,self.purey,self.purex,self.purey-self.yoff,self.purex,self.purey+self.yoff,self.purex+self.xoff,self.purey,self.durx,self.purey)
+        self.myparent.score.coords(self.numwidget, self.purex,self.purey)
+        self.myparent.score.coords(self.denwidget, self.purex,self.purey)
+        self.myparent.score.coords(self.rnumwidget, self.purex+6,self.purey-12)
+        self.myparent.score.coords(self.rdenwidget, self.purex+6,self.purey+12)
+        self.myparent.score.coords(self.regiondisp, self.purex+6,self.purey)
+        self.myparent.score.coords(self.voicedisp, self.purex+6,self.purey)
+
+    def updatedb(self):
+        self.yoff = self.note.db/6.0
+        self.xoff = self.yoff/2.0
+        self.myparent.score.coords(self.notewidget, self.purex+self.xoff,self.purey,self.purex,self.purey-self.yoff,self.purex,self.purey+self.yoff,self.purex+self.xoff,self.purey,self.durx,self.purey)
+
+    def updatedur(self):
+        self.durx = self.purex + self.note.dur * self.myparent.xperquarter
+        self.myparent.score.coords(self.notewidget, self.purex+self.xoff,self.purey,self.purex,self.purey-self.yoff,self.purex,self.purey+self.yoff,self.purex+self.xoff,self.purey,self.durx,self.purey)
+
+    def updateinst(self):
+        if self.note.inst < len(self.myparent.instlist):
+            self.color = self.myparent.instlist[self.note.inst].color
+        else:
+            self.color = '#888888'
+        self.myparent.score.itemconfigure(self.notewidget, fill=self.color, outline=self.color)
+        self.myparent.score.itemconfigure(self.numwidget, fill=self.color)
+        self.myparent.score.itemconfigure(self.denwidget, fill=self.color)
+        self.myparent.score.itemconfigure(self.voicedisp, fill=self.color)
+
+    def updateregion(self):
+        self.rcolor = self.myparent.regionlist[self.note.region].color
+        self.rnum = self.myparent.regionlist[self.note.region].num
+        self.rden = self.myparent.regionlist[self.note.region].den
+        self.rstring = 'r' + str(self.note.region)
+        self.myparent.score.itemconfigure(self.numwidget, text=self.note.num)
+        self.myparent.score.itemconfigure(self.denwidget, text=self.note.den)
+        self.myparent.score.itemconfigure(self.rnumwidget, text=self.rnum, fill=self.rcolor)
+        self.myparent.score.itemconfigure(self.rdenwidget, text=self.rden, fill=self.rcolor)
+        self.myparent.score.itemconfigure(self.regiondisp, text=self.rstring, fill=self.rcolor)
+
+    def updatevoice(self):
+        if self.note.voice == 0:
+            self.vstring = ''
+        else:
+            self.vstring = str(self.note.voice)
+        self.myparent.score.itemconfigure(self.voicedisp, text=self.vstring)
+
+    def undraw(self):
+        self.myparent.score.delete(self.notewidget)
+        self.myparent.score.delete(self.numwidget)
+        self.myparent.score.delete(self.denwidget)
+        self.myparent.score.delete(self.rnumwidget)
+        self.myparent.score.delete(self.rdenwidget)
+        self.myparent.score.delete(self.regiondisp)
+        self.myparent.score.delete(self.voicedisp)
 
     def remove(self):
         pass
 
 class note:
-    def __init__(self, parent, inst, voice, time, dur, db, num, den, region, sel, widget):
+    def __init__(self, parent, inst, voice, time, dur, db, num, den, region, sel):
         self.myparent = parent
         self.inst = inst
         self.voice = voice
@@ -1652,7 +1863,7 @@ class note:
         self.region = region
         self.sel = sel
 #        self.arb = arb
-        self.widget = widget
+#        self.widget = widget
         rnum = self.myparent.regionlist[self.region].num
         rden = self.myparent.regionlist[self.region].den
         self.freq = (float(rnum * self.num))/(float(rden * self.den)) * self.myparent.basefreq
@@ -1869,7 +2080,6 @@ class tempoeditlist:
 ### edited.  A blank line of entries at the bottom waits for a tempo to be
 ### added.  When it is, the list is reordered.  If any are changed, they also
 ### update and reorder.  Each line also has an X button to remove tempos.
-### HOW THE BAJESUS AM I GOING TO TELL CSOUND WHERE THE TEMPO CHANGES GO???
 
 #class meter:
 #    def __init__(self, parent, bar, top, bottom):
@@ -2198,14 +2408,15 @@ class selectbox:
         self.corners = (x, y, x, y)
         self.widget = self.myparent.score.create_rectangle(self.corners, outline="#888888", tags="selectbox")
         selectall = self.myparent.score.find_overlapping(self.corners[0], self.corners[1], self.corners[2], self.corners[3])
-        for note in self.myparent.notelist:
-            if note.widget in selectall:
+        for notewidget in self.myparent.notewidgetlist:
+            note = notewidget.note
+            if notewidget.notewidget in selectall:
                 note.sel = 1
-                self.myparent.score.itemconfig(note.widget, outline="#ff6670", width=3)
+                self.myparent.score.itemconfig(notewidget.notewidget, outline="#ff6670", width=3)
             elif self.myparent.shiftkey == 0:
                 note.sel = 0
-                outline = self.myparent.score.itemcget(note.widget, "fill")
-                self.myparent.score.itemconfig(note.widget, width=1, outline=outline)
+                outline = self.myparent.score.itemcget(notewidget.notewidget, "fill")
+                self.myparent.score.itemconfig(notewidget.notewidget, width=1, outline=outline)
 
     def adjust(self, event):
         x = self.myparent.score.canvasx(event.x)
@@ -2213,14 +2424,15 @@ class selectbox:
         self.corners = (self.corners[0], self.corners[1], x, y)
         self.myparent.score.coords(self.widget, self.corners)
         selectall = self.myparent.score.find_overlapping(self.corners[0], self.corners[1], self.corners[2], self.corners[3])
-        for note in self.myparent.notelist:
-            if note.widget in selectall:
+        for notewidget in self.myparent.notewidgetlist:
+            note = notewidget.note
+            if notewidget.notewidget in selectall:
                 note.sel = 1
-                self.myparent.score.itemconfig(note.widget, outline="#ff6670", width=3)
+                self.myparent.score.itemconfig(notewidget.notewidget, outline="#ff6670", width=3)
             elif self.myparent.shiftkey == 0:
                 note.sel = 0
-                outline = self.myparent.score.itemcget(note.widget, "fill")
-                self.myparent.score.itemconfig(note.widget, width=1, outline=outline)
+                outline = self.myparent.score.itemcget(notewidget.notewidget, "fill")
+                self.myparent.score.itemconfig(notewidget.notewidget, width=1, outline=outline)
 
 class pastedialog:
     def __init__(self, parent, event):
