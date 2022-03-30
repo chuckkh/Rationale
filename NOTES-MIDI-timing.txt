@@ -1,0 +1,10 @@
+sysex
+
+242 11110010 0....... 0mmmmmmm Song Pos Pointer
+
+248 11111000 timing clock = 24x per quarter note
+
+250 11111010 START
+251 11111011 CONTINUE
+252 11111100 STOP
+

@@ -17,8 +17,9 @@
 
 
 #import Tix as tk
-import Tkinter as tk
-import tkFileDialog as tkfd
+import tkinter as tk
+#import tkFileDialog as tkfd
+import tkinter.filedialog as tkfd
 import copy
 import os
 import sys

@@ -16,9 +16,9 @@
 ##    along with Rationale.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import csnd
+import ctcsound as csnd
 import sys
-import StringIO
+#import StringIO
 import os
 
 sf2file = sys.argv[1]

@@ -16,12 +16,12 @@
 ##    along with Rationale.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import csnd
+import ctcsound as csnd
 import os
 import sys
 import threading
 import time
-import StringIO
+#import StringIO
 
 rtmodule = sys.argv[1]
 #csdout = StringIO.StringIO()

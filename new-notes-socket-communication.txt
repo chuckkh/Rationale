@@ -1,0 +1,17 @@
+The JUCE end of the socket will always send:
+4-byte magic number
+4-byte message length
+
+So the Python end must:
+1. Look for the magic number
+magic number can be an end mark??
+Only send ASCII?
+OR only send > 127
+
+
+GCHH
+P Apr 2024
+V Apr 2028
+IHH
+P Feb 2023
+V Jun 2031

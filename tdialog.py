@@ -17,7 +17,7 @@
 
 
 #import Tix as tk
-import Tkinter as tk
+import tkinter as tk
 import copy
 import sys
 
@@ -153,10 +153,10 @@ class tempodialog:
         self.tempofr.bind("<Escape>", self.cancel)
 
     def canvaswheel(self, arg1, event, arg3):
-	if event.delta > 0:
+        if event.delta > 0:
             self.canvas.yview(arg1, -1, arg3)
-	else:
-	    self.canvas.yview(arg1, 1, arg3)
+        else:
+            self.canvas.yview(arg1, 1, arg3)
 
     def unitchange(self, val, bmp):
         self.addunit.set(val)
@@ -551,7 +551,7 @@ class tempoline:
         del todel2
 
     def scrolladjust(self):
-        print self.myparent.scroll.get()
+        print(self.myparent.scroll.get())
 #        self.myparent.tempofr.update_idletasks()
 #        if len(self.myparent.tempolinelist) > 0:
 #            topy = self.myparent.toprow.winfo_reqheight()

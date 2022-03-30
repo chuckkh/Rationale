@@ -17,9 +17,11 @@
 
 
 #import Tix as tk
-import Tkinter as tk
-import tkColorChooser as tkcc
-import tkFileDialog as tkfd
+import tkinter as tk
+#import tkColorChooser as tkcc
+#import tkFileDialog as tkfd
+import tkinter.colorchooser as tkcc
+import tkinter.filedialog as tkfd
 import copy
 import os
 import subprocess
@@ -243,7 +245,7 @@ class outputdialog:
         pass
 
     def save(self):
-        print "Save"
+        print("Save")
 
     def okcond(self, event):
         if not event.widget.__class__.__name__.count("Text"):
@@ -274,10 +276,10 @@ class outputdialog:
                     flag = True
                     break
                 elif iind:
-		    for pair in inst.__dict__.iteritems():
-			if pair[0] != "outlist" and pair not in self.myparent.instlist[iind].__dict__.items():
-			    flag = True
-			    break
+                    for pair in inst.__dict__.items():
+                        if pair[0] != "outlist" and pair not in self.myparent.instlist[iind].__dict__.items():
+                            flag = True
+                            break
                     for oind, out in enumerate(inst.outlist):
                         if out.__class__.__name__ != self.myparent.instlist[iind].outlist[oind].__class__.__name__:
                             flag = True
@@ -287,7 +289,7 @@ class outputdialog:
                                 flag = True
                                 break
                             else:
-                                for pair in out.__dict__.iteritems():
+                                for pair in out.__dict__.items():
 #				    print pair
 #				    print self.myparent.instlist[iind].outlist[oind].__dict__.items()
                                     if pair[0] != "instrument" and pair not in self.myparent.instlist[iind].outlist[oind].__dict__.items():
@@ -484,7 +486,8 @@ class instrumentpage:
     def colorchoose(self, event):
         tempcolor = tkcc.askcolor(self.color.get(), parent=self.widget, title="Select Color")
         if None not in tempcolor:
-            self.myinst.color = '#%02x%02x%02x' % (tempcolor[0][0], tempcolor[0][1], tempcolor[0][2])
+#            self.myinst.color = '#%02x%02x%02x' % (tempcolor[0][0], tempcolor[0][1], tempcolor[0][2])
+            self.myinst.color = tempcolor[1]
             self.color.set(self.myinst.color)
             self.colorwidget.configure(bg=self.color.get())
 #            self.myparent.myparent.hover.colorupdate(self.myparent.myparent.hover)
@@ -676,14 +679,14 @@ class sf2line:
             self.field4menu.delete(0, "end")
             try:
                 self.setbanks(arg1)
-            except: print "Rationale Error: changefield2() failed"
+            except: print("Rationale Error: changefield2() failed")
 
     def changefield3(self, sf2, bank):
         if self.bank.get() != bank:
             self.bank.set(bank)
             self.program.set(None)
             try: self.setpresets(sf2)
-            except: print "Rationale Error: changefield3() failed"
+            except: print("Rationale Error: changefield3() failed")
 
     def changefield4(self, prog):
         self.program.set(prog)
@@ -1197,13 +1200,13 @@ class midout:
     '''
     def __init__(self, parent, et=12, base=60, mpcl=[], msgl=[], pd={}, file=None, bank=None, program=None):
         self.instrument = parent
-	self.ET = et
+        self.ET = et
         self.base = base
         self.round = True
-	self.mod = 'portmidi'
-	self.modportchnlist = mpcl
-	self.messagelist = msgl
-	self.primedict = pd
+        self.mod = 'portmidi'
+        self.modportchnlist = mpcl
+        self.messagelist = msgl
+        self.primedict = pd
         self.mute = 0
         self.solo = 0
         self.volume = 0
@@ -1215,9 +1218,9 @@ class midline:
         self.flag = 'm'
         self.place = self.out.instrument.outlist.index(self.out)
         self.ET = tk.IntVar()
-	self.ET.set(self.out.ET)
-	self.base = tk.IntVar()
-	self.base.set(self.out.base)
+        self.ET.set(self.out.ET)
+        self.base = tk.IntVar()
+        self.base.set(self.out.base)
         self.round = tk.BooleanVar()
         self.round.set(self.out.round)
         self.mpcwidgetlist = []
@@ -1254,23 +1257,23 @@ class midline:
         self.solowidget = tk.Checkbutton(self.frame, height=1, width=1, variable=self.solo, bg='#aaffaa', selectcolor='#669966', padx=2, pady=0, indicatoron=0, activebackground='#88ff88')
         self.solowidget.grid(row=0, column=2, rowspan=1)
 
-	tk.Label(self.frame, text="Module:").grid(row=0, column=3, rowspan=1, columnspan=1, sticky='w')
+        tk.Label(self.frame, text="Module:").grid(row=0, column=3, rowspan=1, columnspan=1, sticky='w')
         if sys.platform.count("win32"):
             self.midimodules = ['portmidi', 'mme', 'winmm']
         elif sys.platform.count("linux"):
             self.midimodules = ['portmidi', 'alsa']
         elif sys.platform.count("darwin"):
             self.midimodules = ['portmidi']
-	self.midimodule = tk.StringVar()
-	self.midimodule.set("portmidi")
-	self.field2 = tk.Menubutton(self.frame, textvariable=self.midimodule, bg="#bbbbaa", activebackground="#ccccaa", width=8, relief="raised", padx=0, indicatoron=1)
-	self.field2menu = tk.Menu(self.field2, tearoff=0)
+        self.midimodule = tk.StringVar()
+        self.midimodule.set("portmidi")
+        self.field2 = tk.Menubutton(self.frame, textvariable=self.midimodule, bg="#bbbbaa", activebackground="#ccccaa", width=8, relief="raised", padx=0, indicatoron=1)
+        self.field2menu = tk.Menu(self.field2, tearoff=0)
 #	self.field2 = tk.OptionMenu(self.frame, self.midimodule, "portmidi")
-	for module in self.midimodules:
+        for module in self.midimodules:
             self.field2menu.add_command(label=module, command=lambda arg1=module: self.changemidimodule(arg1))
         self.field2['menu'] = self.field2menu
-	self.field2.grid(row=0, column=4, rowspan=1, columnspan=1, sticky='w', padx=0)
-	self.field2.focus_set()
+        self.field2.grid(row=0, column=4, rowspan=1, columnspan=1, sticky='w', padx=0)
+        self.field2.focus_set()
 
         tk.Label(self.frame, text="ET:").grid(row=0, column=5, rowspan=1, columnspan=1, sticky='w')
         self.field3 = tk.Entry(self.frame, width=5, textvariable=self.ET)
@@ -1293,133 +1296,133 @@ class midline:
         tk.Label(self.frame, text="MIDI Output    ").grid(row=1, column=0, sticky='w')
 
 ####### PORT/CHANNEL #######
-	self.modportchnfr = tk.Frame(self.frame, bd=2, relief="ridge")
-	self.mpcexpand = tk.StringVar()
-	self.mpcexpand.set("+")
-	self.mpcbox = tk.Button(self.modportchnfr, textvariable=self.mpcexpand, padx=0, pady=0, command=self.mpcexpcon, font=("Times", 6), width=1)
-	self.mpcbox.grid(row=0, column=0)
-	self.modportchnfr.columnconfigure(6, weight=1)
-	tk.Label(self.modportchnfr, text="Port/Channel Combinations", bd=2, relief="ridge", anchor='w').grid(row=0, column=1, columnspan=6, sticky='ew')
+        self.modportchnfr = tk.Frame(self.frame, bd=2, relief="ridge")
+        self.mpcexpand = tk.StringVar()
+        self.mpcexpand.set("+")
+        self.mpcbox = tk.Button(self.modportchnfr, textvariable=self.mpcexpand, padx=0, pady=0, command=self.mpcexpcon, font=("Times", 6), width=1)
+        self.mpcbox.grid(row=0, column=0)
+        self.modportchnfr.columnconfigure(6, weight=1)
+        tk.Label(self.modportchnfr, text="Port/Channel Combinations", bd=2, relief="ridge", anchor='w').grid(row=0, column=1, columnspan=6, sticky='ew')
         tk.Checkbutton(self.modportchnfr, text="Round Robin", variable=self.round).grid(row=0, column=7)
-	nothing = tk.Label(self.modportchnfr, text="Port/Channel combinations go here.", anchor='w')
-	nothing.grid(row=1, column=1, columnspan=7, sticky='w')
-	nothing.grid_remove()
+        nothing = tk.Label(self.modportchnfr, text="Port/Channel combinations go here.", anchor='w')
+        nothing.grid(row=1, column=1, columnspan=7, sticky='w')
+        nothing.grid_remove()
         for mpc in self.out.modportchnlist:
             temp = midimpcwidget(self, mpc)
             self.mpcwidgetlist.append(temp)
         for mpcw in self.mpcwidgetlist:
-            print mpcw.mpc.port
-	self.mpcrow = 1
-	self.mpcpopulate()
+            print(mpcw.mpc.port)
+        self.mpcrow = 1
+        self.mpcpopulate()
 
 ####### MESSAGE #######
-	self.msgfr = tk.Frame(self.frame, bd=2, relief="ridge")
-	self.msgexpand = tk.StringVar()
-	self.msgexpand.set("+")
-	self.msgbox = tk.Button(self.msgfr, textvariable=self.msgexpand, padx=0, pady=0, command=self.msgexpcon, font=("Times", 6), width=1)
-	self.msgbox.grid(row=0, column=0)
-	self.msgfr.columnconfigure(6, weight=1)
-	tk.Label(self.msgfr, text="MIDI Messages", bd=2, relief="ridge", anchor='w').grid(row=0, column=1, columnspan=7, sticky='ew')
-	nothing2 = tk.Label(self.msgfr, text="MIDI messages go here.", anchor='w')
-	nothing2.grid(row=1, column=1, columnspan=7, sticky='w')
-	nothing2.grid_remove()
-	for msg in self.out.messagelist:
+        self.msgfr = tk.Frame(self.frame, bd=2, relief="ridge")
+        self.msgexpand = tk.StringVar()
+        self.msgexpand.set("+")
+        self.msgbox = tk.Button(self.msgfr, textvariable=self.msgexpand, padx=0, pady=0, command=self.msgexpcon, font=("Times", 6), width=1)
+        self.msgbox.grid(row=0, column=0)
+        self.msgfr.columnconfigure(6, weight=1)
+        tk.Label(self.msgfr, text="MIDI Messages", bd=2, relief="ridge", anchor='w').grid(row=0, column=1, columnspan=7, sticky='ew')
+        nothing2 = tk.Label(self.msgfr, text="MIDI messages go here.", anchor='w')
+        nothing2.grid(row=1, column=1, columnspan=7, sticky='w')
+        nothing2.grid_remove()
+        for msg in self.out.messagelist:
             temp = midimsgwidget(self, msg)
-	self.msgrow = 1
-	self.msgpopulate()
+        self.msgrow = 1
+        self.msgpopulate()
 
 
 ####### PRIME EQUIVALENTS #######
-	self.primefr = tk.Frame(self.frame, bd=2, relief="ridge")
-	self.primeexpand = tk.StringVar()
-	self.primeexpand.set("+")
-	self.primebox = tk.Button(self.primefr, textvariable=self.primeexpand, padx=0, pady=0, command=self.primeexpcon, font=("Times", 6), width=1)
-	self.primebox.grid(row=0, column=0)
-	self.primefr.columnconfigure(6, weight=1)
-	tk.Label(self.primefr, text="Prime Equivalents (Advanced)", bd=2, relief="ridge", anchor='w').grid(row=0, column=1, columnspan=7, sticky='ew')
+        self.primefr = tk.Frame(self.frame, bd=2, relief="ridge")
+        self.primeexpand = tk.StringVar()
+        self.primeexpand.set("+")
+        self.primebox = tk.Button(self.primefr, textvariable=self.primeexpand, padx=0, pady=0, command=self.primeexpcon, font=("Times", 6), width=1)
+        self.primebox.grid(row=0, column=0)
+        self.primefr.columnconfigure(6, weight=1)
+        tk.Label(self.primefr, text="Prime Equivalents (Advanced)", bd=2, relief="ridge", anchor='w').grid(row=0, column=1, columnspan=7, sticky='ew')
 
 ####### GRID 'EM, GET WID 'EM #######
-	self.modportchnfr.grid(row=1, column=1, columnspan=9, sticky='ew')
-	self.msgfr.grid(row=2, column=1, columnspan=9, sticky='ew')
-	self.primefr.grid(row=3, column=1, columnspan=9, sticky='ew')
+        self.modportchnfr.grid(row=1, column=1, columnspan=9, sticky='ew')
+        self.msgfr.grid(row=2, column=1, columnspan=9, sticky='ew')
+        self.primefr.grid(row=3, column=1, columnspan=9, sticky='ew')
 
 
         self.volumewidget = tk.Scale(self.frame, orient="horizontal", width=7, fg='#552288', sliderlength=10, sliderrelief='raised', tickinterval=10, from_=-90, to=10, resolution=.1, variable=self.volume)
         self.volumewidget.grid(row=4, column=0, columnspan=11, sticky='ew', pady=2)
 
     def changemidimodule(self, module):
-	print "Change MIDI module to", module
-	self.midimodule.set("%s" % module)
+        print("Change MIDI module to", module)
+        self.midimodule.set("%s" % module)
 
     def mpcpopulate(self, *args):
-	todestroy = []
-	for child in self.modportchnfr.winfo_children():
+        todestroy = []
+        for child in self.modportchnfr.winfo_children():
             try:
                 if int(child.grid_info()['row']):
                     child.grid_forget()
                     todestroy.append(child)
             except:
-		pass
-	for dest in todestroy:
+                pass
+        for dest in todestroy:
             dest.destroy()
-	mpcrow = 0
-	for mpc in self.out.modportchnlist:
+        mpcrow = 0
+        for mpc in self.out.modportchnlist:
             temp = midimpcwidget(self, mpc)
             temp.grid(row=row, column=0, sticky='we')
             mpcrow += 1            
 
     def msgpopulate(self, *args):
-	pass
+        pass
 
     def primepopulate(self, *args):
-	pass
+        pass
 
     def mpcexpcon(self, *args):
-	if self.mpcexpand.get() == "+":
+        if self.mpcexpand.get() == "+":
             self.mpcexpand.set("-")
             for wid in self.modportchnfr.winfo_children():
-		try:
+                try:
                     if int(wid.grid_info()['row']):
                         wid.grid()
-		except:
+                except:
                     wid.grid()
-	else:
+        else:
             self.mpcexpand.set("+")
             for wid in self.modportchnfr.winfo_children():
-		if int(wid.grid_info()['row']):
+                if int(wid.grid_info()['row']):
 #                    print wid.grid_info()['row']
                     wid.grid_remove()
 #	for wid in self.modportchnfr.winfo_children():
 #            print wid.grid_info()['row']
 
     def msgexpcon(self, *args):
-	if self.msgexpand.get() == "+":
+        if self.msgexpand.get() == "+":
             self.msgexpand.set("-")
             for wid in self.msgfr.winfo_children():
-		try:
+                try:
                     if int(wid.grid_info()['row']):
                         wid.grid()
-		except:
+                except:
                     wid.grid()
-	else:
+        else:
             self.msgexpand.set("+")
             for wid in self.msgfr.winfo_children():
-		if int(wid.grid_info()['row']):
+                if int(wid.grid_info()['row']):
                     wid.grid_remove()
 
     def primeexpcon(self, *args):
-	if self.primeexpand.get() == "+":
+        if self.primeexpand.get() == "+":
             self.primeexpand.set("-")
             for wid in self.primefr.winfo_children():
-		try:
+                try:
                     if int(wid.grid_info()['row']):
                         wid.grid()
-		except:
+                except:
                     wid.grid()
-	else:
+        else:
             self.primeexpand.set("+")
             for wid in self.primefr.winfo_children():
-		if int(wid.grid_info()['row']):
+                if int(wid.grid_info()['row']):
                     wid.grid_remove()
 
     def roundchange(self, *args):
@@ -1475,10 +1478,10 @@ class midline:
 
 class midimpc:
     def __init__(self, module="portmidi", port="0", channel=(1,16), base=False):
-	self.module = module
-	self.port = port
-	self.channel = channel
-	self.base = base
+        self.module = module
+        self.port = port
+        self.channel = channel
+        self.base = base
 
 class midimpcwidget(tk.Frame):
     def __init__(self, parent, mpc):
@@ -1488,11 +1491,11 @@ class midimpcwidget(tk.Frame):
 
 class midimsg:
     def __init__(self, code="cc", msb=0, lsb=0, offset=0, pernote=True):
-	self.code = code
-	self.msb = msb
-	self.lsb = lsb
-	self.offset = offset
-	self.pernote = pernote
+        self.code = code
+        self.msb = msb
+        self.lsb = lsb
+        self.offset = offset
+        self.pernote = pernote
 
 class midimsgwidget:
     def __init__(self, parent, msg):
@@ -1564,8 +1567,7 @@ class sf2file:
 #                except: self.proglist[tempset[0]] = [tempset[1]]
 ##            print self.proglist
         except:
-            print "Unable to get presets"
-
+            print("Unable to get presets")
 
 
 class comodialog(object):
@@ -1578,8 +1580,8 @@ class comodialog(object):
         self.myparent.instlist, self.instlist = self.instlist, self.myparent.instlist
         if self.myparent.mode.get() == 0:
             self.myparent.hover.colorupdate()
-	for nw in self.myparent.notewidgetlist:
-	    nw.updateinst()        
+        for nw in self.myparent.notewidgetlist:
+            nw.updateinst()        
 
     def undo(self):
         self.do()

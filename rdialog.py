@@ -17,8 +17,9 @@
 
 
 #import Tix as tk
-import Tkinter as tk
-import tkColorChooser as tkcc
+import tkinter as tk
+#import tkColorChooser as tkcc
+import tkinter.colorchooser as tkcc
 import copy
 import sys
 
@@ -103,10 +104,10 @@ class regiondialog:
         self.regionfr.bind("<Escape>", self.cancel)
 
     def canvaswheel(self, arg1, event, arg3):
-	if event.delta > 0:
+        if event.delta > 0:
             self.canvas.yview(arg1, -1, arg3)
-	else:
-	    self.canvas.yview(arg1, 1, arg3)
+        else:
+            self.canvas.yview(arg1, 1, arg3)
 
     def addregionline(self, region, number):
         newline = regionline(self, region, number)
@@ -216,8 +217,10 @@ class regionline:
 
     def colorchoose(self, event):
         tempcolor = tkcc.askcolor(self.color.get(), parent=self.myparent.regionfr, title="Select Color")
+        print(tempcolor)
         if None not in tempcolor:
-            self.region.color = '#%02x%02x%02x' % (tempcolor[0][0], tempcolor[0][1], tempcolor[0][2])
+#            self.region.color = '#%02x%02x%02x' % (tempcolor[0][0], tempcolor[0][1], tempcolor[0][2])
+            self.region.color = tempcolor[1]
             self.color.set(self.region.color)
             self.colorwidget.configure(bg=self.color.get())
 #            self.myparent.myparent.hover.colorupdate(self.myparent.myparent.hover)

@@ -1,0 +1,40 @@
+Update:
+rationale.py
+rataudio.py
+ratscrubaudio.py
+rataudiotester.py
+
+(ratmidi.py, ratmiditester.py)
+
+using rtmidi2
+
+Rationale sets up MIDI devices
+Rationale takes in MIDI timing and song position messages
+Rationale sends MIDI transport messages
+Rationale sends pitch bend, note, and CC messages
+In Scrub, Rationale sends all those without the timing, spp and transport msgs
+In Add, Rationale sends all those when a note is added
+In Edit, Rationale sends when notes are selected, moved, or pasted
+
+
+
+Bend range can be set according to MPE.
+Zones can be set according to MPE.
+Bend and notes are round-robin according to MPE.
+User can select an MPE zone for each instrument.
+User can select 1/1 note number.
+
+
+Available channels are kept in queue.
+Sounding notes are kept in dict.
+
+class Note
+region
+num
+den
+cents
+velocity
+name
+accidental
+
+class ContinuousController

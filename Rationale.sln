@@ -1,0 +1,35 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31729.503
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "rationale-2020", "rationale-2020.pyproj", "{B95217A2-0663-4E15-9CCA-FA94794CA91F}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RatEngine_ConsoleApp", "RatEngine\Builds\VisualStudio2019\RatEngine_ConsoleApp.vcxproj", "{D21C8CD5-66E1-E3B2-29B9-8FDCD2B99B93}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B95217A2-0663-4E15-9CCA-FA94794CA91F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B95217A2-0663-4E15-9CCA-FA94794CA91F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B95217A2-0663-4E15-9CCA-FA94794CA91F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B95217A2-0663-4E15-9CCA-FA94794CA91F}.Release|x64.ActiveCfg = Release|Any CPU
+		{D21C8CD5-66E1-E3B2-29B9-8FDCD2B99B93}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{D21C8CD5-66E1-E3B2-29B9-8FDCD2B99B93}.Debug|x64.ActiveCfg = Debug|x64
+		{D21C8CD5-66E1-E3B2-29B9-8FDCD2B99B93}.Debug|x64.Build.0 = Debug|x64
+		{D21C8CD5-66E1-E3B2-29B9-8FDCD2B99B93}.Release|Any CPU.ActiveCfg = Release|x64
+		{D21C8CD5-66E1-E3B2-29B9-8FDCD2B99B93}.Release|x64.ActiveCfg = Release|x64
+		{D21C8CD5-66E1-E3B2-29B9-8FDCD2B99B93}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2167F71C-0255-4812-81F2-7FB9BD36BCDF}
+	EndGlobalSection
+EndGlobal

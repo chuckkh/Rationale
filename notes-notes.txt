@@ -1,0 +1,57 @@
+All notes, all regions and the hover have:
+numerator
+denominator
+cent value (offset)
+??
+
+All notes have a bend envelope!
+
+notebanks may take images to be used as accidentals?
+
+
+All notes have a channel value (hidden from user).
+By default, it is -1.
+
+a 16-bit int! can be stored just before every noteon and just after every noteoff to show which channels are available.
+
+When notes are added during playback, they use a channel from this ChannelMask.
+
+
+
+The MIDI interface is always open.
+pitch bend / notes must be sent in several circumstances:
+1. playback
+2. scrubbing over the score
+3. adding notes
+4. moving notes vertically (play all notes sounding at that time)
+
+
+
+
+
+
+
+MIDI:
+Assign MIDI devices to instruments.
+Controllers in addition to instruments. Or arbitrary values??
+pitch bend *offset* per instrument *and* per note!!!
+
+250 start - Rationale to DAW
+251 continue - Rationale to DAW
+252 stop - Rationale to DAW
+
+242 spp 14 bit - send back and forth? Don't echo!
+248 24x per quarter note! - DAW to Rationale
+
+
+Each note has a bend value and note value.
+
+
+
+
+????????
+
+MTS
+or
+MPE
+

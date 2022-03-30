@@ -1,3 +1,4 @@
+
 ##    Copyright 2008, 2009, 2013, 2022 Charles S. Hubbard, Jr.
 ##
 ##    This file is part of Rationale.
@@ -16,13 +17,16 @@
 ##    along with Rationale.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import ctcsound as csnd
+#import ctcsound as csnd
 import time
 import os
 import sys
 import socket
 import threading
 import rtmidi2
+
+#https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-setpriorityclass
+
 #import StringIO
 #if sys.platform.count('win32'):
 #    try:
@@ -44,12 +48,10 @@ if sys.platform.count('linux'):
 
 #csdout = StringIO.StringIO()
 
-class rataudioengine(csnd.Csound):
+class ratmidiengine():
 #    def __init__(self, inport, cbport, stdout):
     def __init__(self, cbport):
-        print("Initializing Rationale Audio Engine.  No flash photography.")
-        csnd.Csound.__init__(self)
-#        self.csdout = stdout
+        print("Initializing Rationale MIDI Engine.  No flash photography.")
 #        self.inport = inport
 #        self.initsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 #	print "binding initsock..."
@@ -85,7 +87,7 @@ class rataudioengine(csnd.Csound):
                     cmd, string = string.split('RATENDMESSAGE', 1)
                     self.cmddelegate(cmd)
         except:
-            print("Socket problems in audio engine, line 83.")
+            print("Socket problems in MIDI engine, line 83.")
             print("............................................")
         print("input loop ending")
 #        sys.exit(1)
@@ -184,6 +186,6 @@ class rataudioengine(csnd.Csound):
             except:
                 print("Unable to Cleanup Csound Instance")
 
-ra = rataudioengine(sys.argv[1])
+ra = rataudioengine()
 
 

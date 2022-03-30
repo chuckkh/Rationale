@@ -16,7 +16,7 @@
 ##    along with Rationale.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import csnd
+import ctcsound as csnd
 import os
 import sys
 import socket
@@ -59,7 +59,7 @@ class ratscrubaudioengine(csnd.CppSound):
 
     def waitforconnect(self):
         self.insock = self.initsock.accept()[0]
-        print "Input Socket Connected"
+        print("Input Socket Connected")
         self.inputflag = 1
         self.inputloop()
 
@@ -82,7 +82,7 @@ class ratscrubaudioengine(csnd.CppSound):
             try:
                 self.perf.InputMessage(cmd[7:])
 #                print 'Input:', cmd[7:]
-            except: print "Message failed:", cmd[7:]
+            except: print("Message failed:", cmd[7:])
         elif cmd.startswith('csdgoz'):
             self.exportForPerformance()
             self.compile()
@@ -90,7 +90,7 @@ class ratscrubaudioengine(csnd.CppSound):
                 self.perf = csnd.CsoundPerformanceThread(self)
                 self.perf.Play()
             else:
-                print "Csound Error"
+                print("Csound Error")
                 self.cbsock.sendall('ENDCB')
         elif cmd.startswith('csdstp'):
 #            print "stopping scrub..."
@@ -100,14 +100,14 @@ class ratscrubaudioengine(csnd.CppSound):
                 self.perf.Join()
                 self.cbsock.sendall('ENDCB')
 #		print "stopped"
-            except: print "No Performance Thread"
+            except: print("No Performance Thread")
             self.cleanup()
         elif cmd.startswith('csdcln'):
             try:
                 self.cleanup()
-                print "Csound Cleaned Up"
+                print("Csound Cleaned Up")
             except:
-                print "Unable to Cleanup Csound Instance"
+                print("Unable to Cleanup Csound Instance")
 
 ra = ratscrubaudioengine(sys.argv[1])
 

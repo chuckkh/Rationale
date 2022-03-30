@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{b95217a2-0663-4e15-9cca-fa94794ca91f}</ProjectGuid>
+    <ProjectHome />
+    <StartupFile>mdialog.py</StartupFile>
+    <SearchPath>img\</SearchPath>
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
+    <LaunchProvider>Standard Python launcher</LaunchProvider>
+    <InterpreterId />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
+  <PropertyGroup>
+    <VisualStudioVersion Condition=" '$(VisualStudioVersion)' == '' ">10.0</VisualStudioVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="2022-Plan.txt" />
+    <Content Include="2022-Plan.txt~" />
+    <Content Include="about.txt" />
+    <Content Include="img\rat32.bmp" />
+    <Content Include="img\rat32.gif" />
+    <Content Include="img\rat32.ico" />
+    <Content Include="manual.txt" />
+    <Content Include="NOTES-MIDI-timing.txt" />
+    <Content Include="NOTES-MIDI-timing.txt~" />
+    <Content Include="README.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="mdialog.py" />
+    <Compile Include="ndialog.py" />
+    <Compile Include="notestorage.py" />
+    <Compile Include="odialog.py" />
+    <Compile Include="rataudio.py" />
+    <Compile Include="rataudiotester.py" />
+    <Compile Include="ratclock.py" />
+    <Compile Include="rationale.py" />
+    <Compile Include="ratscrubaudio.py" />
+    <Compile Include="ratsf2list.py" />
+    <Compile Include="rdialog.py" />
+    <Compile Include="tdialog.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="img" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
+</Project>

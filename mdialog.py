@@ -17,7 +17,7 @@
 
 
 #import Tix as tk
-import Tkinter as tk
+import tkinter as tk
 import copy
 import math
 import sys
@@ -132,10 +132,10 @@ class meterdialog:
         self.meterfr.bind("<Escape>", self.cancel)
 
     def canvaswheel(self, arg1, event, arg3):
-	if event.delta > 0:
+        if event.delta > 0:
             self.canvas.yview(arg1, -1, arg3)
-	else:
-	    self.canvas.yview(arg1, 1, arg3)
+        else:
+            self.canvas.yview(arg1, 1, arg3)
 
     def bottomreplace(self, val):
         self.addbottom.set(val)

@@ -1,0 +1,32 @@
+60 (8 beats) 90
+
+1:
+8/60 seconds
+
+2:
+4/60 + 4/(60*(1.5**.5))
+
+3:
+8/3/60 + 8/3/70 + 8/3/80
+
+Could it be:
+SUM(k=0->n-1) (b/n)/(t1*((t2/t1)**(k/n)))
+?
+=
+b/(n*(t1*((t2/t1)**(k/n))))
+
+
+def findDur(t1, t2, b, n):
+    k = 0
+    dur = 0
+    while k < n:
+        dur += b/(n*(t1*((t2/t1)**(k/n))))
+        k+=1
+    print(dur*60)
+    return dur*60
+
+
+60*b/t1
+
+
+
