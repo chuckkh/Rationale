@@ -31,6 +31,7 @@
     <Content Include="README.txt" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="engineTest.py" />
     <Compile Include="mdialog.py" />
     <Compile Include="ndialog.py" />
     <Compile Include="notestorage.py" />
@@ -38,6 +39,7 @@
     <Compile Include="rataudio.py" />
     <Compile Include="rataudiotester.py" />
     <Compile Include="ratclock.py" />
+    <Compile Include="ratengineinterface.py" />
     <Compile Include="rationale.py" />
     <Compile Include="ratscrubaudio.py" />
     <Compile Include="ratsf2list.py" />

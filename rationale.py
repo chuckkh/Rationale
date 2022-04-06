@@ -47,6 +47,7 @@ import ndialog
 import odialog
 import rdialog
 import tdialog
+import ratengineinterface
 if sys.platform.count("win32"):
     try: import win32process
     except: pass
@@ -619,8 +620,8 @@ You should have received a copy of the GNU General Public License along with Rat
                 self.write('File Created: %s' % sys.argv[1])
 #                self.write('%s: File Not Found' % sys.argv[1])
         self.active = 1
-        self.engine = ratengine(self)
-        self.engine.launch()
+        self.engine = ratengineinterface.RatEngineInterface(self)
+        self.engine.launch(0)
 
 
     def ctlkeyzero(self, *args):
