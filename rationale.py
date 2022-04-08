@@ -620,6 +620,7 @@ You should have received a copy of the GNU General Public License along with Rat
                 self.write('File Created: %s' % sys.argv[1])
 #                self.write('%s: File Not Found' % sys.argv[1])
         self.active = 1
+        self.engineActive = 1
         self.engine = ratengineinterface.RatEngineInterface(self)
         self.engine.launch(0)
 
@@ -3250,6 +3251,7 @@ endin
                 self.cbscrubsock.close()
             except:
                 print("Problems with SCRUB...")
+        self.engineActive = 0
         self.write("File->Exit")
         self.myparent.destroy()
         exit()
