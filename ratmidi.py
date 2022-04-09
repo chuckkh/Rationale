@@ -1,4 +1,3 @@
-
 ##    Copyright 2008, 2009, 2013, 2022 Charles S. Hubbard, Jr.
 ##
 ##    This file is part of Rationale.

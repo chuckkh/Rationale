@@ -1,4 +1,4 @@
-##    Copyright 2008, 2009 Charles S. Hubbard, Jr.
+##    Copyright 2008, 2009, 2010, 2022 Charles S. Hubbard, Jr.
 ##
 ##    This file is part of Rationale.
 ##
@@ -45,7 +45,7 @@ class notebankdialog(tk.Toplevel):
         self.bind("<Escape>", self.cancel)
         self.title("Edit Notebanks")
         self.notebankmaybe = copy.deepcopy(self.myparent.notebanklist)
-        self.defnotebank = [(1, 1), (33, 32), (21, 20), (16, 15), (15, 14), (14, 13), (13, 12), (12, 11), (11, 10), (10, 9), (9, 8), (8, 7), (7, 6), (13, 11), (32, 27), (6, 5), (11, 9), (16, 13), (5, 4), (81, 64), (14, 11), (9, 7), (13, 10), (21, 16), (4, 3), (11, 8), (18, 13), (7, 5), (10, 7), (13, 9), (16, 11), (3, 2), (32, 21), (20, 13), (20, 13), (14, 9), (11, 7), (128, 81), (8, 5), (13, 8), (18, 11), (5, 3), (27, 16), (22, 13), (12, 7), (7, 4), (16, 9), (9, 5), (20, 11), (11, 6), (24, 13), (13, 7), (28, 15), (15, 8), (40, 21), (64, 33), (2, 1)]
+        self.defnotebank = [(1, 1), (33, 32), (21, 20), (16, 15), (15, 14), (14, 13), (13, 12), (12, 11), (11, 10), (10, 9), (9, 8), (8, 7), (7, 6), (13, 11), (32, 27), (6, 5), (11, 9), (16, 13), (5, 4), (81, 64), (14, 11), (9, 7), (13, 10), (21, 16), (4, 3), (11, 8), (18, 13), (7, 5), (10, 7), (13, 9), (16, 11), (3, 2), (32, 21), (20, 13), (14, 9), (11, 7), (128, 81), (8, 5), (13, 8), (18, 11), (5, 3), (27, 16), (22, 13), (12, 7), (7, 4), (16, 9), (9, 5), (20, 11), (11, 6), (24, 13), (13, 7), (28, 15), (15, 8), (40, 21), (64, 33), (2, 1)]
         self.grid_propagate(0)
         row = column = ht = 0
         numdenlist = []
@@ -225,8 +225,10 @@ class notebankdialog(tk.Toplevel):
                         self.inverse.config(text='%d : %d' % (inv[0], inv[1]))
 
     def addinverse(self, *args):
-        self.addjust()
-        self.addthis(self.inverse.cget("text").split(':'))
+        addtup = self.inverse.cget("text").split(':')
+        if len(addtup) == 2 and addtup[0].isnumeric and addtup[1].isnumeric:
+            self.addjust()
+            self.addthis(self.inverse.cget("text").split(':'))
 
     def ratioadd(self, *args):
         for ind in reversed(self.outratios.curselection()):
@@ -295,12 +297,15 @@ class notebankdialog(tk.Toplevel):
             while float(num)/den < 1: num *= 2
             while float(num)/den >= 2: den *= 2
             ratios[ind] = (num, den)
-        ratios.sort(cmp=self.compareratios)
+        ratios.sort(key=self.ratiosorter)
         self.availableratios = ratios
         self.outratios.delete(0, "end")
         for rat in self.availableratios:
             if rat not in self.notebankmaybe[self.current.get()].numdenlist:
                 self.outratios.insert("end", '%4d : %d' % (rat[0], rat[1]))
+
+    def ratiosorter(self, tup):
+        return tup[0]/tup[1]
 
     def compareratios(self, tup1, tup2):
         if float(tup1[0])/tup1[1] - float(tup2[0])/tup2[1] < 0:

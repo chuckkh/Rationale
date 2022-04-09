@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-##    Copyright 2008, 2009, 2010 Charles S. Hubbard, Jr.
+##    Copyright 2008, 2009, 2010, 2022 Charles S. Hubbard, Jr.
 ##
 ##    This file is part of Rationale.
 ##
@@ -19,12 +19,11 @@
 
 
 ####STANDARD MODULES
+# UI
 import tkinter as tk
-#import tkFileDialog as tkfd
-#import tkMessageBox as tkmb
-#import tkColorChooser as tkcc
 import tkinter.filedialog as tkfd
 import tkinter.messagebox as tkmb
+# Python
 import math
 import os
 import threading
@@ -32,25 +31,29 @@ import sys
 import copy
 import pickle
 import subprocess
-#import sched
 import socket
-#import select
 import queue
-#import time
-#import pdb
-####NOT ALWAYS PRESENT
-#import Tix as tk
-#import csnd
-#import notestorage
+# Rationale
 import mdialog
 import ndialog
 import odialog
 import rdialog
 import tdialog
 import ratengineinterface
+# Windows
 if sys.platform.count("win32"):
     try: import win32process
     except: pass
+#import tkFileDialog as tkfd
+#import tkMessageBox as tkmb
+#import tkColorChooser as tkcc
+#import sched
+#import select
+#import time
+#import pdb
+#import Tix as tk
+#import csnd
+#import notestorage
 
 class rationale(object):
     def __init__(self, parent, version):
@@ -59,6 +62,94 @@ class rationale(object):
         self.myparent.rowconfigure(0, weight=1)
         self.myparent.columnconfigure(0, weight=1)
 
+        self.populateLists()
+        self.loadImages()
+        
+        self.outautoload = False
+        self.norepeat = 0
+        self.loop = tk.IntVar()
+        self.loop.set(0)
+        self.dispatcher = dispatcher(self)
+        self.noteid = 0
+        self.filetosave = None
+        self.unsaved = 0
+        self.arbtoedit = 0
+        self.changearb = 0
+        self.primelimit = 13
+        self.editreference = None
+
+####### Csound Audio Options
+#        self.audiomodule = 'portaudio'
+##        try:
+##            self.dac = self.getaudiodevices(self.audiomodule)[0].split(':')[0].strip()
+##        except:
+##            self.dac = 0
+#        self.dac = 0
+#        self.sr = 44100
+#        self.ksmps = 16
+#        self.kr = float(self.sr)/self.ksmps
+#        self.nchnls = 2
+#        self.outputmethod = 0
+#        self.b = -1
+#        self.B = -1
+#        self.csdcommandline = ''
+#        self.csdcommandlineuse = 0
+#        self.wavfile = ''
+#        self.aifffile = ''
+#######        
+        self.realtime = False
+        self.basefreq = 261.625565301
+        self.curnum = 1
+        self.curden = 1
+        self.log2 = math.log(2)
+        self.hinstch = 0
+        self.hide = 0
+        self.hidden = []
+        self.quant = 6.0
+        self.editvoice = 0
+        self.editinst = 0
+        self.editregion = 0
+        self.overdur = 0
+        welcome = 'Welcome to Rationale v. %s%s%sCopyright 2008, 2009%sCharles S. Hubbard, Jr.%s%sReleased under GPL v3%s(see the COPYING file for more details)%s%s' % (self.version, os.linesep, os.linesep, os.linesep, os.linesep, os.linesep, os.linesep, os.linesep, os.linesep)
+        copyright = '''
+Copyright 2008, 2009 Charles S. Hubbard, Jr.
+
+This file is part of Rationale.
+
+Rationale is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+Rationale is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with Rationale.  If not, see <http://www.gnu.org/licenses/>.
+'''
+        #mode 0:add; 1:edit; 2:delete; 3:scrub
+        self.mode = tk.IntVar()
+        modehelp = 'Press:%s\t"a" for ADD mode;%s\t"e" for EDIT mode;%s\t"d" for DELETE mode;%s\t"s" for SCRUB mode%s' % (os.linesep, os.linesep, os.linesep, os.linesep, os.linesep)
+        self.stdouttext = tk.StringVar()
+        self.stdouttext.set('%s%s%s%s' % (welcome, os.linesep, modehelp, os.linesep))
+        self.playing = 0
+        self.allowed2play = 1
+        self.scrubbing = 0
+
+### The Score Window ###
+        self.createScoreWindow()
+        self.setUIBindings()
+### Score Menus ###
+        self.createScoreMenus()
+
+        if len(sys.argv) > 1:
+            try:
+                self.fileopenwork(sys.argv[1])
+            except:
+                self.filesave()
+                self.write('File Created: %s' % sys.argv[1])
+#                self.write('%s: File Not Found' % sys.argv[1])
+        self.active = 1
+        self.engineActive = 1
+        self.engine = ratengineinterface.RatEngineInterface(self)
+        self.engine.launch(0)
+
+    def populateLists(self):
         #note: instr/voice, time, dur, db, num, den, region, bar, selected, guihandle, arb-tuple
         self.notelist = []
         self.notewidgetlist = []
@@ -73,29 +164,13 @@ class rationale(object):
         self.instlist.append(odialog.instrument(self, 1, '#999999'))
         self.instdefault = []
         self.notebankactive = 0
-        self.notebanklist = [ndialog.notebank([(1, 1), (33, 32), (21, 20), (16, 15), (15, 14), (14, 13), (13, 12), (12, 11), (11, 10), (10, 9), (9, 8), (8, 7), (7, 6), (13, 11), (32, 27), (6, 5), (11, 9), (16, 13), (5, 4), (81, 64), (14, 11), (9, 7), (13, 10), (21, 16), (4, 3), (11, 8), (18, 13), (7, 5), (10, 7), (13, 9), (16, 11), (3, 2), (32, 21), (20, 13), (20, 13), (14, 9), (11, 7), (128, 81), (8, 5), (13, 8), (18, 11), (5, 3), (27, 16), (22, 13), (12, 7), (7, 4), (16, 9), (9, 5), (20, 11), (11, 6), (24, 13), (13, 7), (28, 15), (15, 8), (40, 21), (64, 33), (2, 1)])]
-#        self.solo = 0
-        self.cbscrubport = 6999
-        self.outport = 5880
-        self.outscrubport = 7888
-        self.csdimport = None
-        self.csdimported = ''
-        self.outautoload = False
-        self.norepeat = 0
-        self.loop = tk.IntVar()
-        self.loop.set(0)
-        self.dispatcher = dispatcher(self)
-        self.noteid = 0
-        self.clipboard = []
-        self.sf2list = []
-        self.filetosave = None
-        self.unsaved = 0
-        self.arbtoedit = 0
-        self.changearb = 0
-        self.ties = {}
+        self.notebanklist = [ndialog.notebank([(1, 1), (33, 32), (21, 20), (16, 15), (15, 14), (14, 13), (13, 12), (12, 11), (11, 10), (10, 9), (9, 8), (8, 7), (7, 6), (13, 11), (32, 27), (6, 5), (11, 9), (16, 13), (5, 4), (81, 64), (14, 11), (9, 7), (13, 10), (21, 16), (4, 3), (11, 8), (18, 13), (7, 5), (10, 7), (13, 9), (16, 11), (3, 2), (32, 21), (20, 13), (14, 9), (11, 7), (128, 81), (8, 5), (13, 8), (18, 11), (5, 3), (27, 16), (22, 13), (12, 7), (7, 4), (16, 9), (9, 5), (20, 11), (11, 6), (24, 13), (13, 7), (28, 15), (15, 8), (40, 21), (64, 33), (2, 1)])]
         self.barlist = []
-        self.primelimit = 13
-        self.editreference = None
+        self.ties = {}
+        self.sf2list = []
+        self.clipboard = []
+
+    def loadImages(self):
         self.n16 = tk.BitmapImage(file="img/rnssixteenth.xbm")
         self.nnb16 = tk.BitmapImage(file="img/rnsnbsixteenth.xbm")
         self.n8 = tk.BitmapImage(file="img/rnseighth.xbm")
@@ -113,75 +188,8 @@ class rationale(object):
         self.n1 = tk.BitmapImage(file="img/rnswhole.xbm")
         self.nnb1 = tk.BitmapImage(file="img/rnsnbwhole.xbm")
         self.icon = tk.PhotoImage(file="img/rat32.gif")
-        if sys.platform.count("win32"):
-            self.shiftnum1 = [48, 49, 50, 51, 52, 53, 54, 55, 56, 57]
-            self.shiftnum2 = [96, 97, 98, 99, 100, 101, 102, 103, 104, 105]
-        elif sys.platform.count("linux"):
-            self.shiftnum1 = [19, 10, 11, 12, 13, 14, 15, 16, 17, 18]
-            self.shiftnum2 = [90, 87, 88, 89, 83, 84, 85, 79, 80, 81]
-        elif sys.platform.count("darwin"):
-            self.shiftnum1 = [1900585, 1179681, 1245248, 1310755, 1376292, 1507365, 1441886, 1703974, 1835050, 1638440]
-            self.shiftnum2 = [5374000, 5439537, 5505074, 5570611, 5636148, 5701685, 5767222, 5832759, 5963832, 6029369]
-####### Csound Audio Options
-        self.audiomodule = 'portaudio'
-#        try:
-#            self.dac = self.getaudiodevices(self.audiomodule)[0].split(':')[0].strip()
-#        except:
-#            self.dac = 0
-        self.dac = 0
-        self.sr = 44100
-        self.ksmps = 16
-        self.kr = float(self.sr)/self.ksmps
-        self.nchnls = 2
-        self.outputmethod = 0
-        self.b = -1
-        self.B = -1
-        self.csdcommandline = ''
-        self.csdcommandlineuse = 0
-        self.wavfile = ''
-        self.aifffile = ''
-#######        
-        self.realtime = False
-        self.basefreq = 261.625565301
-        self.curnum = 1
-        self.curden = 1
-        self.log2 = math.log(2)
-        if sys.platform.count("darwin"):
-            self.control, self.ctlacc, self.alt, self.altacc = "Alt_L", "Cmd", "Control_L", "Ctl"
 
-        else:
-            self.control, self.ctlacc, self.alt, self.altacc = "Control", "Ctl", "Alt", "Alt"
-        self.ctlkey = self.shiftkey = self.altkey = self.numkey = self.rkey = self.vkey = self.bkey = 0
-        self.hinstch = 0
-        self.hide = 0
-        self.hidden = []
-        self.quant = 6.0
-        self.editvoice = 0
-        self.editinst = 0
-        self.editregion = 0
-        self.overdur = 0
-        #mode 0:add; 1:edit; 2:delete; 3:scrub
-        welcome = 'Welcome to Rationale v. %s%s%sCopyright 2008, 2009%sCharles S. Hubbard, Jr.%s%sReleased under GPL v3%s(see the COPYING file for more details)%s%s' % (self.version, os.linesep, os.linesep, os.linesep, os.linesep, os.linesep, os.linesep, os.linesep, os.linesep)
-        copyright = '''
-Copyright 2008, 2009 Charles S. Hubbard, Jr.
-
-This file is part of Rationale.
-
-Rationale is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
-
-Rationale is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along with Rationale.  If not, see <http://www.gnu.org/licenses/>.
-'''
-        self.mode = tk.IntVar()
-        modehelp = 'Press:%s\t"a" for ADD mode;%s\t"e" for EDIT mode;%s\t"d" for DELETE mode;%s\t"s" for SCRUB mode%s' % (os.linesep, os.linesep, os.linesep, os.linesep, os.linesep)
-        self.stdouttext = tk.StringVar()
-        self.stdouttext.set('%s%s%s%s' % (welcome, os.linesep, modehelp, os.linesep))
-        self.playing = 0
-        self.allowed2play = 1
-        self.scrubbing = 0
-
-### The Score Window ###
+    def createScoreWindow(self):
         self.scorebd = 3
         self.scoreh = 600
         self.scorew = 800
@@ -213,8 +221,10 @@ You should have received a copy of the GNU General Public License along with Rat
             statmode = "EDIT mode"
         elif self.mode.get() == 2:
             statmode = "DELETE mode"
-        elif self.mode.get() == 3:
-            statmode = "SCRUB mode"
+        # Scrub mode is currently not working.
+        # It must be adapted to use the C++ Engine.
+#        elif self.mode.get() == 3:
+#            statmode = "SCRUB mode"
         self.statusmode = tk.Label(self.statusbar, text=statmode, bd=2, relief="ridge", anchor='w')
         self.statusmode.grid(row=0, column=0, sticky='ew')
         self.statusplay = tk.Label(self.statusbar, text='Stopped', bd=2, relief="ridge", anchor='w')
@@ -341,6 +351,142 @@ You should have received a copy of the GNU General Public License along with Rat
             self.loopwidgetlist.append(lw)
         self.hover = hover(self)
 
+    def createScoreMenus(self):
+        self.menumain = tk.Menu(self.myparent)
+        self.myparent.config(menu=self.menumain)
+#        self.menumain.add_command(image=self.icon, command=self.helpabout)
+        self.menufile = tk.Menu(self.menumain, tearoff=0)
+        self.menufile.add_command(label="New", command=self.filenew, underline=0, accelerator="%s-N" % self.ctlacc)
+        self.menufile.add_command(label="Open...", command=self.fileopen, underline=0, accelerator="%s-O" % self.ctlacc)
+        self.menufile.add_command(label="Save...", command=self.filesave, underline=0, accelerator="%s-S" % self.ctlacc)
+        self.menufile.add_command(label="Save As...", command=self.filesaveas, underline=1, accelerator="Sh-%s-S" % self.ctlacc)
+        self.menufile.add_command(label="Reload", command=self.filereload, underline=0, accelerator="%s-R" % self.ctlacc)
+        self.menufile.add_command(label="Import .ji...", command=self.fileimport, underline=0, accelerator="%s-I" % self.ctlacc, state="disabled")
+        self.menufile.add_command(label="Export Csound...", command=self.fileexport, underline=0, accelerator="%s-E" % self.ctlacc)
+        self.menufile.add_command(label="Exit Rationale", command=self.fileexit, underline=1, accelerator="%s-Q" % self.ctlacc)
+        self.menumain.add_cascade(label="File", menu=self.menufile, underline=0)
+        self.menuedit = tk.Menu(self.menumain, tearoff=0)
+        self.menuedit.add_command(label="Can't Undo", command=self.editundo, accelerator="%s-Z" % self.ctlacc, state="disabled")
+        self.menuedit.add_command(label="Can't Redo", command=self.editredo, accelerator="%s-Y" % self.ctlacc, state="disabled")
+        self.menumode = tk.Menu(self.menuedit, tearoff=0)
+        self.menumode.add_radiobutton(label="Add", value=0, variable=self.mode, underline=0, command=self.modeannounce, accelerator="A")
+        self.menumode.add_radiobutton(label="Edit", value=1, variable=self.mode, underline=0, command=self.modeannounce, accelerator="E")
+        self.menumode.add_radiobutton(label="Delete", value=2, variable=self.mode, underline=0, command=self.modeannounce, accelerator="D")
+#        self.menumode.add_radiobutton(label="Scrub", value=3, variable=self.mode, underline=0, command=self.modeannounce, accelerator="S")
+        self.menumode.invoke(0)
+        self.menuselect = tk.Menu(self.menuedit, tearoff=0)
+        self.menuselect.add_command(label="All", command=self.editmodeselectall, accelerator="%s-A" % self.ctlacc, underline=0)
+        self.menuselect.add_command(label="None", command=self.editmodeselectnone, underline=0)
+        self.menuselect.add_command(label="Start to Cursor", command=self.editmodeselecttocursor, underline=0)
+        self.menuselect.add_command(label="Cursor to End", command=self.editmodeselectfromcursor, underline=10)
+#        self.menuselect.add_command(label="Filter...", state="disabled")
+        self.menuselect.add_command(label="Filter...", command=self.editmodeselectfilter, underline=0)
+        self.menuedit.add_cascade(label="Mode", menu=self.menumode, underline=0)
+        self.menuedit.add_cascade(label="Select", menu=self.menuselect, underline=0)
+        self.menuedit.add_separator()
+        self.menuedit.add_command(label="Output...", command=self.openoutputdialog, underline=0, accelerator="O")
+        self.menuedit.add_command(label="Tempos...", command=self.opentempodialog, underline=0, accelerator="P")
+        self.menuedit.add_command(label="Meters...", command=self.openmeterdialog, underline=1, accelerator="M")
+        self.menuedit.add_command(label="Regions...", command=self.openregiondialog, underline=0, accelerator="N")
+        self.menuedit.add_command(label="Notebanks...", command=self.opennotebankdialog, underline=0, accelerator="%s-B" % self.ctlacc)
+        self.menuedit.add_separator()
+        self.menuedit.add_command(label="Cut", command=self.editmodecut, accelerator="%s-X" % self.ctlacc)
+        self.menuedit.add_command(label="Copy", command=self.editmodecopy, underline=0, accelerator="%s-C" % self.ctlacc)
+        self.menuedit.add_command(label="Paste...", command=self.editmodepaste, underline=0, accelerator="%s-V" % self.ctlacc)
+        self.menuedit.add_command(label="Delete", command=self.editmodedelete, underline=0, accelerator="Delete")
+        self.menumain.add_cascade(label="Edit", menu=self.menuedit, underline=0)
+        self.statusshow = tk.BooleanVar()
+        self.statusshow.set(True)
+        self.statusshow.trace("w", self.statusgrid)
+        self.menutransport = tk.Menu(self.menumain, tearoff=0)
+        self.menutransport.add_command(label="Play/Stop", command=self.play, underline=0, accelerator="Space")
+        self.menutransport.add_command(label="Beginning", command=self.cursor.home, underline=0, accelerator="Home")
+        self.menutransport.add_command(label="End", command=self.cursor.end, underline=0, accelerator="End")
+        self.menutransport.add_command(label="Next Beat", command=self.cursor.nextbeat, underline=0, accelerator="Page Down")
+        self.menutransport.add_command(label="Previous Beat", command=self.cursor.previousbeat, underline=1, accelerator="Page Up")
+        self.menutransport.add_command(label="Next Bar", command=self.cursor.nextbar, underline=2, accelerator='%s-PgDn' % self.ctlacc)
+        self.menutransport.add_command(label="Previous Bar", command=self.cursor.previousbar, underline=3, accelerator='%s-PgUp' % self.ctlacc)
+        self.menumain.add_cascade(label="Transport", menu=self.menutransport, underline=0)
+        self.menuview = tk.Menu(self.menumain, tearoff=0)
+        self.menuview.add_command(label="Maximize", command=lambda arg1=self.myparent: self.max(arg1), underline=0)
+        self.menuvertzoom = tk.Menu(self.menuview, tearoff=0)
+        self.menuvertzoom.add_command(label="Vert In", command=lambda arg1="in", arg2="True": self.zoom(arg1, arg2), underline=5, accelerator="%s-+" % self.ctlacc)
+        self.menuvertzoom.add_command(label="Vert Out", command=lambda arg1="out", arg2="True": self.zoom(arg1, arg2), underline=5, accelerator="%s--" % self.ctlacc)
+        self.menuvertzoom.add_command(label="Vert Reset", command=lambda arg1="reset", arg2="True": self.zoom(arg1, arg2), underline=5, accelerator="%s-Backspace" % self.ctlacc)
+        self.menuview.add_cascade(label="Vertical Zoom", underline=0, menu=self.menuvertzoom)
+        self.menuhorizoom = tk.Menu(self.menuview, tearoff=0)
+        self.menuhorizoom.add_command(label="Horiz In", command=lambda arg1="in": self.zoom(arg1), underline=6, accelerator="+")
+        self.menuhorizoom.add_command(label="Horiz Out", command=lambda arg1="out": self.zoom(arg1), underline=6, accelerator="-")
+        self.menuhorizoom.add_command(label="Horiz Reset", command=lambda arg1="reset": self.zoom(arg1), underline=6, accelerator="Backspace")
+        self.menuview.add_cascade(label="Horizontal Zoom", underline=0, menu=self.menuhorizoom)
+        self.menuview.add_checkbutton(label="Status Bar", variable=self.statusshow)
+        self.menuview.add_separator()
+        self.menuview.add_command(label="Show All", command=self.showall, accelerator="%s-S" % self.altacc)
+        self.createhidemenu()
+        self.menumain.add_cascade(label="View", menu=self.menuview, underline=0)
+        self.menuoptions = tk.Menu(self.menumain, tearoff=0)
+        self.menuoptions.add_command(label="Audio", command=self.optionsaudio, underline=0, accelerator="%s-D" % self.ctlacc)
+        self.menumain.add_cascade(label="Options", menu=self.menuoptions, underline=0)
+        self.menuhelp = tk.Menu(self.menumain, tearoff=0)
+        self.menuhelp.add_command(label="Manual", underline=0, command=self.helpManual)
+        self.menuhelp.add_command(label="About", underline=0, command=self.helpabout)
+        self.menumain.add_cascade(label="Help", menu=self.menuhelp, underline=0)
+        self.poppedup = False
+        self.menupopup = tk.Menu(self.myparent, tearoff=0)
+
+        self.menupopupnoteinfo = tk.Menu(self.menupopup, tearoff=0)
+
+        self.menupopupnoteinfo.add_command(label='a')
+        self.menupopupnoteinfo.add_command(label='a')
+        self.menupopupnoteinfo.add_command(label='a')
+        self.menupopupnoteinfo.add_command(label='a')
+        self.menupopupnoteinfo.add_command(label='a')
+        self.menupopupnoteinfo.add_command(label='a')
+        self.menupopupnoteinfo.add_command(label='a')
+        self.menupopupnoteinfo.add_command(label='a')
+        self.menupopupnoteinfo.add_command(label='a')
+
+        self.menupopupregion = tk.Menu(self.menupopup, tearoff=0)
+        for region in range(0, len(self.regionlist)):
+            self.menupopupregion.add_command(label='%d' % region, command=lambda arg1=region: self.editregionassign(arg1))
+        self.menupopupinst = tk.Menu(self.menupopup, tearoff=0)
+        for inst in range(1, len(self.instlist)):
+            self.menupopupinst.add_command(label='%d' % inst, command=lambda arg1=inst: self.editinstassign(arg1))
+        self.menupopupvoice = tk.Menu(self.menupopup, tearoff=0)
+        for voice in range(0, 9):
+            self.menupopupvoice.add_command(label='%d' % voice, command=lambda arg1=voice: self.editvoiceassign(arg1))
+        self.menupopuparb = tk.Menu(self.menupopup, tearoff=0)
+
+
+        self.menupopup.add_cascade(label="Note Info", menu=self.menupopupnoteinfo)
+        self.menupopup.add_cascade(label="Region", menu=self.menupopupregion)
+        self.menupopup.add_cascade(label="Instrument", menu=self.menupopupinst)
+        self.menupopup.add_cascade(label="Voice", menu=self.menupopupvoice)
+        self.menupopup.add_command(label="Connect", command=self.editmodeconnect)
+        self.menupopup.add_command(label="Disconnect", command=self.editmodedisconnect)
+        self.menupopup.add_command(label="Arbitrary", command=self.editmodearb)
+        self.menupopup.add_cascade(label="Arbitrary", menu=self.menupopuparb)
+        self.menupopup.add_command(label="Cut", command=self.editmodecut)
+        self.menupopup.add_command(label="Copy", command=self.editmodecopy)
+        self.menupopup.add_command(label="Delete", command=self.editmodedelete)
+
+        
+    def setUIBindings(self):
+        if sys.platform.count("win32"):
+            self.shiftnum1 = [48, 49, 50, 51, 52, 53, 54, 55, 56, 57]
+            self.shiftnum2 = [96, 97, 98, 99, 100, 101, 102, 103, 104, 105]
+        elif sys.platform.count("linux"):
+            self.shiftnum1 = [19, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+            self.shiftnum2 = [90, 87, 88, 89, 83, 84, 85, 79, 80, 81]
+        elif sys.platform.count("darwin"):
+            self.shiftnum1 = [1900585, 1179681, 1245248, 1310755, 1376292, 1507365, 1441886, 1703974, 1835050, 1638440]
+            self.shiftnum2 = [5374000, 5439537, 5505074, 5570611, 5636148, 5701685, 5767222, 5832759, 5963832, 6029369]
+        if sys.platform.count("darwin"):
+            self.control, self.ctlacc, self.alt, self.altacc = "Alt_L", "Cmd", "Control_L", "Ctl"
+
+        else:
+            self.control, self.ctlacc, self.alt, self.altacc = "Control", "Ctl", "Alt", "Alt"
+        self.ctlkey = self.shiftkey = self.altkey = self.numkey = self.rkey = self.vkey = self.bkey = 0
 ### Score Bindings ###
         self.score.bind("<Button-1>", self.buttondown)
         self.score.bind("<B1-Motion>", self.buttonmotion)
@@ -491,140 +637,8 @@ You should have received a copy of the GNU General Public License along with Rat
         self.myparent.bind_all("<Escape>", self.globalcancel)
 #        self.myparent.bind("<n>", self.noteeditlistnew)
 #        self.myparent.bind("<N>", self.noteeditlistnew)
-
-
-### Score Menus ###
-        self.menumain = tk.Menu(self.myparent)
-        self.myparent.config(menu=self.menumain)
-#        self.menumain.add_command(image=self.icon, command=self.helpabout)
-        self.menufile = tk.Menu(self.menumain, tearoff=0)
-        self.menufile.add_command(label="New", command=self.filenew, underline=0, accelerator="%s-N" % self.ctlacc)
-        self.menufile.add_command(label="Open...", command=self.fileopen, underline=0, accelerator="%s-O" % self.ctlacc)
-        self.menufile.add_command(label="Save...", command=self.filesave, underline=0, accelerator="%s-S" % self.ctlacc)
-        self.menufile.add_command(label="Save As...", command=self.filesaveas, underline=1, accelerator="Sh-%s-S" % self.ctlacc)
-        self.menufile.add_command(label="Reload", command=self.filereload, underline=0, accelerator="%s-R" % self.ctlacc)
-        self.menufile.add_command(label="Import .ji...", command=self.fileimport, underline=0, accelerator="%s-I" % self.ctlacc, state="disabled")
-        self.menufile.add_command(label="Export Csound...", command=self.fileexport, underline=0, accelerator="%s-E" % self.ctlacc)
-        self.menufile.add_command(label="Exit Rationale", command=self.fileexit, underline=1, accelerator="%s-Q" % self.ctlacc)
-        self.menumain.add_cascade(label="File", menu=self.menufile, underline=0)
-        self.menuedit = tk.Menu(self.menumain, tearoff=0)
-        self.menuedit.add_command(label="Can't Undo", command=self.editundo, accelerator="%s-Z" % self.ctlacc, state="disabled")
-        self.menuedit.add_command(label="Can't Redo", command=self.editredo, accelerator="%s-Y" % self.ctlacc, state="disabled")
-        self.menumode = tk.Menu(self.menuedit, tearoff=0)
-        self.menumode.add_radiobutton(label="Add", value=0, variable=self.mode, underline=0, command=self.modeannounce, accelerator="A")
-        self.menumode.add_radiobutton(label="Edit", value=1, variable=self.mode, underline=0, command=self.modeannounce, accelerator="E")
-        self.menumode.add_radiobutton(label="Delete", value=2, variable=self.mode, underline=0, command=self.modeannounce, accelerator="D")
-        self.menumode.add_radiobutton(label="Scrub", value=3, variable=self.mode, underline=0, command=self.modeannounce, accelerator="S")
-        self.menumode.invoke(0)
-        self.menuselect = tk.Menu(self.menuedit, tearoff=0)
-        self.menuselect.add_command(label="All", command=self.editmodeselectall, accelerator="%s-A" % self.ctlacc, underline=0)
-        self.menuselect.add_command(label="None", command=self.editmodeselectnone, underline=0)
-        self.menuselect.add_command(label="Start to Cursor", command=self.editmodeselecttocursor, underline=0)
-        self.menuselect.add_command(label="Cursor to End", command=self.editmodeselectfromcursor, underline=10)
-#        self.menuselect.add_command(label="Filter...", state="disabled")
-        self.menuselect.add_command(label="Filter...", command=self.editmodeselectfilter, underline=0)
-        self.menuedit.add_cascade(label="Mode", menu=self.menumode, underline=0)
-        self.menuedit.add_cascade(label="Select", menu=self.menuselect, underline=0)
-        self.menuedit.add_separator()
-        self.menuedit.add_command(label="Output...", command=self.openoutputdialog, underline=0, accelerator="O")
-        self.menuedit.add_command(label="Tempos...", command=self.opentempodialog, underline=0, accelerator="P")
-        self.menuedit.add_command(label="Meters...", command=self.openmeterdialog, underline=1, accelerator="M")
-        self.menuedit.add_command(label="Regions...", command=self.openregiondialog, underline=0, accelerator="N")
-        self.menuedit.add_command(label="Notebanks...", command=self.opennotebankdialog, underline=0, accelerator="%s-B" % self.ctlacc)
-        self.menuedit.add_separator()
-        self.menuedit.add_command(label="Cut", command=self.editmodecut, accelerator="%s-X" % self.ctlacc)
-        self.menuedit.add_command(label="Copy", command=self.editmodecopy, underline=0, accelerator="%s-C" % self.ctlacc)
-        self.menuedit.add_command(label="Paste...", command=self.editmodepaste, underline=0, accelerator="%s-V" % self.ctlacc)
-        self.menuedit.add_command(label="Delete", command=self.editmodedelete, underline=0, accelerator="Delete")
-        self.menumain.add_cascade(label="Edit", menu=self.menuedit, underline=0)
-        self.statusshow = tk.BooleanVar()
-        self.statusshow.set(True)
-        self.statusshow.trace("w", self.statusgrid)
-        self.menutransport = tk.Menu(self.menumain, tearoff=0)
-        self.menutransport.add_command(label="Play/Stop", command=self.play, underline=0, accelerator="Space")
-        self.menutransport.add_command(label="Beginning", command=self.cursor.home, underline=0, accelerator="Home")
-        self.menutransport.add_command(label="End", command=self.cursor.end, underline=0, accelerator="End")
-        self.menutransport.add_command(label="Next Beat", command=self.cursor.nextbeat, underline=0, accelerator="Page Down")
-        self.menutransport.add_command(label="Previous Beat", command=self.cursor.previousbeat, underline=1, accelerator="Page Up")
-        self.menutransport.add_command(label="Next Bar", command=self.cursor.nextbar, underline=2, accelerator='%s-PgDn' % self.ctlacc)
-        self.menutransport.add_command(label="Previous Bar", command=self.cursor.previousbar, underline=3, accelerator='%s-PgUp' % self.ctlacc)
-        self.menumain.add_cascade(label="Transport", menu=self.menutransport, underline=0)
-        self.menuview = tk.Menu(self.menumain, tearoff=0)
-        self.menuview.add_command(label="Maximize", command=lambda arg1=self.myparent: self.max(arg1), underline=0)
-        self.menuvertzoom = tk.Menu(self.menuview, tearoff=0)
-        self.menuvertzoom.add_command(label="Vert In", command=lambda arg1="in", arg2="True": self.zoom(arg1, arg2), underline=5, accelerator="%s-+" % self.ctlacc)
-        self.menuvertzoom.add_command(label="Vert Out", command=lambda arg1="out", arg2="True": self.zoom(arg1, arg2), underline=5, accelerator="%s--" % self.ctlacc)
-        self.menuvertzoom.add_command(label="Vert Reset", command=lambda arg1="reset", arg2="True": self.zoom(arg1, arg2), underline=5, accelerator="%s-Backspace" % self.ctlacc)
-        self.menuview.add_cascade(label="Vertical Zoom", underline=0, menu=self.menuvertzoom)
-        self.menuhorizoom = tk.Menu(self.menuview, tearoff=0)
-        self.menuhorizoom.add_command(label="Horiz In", command=lambda arg1="in": self.zoom(arg1), underline=6, accelerator="+")
-        self.menuhorizoom.add_command(label="Horiz Out", command=lambda arg1="out": self.zoom(arg1), underline=6, accelerator="-")
-        self.menuhorizoom.add_command(label="Horiz Reset", command=lambda arg1="reset": self.zoom(arg1), underline=6, accelerator="Backspace")
-        self.menuview.add_cascade(label="Horizontal Zoom", underline=0, menu=self.menuhorizoom)
-        self.menuview.add_checkbutton(label="Status Bar", variable=self.statusshow)
-        self.menuview.add_separator()
-        self.menuview.add_command(label="Show All", command=self.showall, accelerator="%s-S" % self.altacc)
-        self.createhidemenu()
-        self.menumain.add_cascade(label="View", menu=self.menuview, underline=0)
-        self.menuoptions = tk.Menu(self.menumain, tearoff=0)
-        self.menuoptions.add_command(label="Audio", command=self.optionsaudio, underline=0, accelerator="%s-D" % self.ctlacc)
-        self.menumain.add_cascade(label="Options", menu=self.menuoptions, underline=0)
-        self.menuhelp = tk.Menu(self.menumain, tearoff=0)
-        self.menuhelp.add_command(label="Manual", underline=0, command=self.helpManual)
-        self.menuhelp.add_command(label="About", underline=0, command=self.helpabout)
-        self.menumain.add_cascade(label="Help", menu=self.menuhelp, underline=0)
-        self.poppedup = False
-        self.menupopup = tk.Menu(self.myparent, tearoff=0)
-
-        self.menupopupnoteinfo = tk.Menu(self.menupopup, tearoff=0)
-
-        self.menupopupnoteinfo.add_command(label='a')
-        self.menupopupnoteinfo.add_command(label='a')
-        self.menupopupnoteinfo.add_command(label='a')
-        self.menupopupnoteinfo.add_command(label='a')
-        self.menupopupnoteinfo.add_command(label='a')
-        self.menupopupnoteinfo.add_command(label='a')
-        self.menupopupnoteinfo.add_command(label='a')
-        self.menupopupnoteinfo.add_command(label='a')
-        self.menupopupnoteinfo.add_command(label='a')
-
-        self.menupopupregion = tk.Menu(self.menupopup, tearoff=0)
-        for region in range(0, len(self.regionlist)):
-            self.menupopupregion.add_command(label='%d' % region, command=lambda arg1=region: self.editregionassign(arg1))
-        self.menupopupinst = tk.Menu(self.menupopup, tearoff=0)
-        for inst in range(1, len(self.instlist)):
-            self.menupopupinst.add_command(label='%d' % inst, command=lambda arg1=inst: self.editinstassign(arg1))
-        self.menupopupvoice = tk.Menu(self.menupopup, tearoff=0)
-        for voice in range(0, 9):
-            self.menupopupvoice.add_command(label='%d' % voice, command=lambda arg1=voice: self.editvoiceassign(arg1))
-        self.menupopuparb = tk.Menu(self.menupopup, tearoff=0)
-
-
-        self.menupopup.add_cascade(label="Note Info", menu=self.menupopupnoteinfo)
-        self.menupopup.add_cascade(label="Region", menu=self.menupopupregion)
-        self.menupopup.add_cascade(label="Instrument", menu=self.menupopupinst)
-        self.menupopup.add_cascade(label="Voice", menu=self.menupopupvoice)
-        self.menupopup.add_command(label="Connect", command=self.editmodeconnect)
-        self.menupopup.add_command(label="Disconnect", command=self.editmodedisconnect)
-        self.menupopup.add_command(label="Arbitrary", command=self.editmodearb)
-        self.menupopup.add_cascade(label="Arbitrary", menu=self.menupopuparb)
-        self.menupopup.add_command(label="Cut", command=self.editmodecut)
-        self.menupopup.add_command(label="Copy", command=self.editmodecopy)
-        self.menupopup.add_command(label="Delete", command=self.editmodedelete)
-
-        if len(sys.argv) > 1:
-            try:
-                self.fileopenwork(sys.argv[1])
-            except:
-                self.filesave()
-                self.write('File Created: %s' % sys.argv[1])
-#                self.write('%s: File Not Found' % sys.argv[1])
-        self.active = 1
-        self.engineActive = 1
-        self.engine = ratengineinterface.RatEngineInterface(self)
-        self.engine.launch(0)
-
-
+        
+        
     def ctlkeyzero(self, *args):
         self.ctlkey = 0
         if self.quant == 0:
@@ -1356,9 +1370,13 @@ endin
 
 ### Play ###
     def play(self, instlist=None, sf2list=None, method=None, sr=None, ksmps=None, nchnls=None, amodule=None, dac=None, b=None, B=None, aifffile=None, wavfile=None, commandline=None, commandlineuse=None):
-        '''A hot mess...
-
-        Lots of workarounds added that could probably be replaced by more efficient code, but it appears to work as expected at this point, and there's music to be written.'''
+        '''This currently only prints the notes in the score. Rationale is in the process of migrating from Python with Csound to C++ with JUCE, and this is one of the first parts that needs to be moved.'''
+        print()
+        print("Score:")
+        for nt in self.notelist:
+            print("Beat ", nt.time, ", Dur ", nt.dur, ", Inst ", nt.inst, ", Ratio ", nt.num, ":", nt.den, sep='')
+        print()
+        return
 
         if instlist == None:
             instlist = self.instlist
@@ -2123,8 +2141,9 @@ endin
                 self.menumode.invoke(1)
             elif event.serial != self.norepeat and event.keysym == "d" or event.keysym == "D":
                 self.menumode.invoke(2)
-            elif event.serial != self.norepeat and event.keysym == "s" or event.keysym == "S":
-                self.menumode.invoke(3)
+# Scrub mode is not currently working.
+#            elif event.serial != self.norepeat and event.keysym == "s" or event.keysym == "S":
+#                self.menumode.invoke(3)
             if event.keysym == "space" and event.serial != self.norepeat:
                 if self.numkey == 0:
                     if self.playing == 0:
