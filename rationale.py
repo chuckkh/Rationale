@@ -34,6 +34,7 @@ import subprocess
 import socket
 import queue
 # Rationale
+sys.path.append("Python")
 import mdialog
 import ndialog
 import odialog
@@ -77,6 +78,8 @@ class rationale(object):
         self.changearb = 0
         self.primelimit = 13
         self.editreference = None
+        self.csdimport = None
+        self.csdimported = ''
 
 ####### Csound Audio Options
 #        self.audiomodule = 'portaudio'
@@ -183,7 +186,7 @@ You should have received a copy of the GNU General Public License along with Rat
         self.nnbd4 = tk.BitmapImage(file="img/rnsnbdottedquarter.xbm")
         self.n2 = tk.BitmapImage(file="img/rnshalf.xbm")
         self.nnb2 = tk.BitmapImage(file="img/rnsnbhalf.xbm")
-        self.nd2 = tk.BitmapImage(file="img/rnsdottedhalf.xbm")
+        self.nd2 = tk.BitmapImage(file="img/rnsdottedhalf.xbm") #  
         self.nnbd2 = tk.BitmapImage(file="img/rnsnbdottedhalf.xbm")
         self.n1 = tk.BitmapImage(file="img/rnswhole.xbm")
         self.nnb1 = tk.BitmapImage(file="img/rnsnbwhole.xbm")

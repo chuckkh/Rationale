@@ -97,10 +97,10 @@ class outputdialog:
 #        self.csdpage.columnconfigure(0, weight=1)
         self.csdpage.columnconfigure(1, weight=1)
         tk.Label(self.csdpage, text="CSD file load/edit: Edit in this space, or load with the button below.").grid(row=0, column=0, columnspan=2, sticky='w')
-        if self.myparent.csdimport:
-            lab = os.path.split(self.myparent.csdimport)
-        else:
-            lab = ('', 'No Csound File Loaded')
+#        if self.myparent.csdimport:
+#            lab = os.path.split(self.myparent.csdimport)
+#        else:
+        lab = ('', 'No Csound File Loaded')
         self.csdpathlabel = tk.Label(self.csdpage, text=lab[0]+os.sep, relief="ridge", bg="#aaaaaa")
         self.csdpathlabel.grid(row=1, column=0, sticky='w')
         self.csdlabel = tk.Label(self.csdpage, text=lab[1], relief="ridge", bg="#eeeeee")
@@ -109,7 +109,8 @@ class outputdialog:
         scroll.grid(row=2, column=2, sticky='ns')
         self.csdtext = tk.Text(self.csdpage, yscrollcommand=scroll.set)
         self.csdtext.grid(row=2, column=0, columnspan=2, sticky='nesw')
-        self.csdtext.insert('0.0', self.myparent.csdimported)
+#        self.csdtext.insert('0.0', self.myparent.csdimported)
+        self.csdtext.insert('0.0', '')
         if self.myparent.outautoload:
             self.csdloadwork(self.myparent.csdimport)
         scroll.config(command=self.csdtext.yview)
