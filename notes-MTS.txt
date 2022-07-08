@@ -1,0 +1,4 @@
+Each MTS output has:
+port/channel
+
+CC outputs are separate!!!!

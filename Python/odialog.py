@@ -16,10 +16,7 @@
 ##    along with Rationale.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#import Tix as tk
 import tkinter as tk
-#import tkColorChooser as tkcc
-#import tkFileDialog as tkfd
 import tkinter.colorchooser as tkcc
 import tkinter.filedialog as tkfd
 import copy
@@ -509,34 +506,25 @@ class instrumentpage:
     def outputselect(self, event):
         type = event.widget.get()
         if event.widget == self.blank:
+            newout = newline = 0
             if type == 's' or type == 'S':
                 newout = sf2out(self.myinst)
-                self.myinst.outlist.append(newout)
                 newline = sf2line(self, newout)
-                self.linelist.append(newline)
-                self.scrolladjust()
-                self.canvas.yview_moveto(1.0)
             elif type == 'c' or type == 'C':
                 newout = csdout(self.myinst)
-                self.myinst.outlist.append(newout)
                 newline = csdline(self, newout)
-                self.linelist.append(newline)
-                self.scrolladjust()
-                self.canvas.yview_moveto(1.0)
             elif type == 'o' or type == 'O':
                 newout = oscout(self.myinst)
-                self.myinst.outlist.append(newout)
                 newline = oscline(self, newout)
-                self.linelist.append(newline)
-                self.scrolladjust()
-                self.canvas.yview_moveto(1.0)
             elif type == 'm' or type == 'M':
                 newout = midout(self.myinst)
-                self.myinst.outlist.append(newout)
                 newline = midline(self, newout)
+            if newout:
+                self.myinst.outlist.append(newout)
                 self.linelist.append(newline)
                 self.scrolladjust()
                 self.canvas.yview_moveto(1.0)
+
             self.blank.delete(0,last='end')
 
 class sf2out:
