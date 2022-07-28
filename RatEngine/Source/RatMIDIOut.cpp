@@ -14,16 +14,6 @@
 //
 //    You should have received a copy of the GNU General Public License
 //    along with Rationale.  If not, see <http://www.gnu.org/licenses/>.
-					  
-#include "RatIO.h"
-#include "RatNote.h"
 
-RatNote::RatNote(int _num=1, int _den=1, int _cents=0) : num(_num), den(_den), cents(_cents)
-{
-
-}
-
-int RatNote::play()
-{
-	return 0;
-}
+#include "JuceHeader.h"
+#include "RatMIDIOut.h"

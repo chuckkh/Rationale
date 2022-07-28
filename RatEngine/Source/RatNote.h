@@ -18,8 +18,25 @@
 #pragma once
 #include "JuceHeader.h"
 #include "RatEvent.h"
+#include <memory>
 
-class RatNote : public RatEvent
+class RatNote //: public RatEvent
 {
-
+public:
+	RatNote(int, int, int);
+	int play();
+private:
+	uint16 id;
+	uint8 instrument;
+	uint8 voice;
+	uint8 dB;
+	uint8 region;
+	bool selected;
+	uint32 num;
+	uint32 den;
+	uint32 cents;
+	std::shared_ptr<RatEvent> noteOn, noteOff;
+//	uint32 beat;
+//	uint32 beatSubNum;
+//	uint32 beatSubDen;
 };

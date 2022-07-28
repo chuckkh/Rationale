@@ -16,8 +16,28 @@
 //    along with Rationale.  If not, see <http://www.gnu.org/licenses/>.
 					  
 #include "RatEvent.h"
+#include <vector>
 
-uint32 RatEvent::getBeatTime()
+std::vector<uint16> RatEvent::getBeatTime()
 {
-	return beatTime;
+	std::vector<uint16> _beatTime{ beat, ticks };
+	return _beatTime;
 }
+
+void RatEvent::setBeatTime(std::vector<uint16> _beatTime)
+{
+	//beatTime = _beatTime;
+	beat = _beatTime[0];
+	ticks = _beatTime[1];
+}
+
+void RatEvent::setBeatTime(uint16 _beat, uint16 _ticks)
+{
+	beat = _beat;
+	ticks = _ticks;
+}
+
+
+
+
+

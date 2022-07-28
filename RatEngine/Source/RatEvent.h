@@ -17,13 +17,33 @@
 					  
 #pragma once
 #include "JuceHeader.h"
+#include <vector>
+#include <map>
+#include <string>
 
 class RatEvent
 {
 public:
-	virtual int play() = 0;
-	uint32 getBeatTime();
+	virtual int trigger() = 0;
+	std::vector<uint16> getBeatTime();
+	void setBeatTime(std::vector<uint16>);
+	void setBeatTime(uint16, uint16);
 private:
-	uint32 beatTime;
+	//std::vector<uint32> beatTime;
+
+	/*
+	"beat" is a 16-bit number simply representing the number of 
+	beats.... 
+	*/
+	uint16 bar;
+	uint8 beat;
+	uint16 ticks;
+//	uint16 durationBeats;
+//	uint16 durationTicks;
+//	uint16 id;
+//	std::map<std::string, uint16> arbitrary;
+	
+//	uint32 beatSubNum;
+//	uint32 beatSubDen;
 
 };

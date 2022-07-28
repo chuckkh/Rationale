@@ -1,10 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <JUCERPROJECT id="EunJRq" name="RatEngine" projectType="consoleapp" jucerFormatVersion="1"
-              companyName="CSHJr">
+              companyName="CSHJr" companyWebsite="www.cloudintheheads.com">
   <MAINGROUP id="NeefFy" name="RatEngine">
     <GROUP id="{55872E9C-3F96-AEF2-3313-E4AD31E0C2E3}" name="Source">
       <FILE id="ceSW3S" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
+      <FILE id="ZV2ggn" name="RatEngine.cpp" compile="1" resource="0" file="Source/RatEngine.cpp"/>
+      <FILE id="ZKpX63" name="RatEngine.h" compile="0" resource="0" file="Source/RatEngine.h"/>
+      <FILE id="ehs2g1" name="RatEvent.cpp" compile="1" resource="0" file="Source/RatEvent.cpp"/>
+      <FILE id="snKaJp" name="RatEvent.h" compile="0" resource="0" file="Source/RatEvent.h"/>
+      <FILE id="uC2eZF" name="RatIO.cpp" compile="1" resource="0" file="Source/RatIO.cpp"/>
+      <FILE id="ArZugJ" name="RatIO.h" compile="0" resource="0" file="Source/RatIO.h"/>
+      <FILE id="dS46u3" name="RatIOManager.cpp" compile="1" resource="0"
+            file="Source/RatIOManager.cpp"/>
+      <FILE id="GIMboU" name="RatIOManager.h" compile="0" resource="0" file="Source/RatIOManager.h"/>
+      <FILE id="grRXgd" name="RatMIDIManager.cpp" compile="1" resource="0"
+            file="Source/RatMIDIManager.cpp"/>
+      <FILE id="LHmd7G" name="RatMIDIManager.h" compile="0" resource="0"
+            file="Source/RatMIDIManager.h"/>
+      <FILE id="xvDhiP" name="RatMPEManager.cpp" compile="1" resource="0"
+            file="Source/RatMPEManager.cpp"/>
+      <FILE id="PYvg2v" name="RatMPEManager.h" compile="0" resource="0" file="Source/RatMPEManager.h"/>
+      <FILE id="OnsQ5O" name="RatMPEOut.cpp" compile="1" resource="0" file="Source/RatMPEOut.cpp"/>
+      <FILE id="eaqpbz" name="RatMPEOut.h" compile="0" resource="0" file="Source/RatMPEOut.h"/>
+      <FILE id="tWmsxD" name="RatNote.cpp" compile="1" resource="0" file="Source/RatNote.cpp"/>
+      <FILE id="xCSGr7" name="RatNote.h" compile="0" resource="0" file="Source/RatNote.h"/>
     </GROUP>
   </MAINGROUP>
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1"/>
@@ -15,7 +35,7 @@
         <CONFIGURATION isDebug="0" name="Release" targetName="NewProject"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
-        <MODULEPATH id="juce_audio_basics" path="../../JUCE/modules"/>
+        <MODULEPATH id="juce_audio_basics" path="..\..\JUCE-for-Rationale\modules"/>
         <MODULEPATH id="juce_audio_devices" path="../../JUCE/modules"/>
         <MODULEPATH id="juce_audio_processors" path="../../JUCE/modules"/>
         <MODULEPATH id="juce_audio_utils" path="../../JUCE/modules"/>
