@@ -130,7 +130,8 @@ void RatEngine::sendAvailableMidiInDevices()
     std::cout << "Getting Available MIDI In Devices..." << std::endl;
     auto iDevices = MidiInput::getAvailableDevices();
     for (juce::MidiDeviceInfo& dev : iDevices) {
-        sendString(dev.name.dropLastCharacters(std::max(0,dev.name.length()-56)));
+        sendString(dev.name.dropLastCharacters(std::max(0, dev.name.length() - 56)));
+        sendString(dev.identifier.dropLastCharacters(std::max(0, dev.identifier.length()-56)));
     }
 }
 
@@ -140,6 +141,17 @@ void RatEngine::sendAvailableMidiOutDevices()
     auto oDevices = MidiOutput::getAvailableDevices();
     for (juce::MidiDeviceInfo& dev : oDevices) {
         sendString(dev.name.dropLastCharacters(std::max(0, dev.name.length() - 56)));
+        sendString(dev.identifier.dropLastCharacters(std::max(0, dev.identifier.length()-56)));
+/*        if (dev.name.compare("loopMIDI Port") == 0)
+        {
+            mdout = juce::MidiOutput::openDevice(dev.identifier);
+            uint8 vel = 100;
+            juce::MidiMessage mdmsg = juce::MidiMessage::noteOn(1, 60, vel);
+            for (int i = 0; i < 100; i++)
+            {
+                mdout->sendMessageNow(mdmsg);
+            }
+        }*/
     }
 }
 
@@ -171,7 +183,7 @@ void RatEngine::messageReceived(const juce::MemoryBlock &msg)
 {
 //    sendMessage(msg);
     juce::String textMessage = msg.toString();
-    std::cout << "Message: " << textMessage << std::endl;
+    std::cout << "Rationale to Engine: " << textMessage << std::endl;
     if (textMessage.compare("GetMidiIn") == 0) {
         sendAvailableMidiInDevices();
     }
@@ -199,4 +211,12 @@ void RatEngine::connectionMade()
 void RatEngine::connectionLost()
 {
 
+}
+
+void RatEngine::addNote(int id)
+{
+    if (score.count(id)==0)
+    {
+
+    }
 }

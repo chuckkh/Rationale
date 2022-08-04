@@ -22,6 +22,10 @@
 
 class RatMIDIOut : public RatIO
 {
+public:
 
+private:
+	std::shared_ptr<juce::MidiOutput> outputDevice;
+	uint8 channel;
 };
 

@@ -2,5 +2,5 @@
 
 int RatNoteOn::trigger()
 {
-
+	return 0;
 }

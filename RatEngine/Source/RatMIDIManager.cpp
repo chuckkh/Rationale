@@ -15,3 +15,35 @@
 //    You should have received a copy of the GNU General Public License
 //    along with Rationale.  If not, see <http://www.gnu.org/licenses/>.
 					  
+#include "JuceHeader.h"
+#include "RatMIDIManager.h"
+
+RatMIDIManager::RatMIDIManager()
+{
+	
+}
+
+void RatMIDIManager::addInput(juce::String inputName)
+{
+
+}
+
+void RatMIDIManager::addOutput(juce::String outputName)
+{
+
+}
+
+void RatMIDIManager::removeInput(juce::String inputName)
+{
+
+}
+
+void RatMIDIManager::removeOutput(juce::String outputName)
+{
+
+}
+
+int RatMIDIManager::sendMIDI(RatMIDIMessage msg)
+{
+
+}

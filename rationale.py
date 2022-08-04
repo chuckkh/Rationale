@@ -1373,6 +1373,7 @@ endin
 
 ### Play ###
     def play(self, instlist=None, sf2list=None, method=None, sr=None, ksmps=None, nchnls=None, amodule=None, dac=None, b=None, B=None, aifffile=None, wavfile=None, commandline=None, commandlineuse=None):
+        self.engine.sendToEngine("GetMidiOut")
         '''This currently only prints the notes in the score. Rationale is in the process of migrating from Python with Csound to C++ with JUCE, and this is one of the first parts that needs to be moved.'''
         print()
         print("Score:")
@@ -5296,6 +5297,7 @@ class notewidgetclass(object):
 class note(object):
     def __init__(self, parent, id, inst, voice, time, dur, db, num, den, region, sel, arb):
         self.myparent = parent
+        self.myparent.engine.sendToEngine("addNote:"+str(id))
         self.id = id
         self.inst = inst
         self.voice = voice
@@ -5315,6 +5317,8 @@ class note(object):
         self.dict = {'inst': self.inst, 'voice': self.voice, 'time': self.time, 'dur': self.dur, 'sdur': self.sdur, 'db': self.db, 'num': self.num, 'den': self.den, 'region': self.region, 'freq': self.freq}
         for n, a in enumerate(self.arb):
             self.dict['a%d' % (n+1)] = a
+
+
 
     def updatearb(self, anum, val):
 #        print len(self.arb), anum

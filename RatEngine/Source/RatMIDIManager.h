@@ -18,12 +18,24 @@
 #pragma once
 
 #include "RatIOManager.h"
+#include "RatMIDIMessage.h"
 #include "JuceHeader.h"
 #include <queue>
 #include <map>
+#include <memory>
 class RatMIDIManager : public RatIOManager
 {
+public:
+	RatMIDIManager();
+	void addInput(juce::String);
+	void addOutput(juce::String);
+	void removeInput(juce::String);
+	void removeOutput(juce::String);
+	int sendMIDI(RatMIDIMessage);
+	
 private:
+	std::map <juce::String, std::pair<juce::MidiInput, uint16>> activeMidiInputs;
+	std::map <juce::String, std::pair<juce::MidiOutput, uint16>> activeMidiOutputs;
 
 };
 

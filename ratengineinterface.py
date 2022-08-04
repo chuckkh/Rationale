@@ -32,6 +32,7 @@ class RatEngineInterface:
         self.active = 1
         self.magicNumber = b'\x2c\x9e\xb4\xf2'
         self.rau = None
+        self.sock = None
 
     def findEnginePath(self):
         fileDirectory = pathlib.Path(__file__).parent.absolute()
@@ -61,7 +62,7 @@ class RatEngineInterface:
 #            sock.send(msg)
 #            time.sleep(0.1)
                 if msg:
-                    print("Msg ", msg)
+#                    print("Msg ", msg)
 #                enc = chardet.detect(msg)["encoding"]
 #                print(enc)
                     wtf = msg.decode()
@@ -71,7 +72,7 @@ class RatEngineInterface:
 #                cbtext += wtf
                     while cbtext.count("CB"):
                         cmd, cbtext = cbtext.split("CB", 1)
-                        print("Engine to Rationale: ", cmd)
+                        print("Engine to Rationale:", cmd)
                         if cmd == "END" or cbtext == "ENDCB":
                             #print("Ennnnnndaaa")
                             self.parent.engineActive = 0
@@ -84,7 +85,6 @@ class RatEngineInterface:
 #                print sock
 #                self.parent.engineActive = 0
 #                self.active = 0
-                pass
             if self.parent.engineActive == 0:
                 try:
                     sock.send(b'\x2c\x9e\xb4\xf2')
@@ -136,38 +136,34 @@ class RatEngineInterface:
         print("wait joined")
         cbsock = q.get()[0]
         cbsock.setblocking(0)
+        self.sock = cbsock
         cbThread = threading.Thread(target=self.delegatecallbacks, args=(cbsock,))
         cbThread.start()
-#        time.sleep(1)
-#        print(type(cbThread))
-#        cbThread.join()
-#        time.sleep(2)
-#        try:
-#            cbsock.send(b'\x2c\x9e\xb4\xf2')
-#            cbsock.send(b'\x0a\x00\x00\x00')
-#            cbsock.send(b'\x47\x65\x74\x4d\x69\x64\x69\x4f\x75\x74')
+        time.sleep(4)
+        #self.sendToEngine("GetMidiIn")
+#        cbsock.send(b'\x2c\x9e\xb4\xf2')
+#        cbsock.send(b'\x0a\x00\x00\x00')
+#        cbsock.send(b'\x47\x65\x74\x4d\x69\x64\x69\x4f\x75\x74')
 
+    def sendToEngine(self, outMessage):
+        ln = len(outMessage)
+        ln0 = ln%256
+        ln1 = (ln//256)%256
+        ln2 = (ln//256//256)%256
+        ln3 = (ln//256//256//256)%256
+        header2 = bytes([ln0,ln1,ln2,ln3])
 
-#            cbsock.send(b'\x2c\x9e\xb4\xf2')
-#            cbsock.send(b'\x01\x00\x00\x00')
-#            cbsock.send(b'\x65')
-#            time.sleep(8)
-#            cbsock.send(b'\x2c\x9e\xb4\xf2')
-#            cbsock.send(b'\x05\x00\x00\x00')
-#            cbsock.send(b'\x45\x4e\x44\x43\x42')
-#        except:
-#            print("Not sent")
-#        time.sleep(10)
-#        self.active = 0
-#    rau.communicate()
-#    try:
-#        cbsock.sendall('HelloRATENDMESSAGE')
-#    except:
-#        print("Unable to start")
+#        header2 = bytes(str(ln0) + str(ln1) + str(ln2) + str(ln3), 'ascii')
+        messageBytes = bytes(outMessage, 'ascii')
+        self.sock.send(self.magicNumber)
+        self.sock.send(header2)
+        self.sock.send(messageBytes)
+
 
     def launchWithDebug(self):
         try:
-            enginePath = pathlib.Path(__file__).parent.absolute().__str__() + os.sep + "RatEngine" + os.sep + "Builds" + os.sep + "VisualStudio2019" + os.sep + "x64" + os.sep + "Debug" + os.sep + "ConsoleApp" + os.sep + "RatEngine.exe"
+            enginePath = pathlib.Path(__file__).parent.absolute().__str__() + os.sep + "RatEngine" + os.sep + "Builds" + os.sep + "ConsoleApp" + os.sep + "RatEngine.exe"
+#            enginePath = pathlib.Path(__file__).parent.absolute().__str__() + os.sep + "RatEngine" + os.sep + "Builds" + os.sep + "VisualStudio2019" + os.sep + "x64" + os.sep + "Debug" + os.sep + "ConsoleApp" + os.sep + "RatEngine.exe"
         #rau = subprocess.Popen((r'C:\Users\Home\Documents\Coding\rationale-2020\RatEngine\Builds\VisualStudio2019\x64\Debug\ConsoleApp\RatEngine.exe', str(cbport)))
             self.rau = subprocess.Popen((enginePath, str(self.cbport)))
 
@@ -177,7 +173,9 @@ class RatEngineInterface:
 
     def launchWithoutDebug(self):
         try:
-            enginePath = pathlib.Path(__file__).parent.absolute().__str__() + os.sep + "RatEngine" + os.sep + "Builds" + os.sep + "VisualStudio2019" + os.sep + "x64" + os.sep + "Release" + os.sep + "ConsoleApp" + os.sep + "RatEngine.exe"
+            enginePath = pathlib.Path(__file__).parent.absolute().__str__() + os.sep + "RatEngine" + os.sep + "Builds" + os.sep + "ConsoleApp" + os.sep + "RatEngine.exe"
+
+#            enginePath = pathlib.Path(__file__).parent.absolute().__str__() + os.sep + "RatEngine" + os.sep + "Builds" + os.sep + "VisualStudio2019" + os.sep + "x64" + os.sep + "Release" + os.sep + "ConsoleApp" + os.sep + "RatEngine.exe"
             print("path ", enginePath)
             #rau = subprocess.Popen((r'C:\Users\Home\Documents\Coding\rationale-2020\RatEngine\Builds\VisualStudio2019\x64\Release\ConsoleApp\RatEngine.exe', str(cbport)))
             print(enginePath)

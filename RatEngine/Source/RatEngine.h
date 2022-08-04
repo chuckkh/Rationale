@@ -30,6 +30,7 @@
 #include <string>
 #include <algorithm>
 #include "RatIOManager.h"
+#include "RatNote.h"
 
 class RatEngine : public juce::InterprocessConnection
 {
@@ -50,14 +51,18 @@ public:
     void sendAvailableMidiInDevices();
     void sendAvailableMidiOutDevices();
     void setCbPort(int);
-    bool sendMessageNoHeader(const MemoryBlock&);
+    void addNote(int);
+//    bool sendMessageNoHeader(const MemoryBlock&);
 //    void timerCallback();
 
 private:
     int cbport;
     bool active = true;
+    std::unique_ptr<juce::MidiOutput> mdout;
+
     juce::OwnedArray<RatIOManager> ioManagers;
     JUCEApplication& app;
+    std::map<uint32, std::unique_ptr<RatNote>> score;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (RatEngine)
 };
