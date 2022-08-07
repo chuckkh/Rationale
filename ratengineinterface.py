@@ -78,6 +78,8 @@ class RatEngineInterface:
                             self.parent.engineActive = 0
                             self.active = 0
                             break
+                        else:
+                            self.parent.bufferFromEngine.append(cmd)
 
             except:
                 pass

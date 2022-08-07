@@ -49,7 +49,6 @@ public:
         //ratEngine->setCbPort(cbport);
         ratEngine.reset(new RatEngine(cbport, *this));
         ratEngine->run();
-
         
     }
 

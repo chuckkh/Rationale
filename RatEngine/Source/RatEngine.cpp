@@ -96,7 +96,7 @@ void RatEngine::run() {
 //    std::cin >> g;
 }
 
-void RatEngine::sendString(const std::string& outMsg)
+void RatEngine::sendStdString(const std::string& outMsg)
 {
     int messageLength = outMsg.length();
     MemoryBlock myMessage;
@@ -129,19 +129,26 @@ void RatEngine::sendAvailableMidiInDevices()
 {
     std::cout << "Getting Available MIDI In Devices..." << std::endl;
     auto iDevices = MidiInput::getAvailableDevices();
+    sendString("MidiInBegin");
     for (juce::MidiDeviceInfo& dev : iDevices) {
-        sendString(dev.name.dropLastCharacters(std::max(0, dev.name.length() - 56)));
-        sendString(dev.identifier.dropLastCharacters(std::max(0, dev.identifier.length()-56)));
+        auto name = dev.name.dropLastCharacters(std::max(0, dev.name.length() - 56));
+        sendString(name);
+//        sendString(dev.identifier.dropLastCharacters(std::max(0, dev.identifier.length()-56)));
+        midiInDevices[name] = dev.identifier;
     }
+    sendString("MidiInEnd");
 }
 
 void RatEngine::sendAvailableMidiOutDevices()
 {
     std::cout << "Getting Available MIDI Out Devices..." << std::endl;
     auto oDevices = MidiOutput::getAvailableDevices();
+    sendString("MidiOutBegin");
     for (juce::MidiDeviceInfo& dev : oDevices) {
-        sendString(dev.name.dropLastCharacters(std::max(0, dev.name.length() - 56)));
-        sendString(dev.identifier.dropLastCharacters(std::max(0, dev.identifier.length()-56)));
+        auto name = dev.name.dropLastCharacters(std::max(0, dev.name.length() - 56));
+//        sendString(dev.identifier.dropLastCharacters(std::max(0, dev.identifier.length()-56)));
+        sendString(name);
+        midiOutDevices[name] = dev.identifier;
 /*        if (dev.name.compare("loopMIDI Port") == 0)
         {
             mdout = juce::MidiOutput::openDevice(dev.identifier);
@@ -153,6 +160,7 @@ void RatEngine::sendAvailableMidiOutDevices()
             }
         }*/
     }
+    sendString("MidiOutEnd");
 }
 
 void RatEngine::endItAll() {
@@ -165,7 +173,7 @@ void RatEngine::endItAll() {
         }
         bool sent = juce::InterprocessConnection::sendMessageNoHeader(myMessage);
     }
-    app.quit();
+    app.systemRequestedQuit();
     //active = false;
     while (active) {
 

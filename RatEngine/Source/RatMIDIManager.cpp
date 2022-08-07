@@ -45,5 +45,5 @@ void RatMIDIManager::removeOutput(juce::String outputName)
 
 int RatMIDIManager::sendMIDI(RatMIDIMessage msg)
 {
-
+	return 0;
 }

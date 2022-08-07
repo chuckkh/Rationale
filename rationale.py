@@ -33,6 +33,7 @@ import pickle
 import subprocess
 import socket
 import queue
+import time
 # Rationale
 sys.path.append("Python")
 import mdialog
@@ -62,10 +63,20 @@ class rationale(object):
         self.version = version
         self.myparent.rowconfigure(0, weight=1)
         self.myparent.columnconfigure(0, weight=1)
+        self.active = 1
+        self.engineActive = 1
+        self.engine = ratengineinterface.RatEngineInterface(self)
+        self.engine.launch(0)
+        self.messageFromEngine = False
+        self.bufferFromEngine = []
+        self.midiInDevices = []
+        self.midiOutDevices = []
+        self.requestMidiDevices()
 
         self.populateLists()
         self.loadImages()
-        
+
+        self.out = None
         self.outautoload = False
         self.norepeat = 0
         self.loop = tk.IntVar()
@@ -147,11 +158,48 @@ You should have received a copy of the GNU General Public License along with Rat
                 self.filesave()
                 self.write('File Created: %s' % sys.argv[1])
 #                self.write('%s: File Not Found' % sys.argv[1])
-        self.active = 1
-        self.engineActive = 1
-        self.engine = ratengineinterface.RatEngineInterface(self)
-        self.engine.launch(0)
+        self.openoutputdialog()
 
+    def requestMidiDevices(self):
+        self.bufferFromEngine = []
+        self.engine.sendToEngine("GetMidiIn")
+        while len(self.bufferFromEngine) == 0:
+            time.sleep(0.01)
+        ind = 0
+        msg = self.bufferFromEngine[ind]
+        if msg == "MidiInBegin":
+            ind += 1
+            while msg != "MidiInEnd":
+                while len(self.bufferFromEngine) <= ind:
+                    time.sleep(0.01)
+                msg = self.bufferFromEngine[ind]
+                if msg != "MidiInEnd":
+                    self.midiInDevices.append(msg)
+                ind += 1
+        print("Got MIDI In Devices:")
+        for nm in self.midiInDevices:
+            print(nm)
+        self.bufferFromEngine = []
+        self.engine.sendToEngine("GetMidiOut")
+        while len(self.bufferFromEngine) == 0:
+            time.sleep(0.01)
+        ind = 0
+        msg = self.bufferFromEngine[ind]
+        if msg == "MidiOutBegin":
+            ind += 1
+            while msg != "MidiOutEnd":
+                while len(self.bufferFromEngine) <= ind:
+                    time.sleep(0.01)
+                msg = self.bufferFromEngine[ind]
+                if msg != "MidiOutEnd":
+                    self.midiOutDevices.append(msg)
+                ind += 1
+        print("Got MIDI Out Devices:")
+        for nm in self.midiOutDevices:
+            print(nm)        
+        
+        
+        
     def populateLists(self):
         #note: instr/voice, time, dur, db, num, den, region, bar, selected, guihandle, arb-tuple
         self.notelist = []
@@ -162,7 +210,10 @@ You should have received a copy of the GNU General Public License along with Rat
         self.tempolist = []
         #region: num, den, color, r11
         initregion = rdialog.region(self, 1, 1, '#999999', 240)
-        self.regionlist = [initregion]
+        self.regionlist = []
+
+        self.regionlist.append(initregion)
+        self.engine.sendToEngine("addRegion:0:1:1")
         self.instlist = [0]
         self.instlist.append(odialog.instrument(self, 1, '#999999'))
         self.instdefault = []
@@ -427,9 +478,9 @@ You should have received a copy of the GNU General Public License along with Rat
         self.menuview.add_command(label="Show All", command=self.showall, accelerator="%s-S" % self.altacc)
         self.createhidemenu()
         self.menumain.add_cascade(label="View", menu=self.menuview, underline=0)
-        self.menuoptions = tk.Menu(self.menumain, tearoff=0)
-        self.menuoptions.add_command(label="Audio", command=self.optionsaudio, underline=0, accelerator="%s-D" % self.ctlacc)
-        self.menumain.add_cascade(label="Options", menu=self.menuoptions, underline=0)
+        #self.menuoptions = tk.Menu(self.menumain, tearoff=0)
+        #self.menuoptions.add_command(label="Audio", command=self.optionsaudio, underline=0, accelerator="%s-D" % self.ctlacc)
+        #self.menumain.add_cascade(label="Options", menu=self.menuoptions, underline=0)
         self.menuhelp = tk.Menu(self.menumain, tearoff=0)
         self.menuhelp.add_command(label="Manual", underline=0, command=self.helpManual)
         self.menuhelp.add_command(label="About", underline=0, command=self.helpabout)
@@ -559,8 +610,8 @@ You should have received a copy of the GNU General Public License along with Rat
             self.myparent.bind("<Command-V>", self.editmodepaste)
             self.myparent.bind("<Command-a>", self.editmodeselectall)
             self.myparent.bind("<Command-A>", self.editmodeselectall)
-            self.myparent.bind("<Command-d>", self.optionsaudio)
-            self.myparent.bind("<Command-D>", self.optionsaudio)
+            #self.myparent.bind("<Command-d>", self.optionsaudio)
+            #self.myparent.bind("<Command-D>", self.optionsaudio)
             self.myparent.bind("<Command-b>", self.opennotebankdialog)
             self.myparent.bind("<Command-B>", self.opennotebankdialog)
             self.myparent.bind("<Command-f>", self.editmodeselectfilter)
@@ -604,8 +655,8 @@ You should have received a copy of the GNU General Public License along with Rat
             self.myparent.bind("<Control-V>", self.editmodepaste)
             self.myparent.bind("<Control-a>", self.editmodeselectall)
             self.myparent.bind("<Control-A>", self.editmodeselectall)
-            self.myparent.bind("<Control-d>", self.optionsaudio)
-            self.myparent.bind("<Control-D>", self.optionsaudio)
+            #self.myparent.bind("<Control-d>", self.optionsaudio)
+            #self.myparent.bind("<Control-D>", self.optionsaudio)
             self.myparent.bind("<Control-b>", self.opennotebankdialog)
             self.myparent.bind("<Control-B>", self.opennotebankdialog)
             self.myparent.bind("<Control-f>", self.editmodeselectfilter)
@@ -1500,8 +1551,8 @@ endin
 #			print 'cb connected'
 #                    except: pass
 
-                try: self.audiodialog.playbutton.configure(text='Stop', command=self.audiodialog.stop)
-                except: pass
+#                try: self.audiodialog.playbutton.configure(text='Stop', command=self.audiodialog.stop)
+#                except: pass
                 try: self.out.playbutton.configure(text='Stop', command=self.stop)
                 except: pass
                 self.playing = 1
@@ -1559,8 +1610,8 @@ endin
 #                self.cursor.scrollabs(float(self.score.coords(self.barlist[self.cursor.beat])[0])/self.xperquarter)
                 
 #            try: self.audiodialog.buttons.subwidget('play').configure(text='Play', command=self.audiodialog.play)
-            try: self.audiodialog.playbutton.configure(text='Play', command=self.audiodialog.play)
-            except: pass
+#            try: self.audiodialog.playbutton.configure(text='Play', command=self.audiodialog.play)
+#            except: pass
 #            try: self.out.outputbuttons.subwidget('play').configure(text='Play', command=self.out.audition)
             try: self.out.playbutton.configure(text='Play', command=self.out.audition)
             except: pass
@@ -2763,14 +2814,15 @@ endin
         self.write("Edit->Paste")
 
     def optionsaudio(self, *args):
-        try:
-            self.audiodialog.destroy()
-            del self.audiodialog
-        except:
-            pass
-        self.audiodialog = audiodialog(self)
-        self.altkey = 0
-        self.ctlkeyzero()
+        pass
+#        try:
+#            self.audiodialog.destroy()
+#            del self.audiodialog
+#        except:
+#            pass
+#        self.audiodialog = audiodialog(self)
+#        self.altkey = 0
+#        self.ctlkeyzero()
 
     def removehidemenu(self):
         for ind, i in enumerate(self.instlist):
@@ -4757,103 +4809,103 @@ class scrubcursor(object):
 #                except: print "String failed:", offstring
 #                print offstring
 
-class ratengine:
-    def __init__(self, parent):
-        self.myparent = parent
-        self.cbport = 5899
-        self.active = 1
-
-    def waitforconnect(self, sock, q):
-        conn = sock.accept()
-        q.put(conn)
-
-    def delegatecallbacks(self, sock):
-        cbtext = ''
-        while self.active == 1:
-#        while self.playing == 1:
-#            if select.select((sock,),(),())[0]:
-            try:
-                cbtext += sock.recv(32)
-                print(cbtext)
-                while cbtext.count('CB'):
-                    cb, cbtext = cbtext.split('CB', 1)
-                    if cb == 'END':
-#                    self.playing = 0
-#                    print "END received"
-#                        print "END received"
-                        self.myparent.stop()
-                        if self.myparent.loop.get():
-                            self.myparent.play()
-                    elif self.myparent.outputmethod == 0:
-                        if self.myparent.playing == 1:
-                            x = float(cb) * 1000
-                            self.myparent.score.event_generate('<<PushCursor>>', when='tail', x=x)
+#class ratengine:
+#    def __init__(self, parent):
+#        self.myparent = parent
+#        self.cbport = 5899
+#        self.active = 1
+#
+#    def waitforconnect(self, sock, q):
+#        conn = sock.accept()
+#        q.put(conn)
+#
+#    def delegatecallbacks(self, sock):
+#        cbtext = ''
+#        while self.active == 1:
+##        while self.playing == 1:
+##            if select.select((sock,),(),())[0]:
+#            try:
+#                cbtext += sock.recv(32)
+#                print(cbtext)
+#                while cbtext.count('CB'):
+#                    cb, cbtext = cbtext.split('CB', 1)
+#                    if cb == 'END':
+##                    self.playing = 0
+##                    print "END received"
+##                        print "END received"
+#                        self.myparent.stop()
+#                        if self.myparent.loop.get():
+#                            self.myparent.play()
+#                    elif self.myparent.outputmethod == 0:
+#                        if self.myparent.playing == 1:
+#                            x = float(cb) * 1000
+#                            self.myparent.score.event_generate('<<PushCursor>>', when='tail', x=x)
 #                            self.cursor.scrollabs(float(cb))
-            except:
-#                print "Callback Socket Unavailable:", sys.exc_info()[0]
-#                print sock
-                pass
-
-
-    def launch(self):
-        
-        #create socket to receive callbacks to move the time cursor
-        cbwait = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        cbwait.settimeout(4.0)
-        count = 0
-        while count < 30000:
-            try:
-                cbwait.bind(('127.0.0.1', self.cbport))
-                print('Callback Port: %s' % str(self.cbport))
-                break
-            except:
-                self.cbport += 1
-                count += 1
-                if count == 30000:
-                    print("NO PORTS AVAILABLE FOR CALLBACK")
-                    self.active = 0
-
-        cbwait.listen(2)
-
-        #thread to wait for ratengine to connect
-        q = queue.Queue()
-        wait = threading.Thread(target=self.waitforconnect, args=(cbwait, q))
-        wait.start()
-
-        count = 0
-
-        try:
-            self.rau = subprocess.Popen((r'C:\Users\Charlie\Documents\CSHJr2021\Coding\rationale-2020\RatEngine\RatEngine.exe', str(self.cbport)))
-        except:
-            print("Engine stolen")
-            self.active = 0
-
-            self.myparent.fileexit()
-
-        if sys.platform.count("linux"):
-            try:
-                os.nice(-1)
-                os.nice(6)
-            except: pass
-
-        wait.join()
-        self.cbsock = q.get()[0]
-
-#        try: self.audiodialog.playbutton.configure(text='Stop', command=self.audiodialog.stop)
-#        except: pass
-#        try: self.out.playbutton.configure(text='Stop', command=self.stop)
-#        except: pass
-#        self.playing = 1
-#        self.statusplay.configure(text="Playing")
-        threading.Thread(target=self.delegatecallbacks, args=(self.cbsock,)).start()
-
-        try:
-            self.cbsock.sendall('csdopt:%sRATENDMESSAGE' % self.csdopt)
-            self.cbsock.sendall('csdorc:%sRATENDMESSAGE' % self.csdinst)
-            self.cbsock.sendall('csdsco:%sRATENDMESSAGE' % self.csdsco)
-            self.cbsock.sendall('csdgozRATENDMESSAGE')
-        except:
-            print("Unable to start")
+#            except:
+##                print "Callback Socket Unavailable:", sys.exc_info()[0]
+##                print sock
+#                pass
+#
+#
+#    def launch(self):
+#        
+#        #create socket to receive callbacks to move the time cursor
+#        cbwait = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#        cbwait.settimeout(4.0)
+#        count = 0
+#        while count < 30000:
+#            try:
+#                cbwait.bind(('127.0.0.1', self.cbport))
+#                print('Callback Port: %s' % str(self.cbport))
+#                break
+#            except:
+#                self.cbport += 1
+#                count += 1
+#                if count == 30000:
+#                    print("NO PORTS AVAILABLE FOR CALLBACK")
+#                    self.active = 0
+#
+#        cbwait.listen(2)
+#
+#        #thread to wait for ratengine to connect
+#        q = queue.Queue()
+#        wait = threading.Thread(target=self.waitforconnect, args=(cbwait, q))
+#        wait.start()
+#
+#        count = 0
+#
+#        try:
+#            self.rau = subprocess.Popen((r'C:\Users\Charlie\Documents\CSHJr2021\Coding\rationale-2020\RatEngine\RatEngine.exe', str(self.cbport)))
+#        except:
+#            print("Engine stolen")
+#            self.active = 0
+#
+#            self.myparent.fileexit()
+#
+#        if sys.platform.count("linux"):
+#            try:
+#                os.nice(-1)
+#                os.nice(6)
+#            except: pass
+#
+#        wait.join()
+#        self.cbsock = q.get()[0]
+#
+##        try: self.audiodialog.playbutton.configure(text='Stop', command=self.audiodialog.stop)
+##        except: pass
+##        try: self.out.playbutton.configure(text='Stop', command=self.stop)
+##        except: pass
+##        self.playing = 1
+##        self.statusplay.configure(text="Playing")
+##        threading.Thread(target=self.delegatecallbacks, args=(self.cbsock,)).start()
+#
+#        try:
+#            self.cbsock.sendall('csdopt:%sRATENDMESSAGE' % self.csdopt)
+#            self.cbsock.sendall('csdorc:%sRATENDMESSAGE' % self.csdinst)
+#            self.cbsock.sendall('csdsco:%sRATENDMESSAGE' % self.csdsco)
+#            self.cbsock.sendall('csdgozRATENDMESSAGE')
+#        except:
+#            print("Unable to start")
 
 
 class audiodialog(tk.Toplevel):
@@ -5294,10 +5346,10 @@ class notewidgetclass(object):
     def remove(self):
         pass
 
-class note(object):
+class noteSuperClass(object):
     def __init__(self, parent, id, inst, voice, time, dur, db, num, den, region, sel, arb):
         self.myparent = parent
-        self.myparent.engine.sendToEngine("addNote:"+str(id))
+        #self.myparent.engine.sendToEngine("addNote:"+str(id))
         self.id = id
         self.inst = inst
         self.voice = voice
@@ -5380,6 +5432,22 @@ class note(object):
         self.region = region
         self.dict['region'] = region
 #        if not self.myparent.unsaved: self.myparent.unsaved = True
+
+class note(noteSuperClass):
+    def __init__(self, parent, id, inst, voice, time, dur, db, num, den, region, sel, arb):
+        parent.engine.sendToEngine("addNote:"+str(id)+":"+str(inst)+":"+str(voice))
+        super().__init__(parent, id, inst, voice, time, dur, db, num, den, region, sel, arb)
+    def __setattr__(self, k, v):
+        if not (k in dir(self) and self.__getattribute__(k) == v):
+            if k != "myparent" and k != "id":
+                self.myparent.engine.sendToEngine("modNote:"+str(self.id)+":"+str(k)+":"+str(v))
+            super().__setattr__(k, v)
+    def __del__(self):
+        self.myparent.engine.sendToEngine("definitiveDelNote:"+str(self.id))
+        #super().__del__()
+
+
+
 
 class noteeditlist(object):
     def __init__(self, parent):
@@ -6367,6 +6435,7 @@ class comdeletenotes(object):
             if nw.note.id in self.noteids:
 #                    break
                 self.deleted.append(nw.note)
+                self.myparent.engine.sendToEngine("delNote:"+str(nw.note.id))
                 nws.append(nw)
                 inst = nw.note.inst
                 voice = nw.note.voice
@@ -6393,6 +6462,7 @@ class comdeletenotes(object):
             self.myparent.notelist.append(note)
             self.myparent.notewidgetlist.append(nw)
             self.noteids.append(nw.note.id)
+            self.myparent.engine.sendToEngine("undelNote:"+str(nw.note.id))
             if (note.inst, note.voice) not in instvoicelist:
                 instvoicelist.append((note.inst, note.voice))
         self.deleted = []
@@ -6599,6 +6669,7 @@ class comtonchange(object):
         self.myparent.textsize = 24
         rtext = 'Region "%d" x %d/%d%s= %d/%d' % (self.region, self.num, self.den, os.linesep, self.myparent.regionlist[self.region].num, self.myparent.regionlist[self.region].den)
         self.myparent.write(rtext)
+        self.myparent.engine.sendToEngine("modRegion:"+str(self.region)+":"+str(self.myparent.regionlist[self.region].num)+":"+str(self.myparent.regionlist[self.region].den))
 
     def undo(self):
         curnum = self.myparent.regionlist[self.region].num * self.den
@@ -6641,6 +6712,8 @@ class comtonchange(object):
         self.myparent.textsize = 24
         rtext = 'Region "%d" x %d/%d%s= %d/%d' % (self.region, self.den, self.num, os.linesep, self.myparent.regionlist[self.region].num, self.myparent.regionlist[self.region].den)
         self.myparent.write(rtext)
+        self.myparent.engine.sendToEngine("modRegion:"+str(self.region)+":"+str(self.myparent.regionlist[self.region].num)+":"+str(self.myparent.regionlist[self.region].den))
+
 
 class comregionnew(object):
     def __init__(self, parent, num, den, color, octave11):
@@ -6654,13 +6727,16 @@ class comregionnew(object):
 
     def do(self):
         newregion = rdialog.region(self.myparent, self.num, self.den, self.color, self.octave11)
+        self.myparent.engine.sendToEngine("addRegion:"+str(len(self.myparent.regionlist))+":"+str(self.num)+":"+str(self.den))
         self.myparent.regionlist.append(newregion)
+
 
     def undo(self):
         if self.myparent.hover.hregion >= len(self.myparent.regionlist)-1:
             self.myparent.hover.hregion = len(self.myparent.regionlist)-2
             self.myparent.regionchange()
         self.myparent.regionlist.pop()
+        self.myparent.engine.sendToEngine("unaddRegion:"+str(len(self.myparent.regionlist)))
 
 class cominstnew(object):
     def __init__(self, parent, instch):

@@ -29,6 +29,7 @@
 #include <JuceHeader.h>
 #include <string>
 #include <algorithm>
+#include <map>
 #include "RatIOManager.h"
 #include "RatNote.h"
 
@@ -46,7 +47,7 @@ public:
     void connectionLost() override;
     void endItAll();
     void run();
-    void sendString(const std::string&);
+    void sendStdString(const std::string&);
     void sendString(const juce::String&);
     void sendAvailableMidiInDevices();
     void sendAvailableMidiOutDevices();
@@ -63,6 +64,8 @@ private:
     juce::OwnedArray<RatIOManager> ioManagers;
     JUCEApplication& app;
     std::map<uint32, std::unique_ptr<RatNote>> score;
+    std::map<juce::String, juce::String> midiInDevices;
+    std::map<juce::String, juce::String> midiOutDevices;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (RatEngine)
 };

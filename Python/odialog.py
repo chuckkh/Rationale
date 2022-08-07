@@ -86,56 +86,59 @@ class outputdialog:
         self.instpagelist = []
         self.sf2list = copy.deepcopy(self.myparent.sf2list)
 #        self.csdpage = self.nb.add('csd', label='CSD')
-        self.csdpage = self.add(label='CSD')
-        self.csdpage.rowconfigure(0, weight=0)
-        self.csdpage.rowconfigure(1, weight=0)
-        self.csdpage.rowconfigure(2, weight=1)
-        self.csdpage.rowconfigure(3, weight=0)
-#        self.csdpage.columnconfigure(0, weight=1)
-        self.csdpage.columnconfigure(1, weight=1)
-        tk.Label(self.csdpage, text="CSD file load/edit: Edit in this space, or load with the button below.").grid(row=0, column=0, columnspan=2, sticky='w')
+        self.globalPage = self.add(label='Global')
+        self.globalPage.rowconfigure(0, weight=0)
+        self.globalPage.rowconfigure(1, weight=0)
+        self.globalPage.rowconfigure(2, weight=1)
+        self.globalPage.rowconfigure(3, weight=0)
+#        self.globalPage.columnconfigure(0, weight=1)
+        self.globalPage.columnconfigure(1, weight=1)
+        tk.Label(self.globalPage, text="MIDI Timing Input & Transport Output").grid(row=0, column=0, columnspan=2, sticky='w')
+#        tk.Label(self.globalPage, text="CSD file load/edit: Edit in this space, or load with the button below.").grid(row=0, column=0, columnspan=2, sticky='w')
 #        if self.myparent.csdimport:
 #            lab = os.path.split(self.myparent.csdimport)
 #        else:
-        lab = ('', 'No Csound File Loaded')
-        self.csdpathlabel = tk.Label(self.csdpage, text=lab[0]+os.sep, relief="ridge", bg="#aaaaaa")
-        self.csdpathlabel.grid(row=1, column=0, sticky='w')
-        self.csdlabel = tk.Label(self.csdpage, text=lab[1], relief="ridge", bg="#eeeeee")
-        self.csdlabel.grid(row=1, column=1, sticky='w')
-        scroll = tk.Scrollbar(self.csdpage)
-        scroll.grid(row=2, column=2, sticky='ns')
-        self.csdtext = tk.Text(self.csdpage, yscrollcommand=scroll.set)
-        self.csdtext.grid(row=2, column=0, columnspan=2, sticky='nesw')
+#        lab = ('', 'No Csound File Loaded')
+#        self.csdpathlabel = tk.Label(self.globalPage, text=lab[0]+os.sep, relief="ridge", bg="#aaaaaa")
+#        self.csdpathlabel.grid(row=1, column=0, sticky='w')
+#        self.csdlabel = tk.Label(self.globalPage, text=lab[1], relief="ridge", bg="#eeeeee")
+#        self.csdlabel.grid(row=1, column=1, sticky='w')
+#        scroll = tk.Scrollbar(self.globalPage)
+#        scroll.grid(row=2, column=2, sticky='ns')
+ #       self.csdtext = tk.Text(self.globalPage, yscrollcommand=scroll.set)
+ #       self.csdtext.grid(row=2, column=0, columnspan=2, sticky='nesw')
 #        self.csdtext.insert('0.0', self.myparent.csdimported)
-        self.csdtext.insert('0.0', '')
-        if self.myparent.outautoload:
-            self.csdloadwork(self.myparent.csdimport)
-        scroll.config(command=self.csdtext.yview)
+ #       self.csdtext.insert('0.0', '')
+#        if self.myparent.outautoload:
+#            self.csdloadwork(self.myparent.csdimport)
+#        scroll.config(command=self.csdtext.yview)
         for i in range(1, len(self.instmaybe)):
             inst = self.instmaybe[i]
             newpage = self.addinstpage(inst)
             for out in inst.outlist:
-                if out.__class__.__name__ == 'csdout':
-                    newline = csdline(newpage, out)
-                elif out.__class__.__name__ == 'sf2out':
-                    newline = sf2line(newpage, out)
-                elif out.__class__.__name__ == 'oscout':
-                    newline = oscline(newpage, out)
-                elif out.__class__.__name__ == 'midout':
-                    newline = midline(newpage, out)
-                newpage.linelist.append(newline)
-                newpage.scrolladjust()
-                newpage.canvas.yview_moveto(1.0)
-        self.loadfr = tk.Frame(self.csdpage)
-        self.loadfr.grid(row=3, column=0, sticky='ew', columnspan=2)
-        self.csdloadbutton = tk.Button(self.loadfr, text="Load", command=self.csdload)
-        self.csdloadbutton.grid(row=0, column=0, sticky='e')
-        self.csdreloadbutton = tk.Button(self.loadfr, text="Reload", command=lambda arg1 = self.myparent.csdimport: self.csdloadwork(arg1))
-        self.csdreloadbutton.grid(row=0, column=1, sticky='e')
-        self.autoload = tk.BooleanVar(value=self.myparent.outautoload)
+                if len(newpage.linelist) == 0:
+                    if out.__class__.__name__ == 'csdout':
+                        newline = csdline(newpage, out)
+                    elif out.__class__.__name__ == 'sf2out':
+                        newline = sf2line(newpage, out)
+                    elif out.__class__.__name__ == 'oscout':
+                        newline = oscline(newpage, out)
+                    elif out.__class__.__name__ == 'midout':
+                        print("line 125")
+                        newline = midline(newpage, out)
+                    newpage.linelist.append(newline)
+                    newpage.scrolladjust()
+                    newpage.canvas.yview_moveto(1.0)
+#        self.loadfr = tk.Frame(self.globalPage)
+#        self.loadfr.grid(row=3, column=0, sticky='ew', columnspan=2)
+#        self.csdloadbutton = tk.Button(self.loadfr, text="Load", command=self.csdload)
+#        self.csdloadbutton.grid(row=0, column=0, sticky='e')
+#        self.csdreloadbutton = tk.Button(self.loadfr, text="Reload", command=lambda arg1 = self.myparent.csdimport: self.csdloadwork(arg1))
+#        self.csdreloadbutton.grid(row=0, column=1, sticky='e')
+#        self.autoload = tk.BooleanVar(value=self.myparent.outautoload)
 #        self.autoload.set(self.myparent.outautoload)
-        self.autocheck = tk.Checkbutton(self.loadfr, variable=self.autoload, text="Auto Reload", bg="#77aa77")
-        self.autocheck.grid(row=0, column=2, sticky='w')
+#        self.autocheck = tk.Checkbutton(self.loadfr, variable=self.autoload, text="Auto Reload", bg="#77aa77")
+#        self.autocheck.grid(row=0, column=2, sticky='w')
         self.tabs.winfo_children()[0].select()
         self.tabs.winfo_children()[0].invoke()
 #        self.tablist[0].select()
@@ -258,12 +261,13 @@ class outputdialog:
         del self.myparent.out
 
     def audition(self):
-        self.myparent.play(self.instmaybe, self.sf2list, self.myparent.outputmethod, self.myparent.sr, self.myparent.ksmps, self.myparent.nchnls, self.myparent.audiomodule, self.myparent.dac, self.myparent.b, self.myparent.B, self.myparent.aifffile, self.myparent.wavfile, self.myparent.csdcommandline, self.myparent.csdcommandlineuse)
+        self.myparent.play()
+        #self.myparent.play(self.instmaybe, self.sf2list, self.myparent.outputmethod, self.myparent.sr, self.myparent.ksmps, self.myparent.nchnls, self.myparent.audiomodule, self.myparent.dac, self.myparent.b, self.myparent.B, self.myparent.aifffile, self.myparent.wavfile, self.myparent.csdcommandline, self.myparent.csdcommandlineuse)
 
     def apply(self):
 
-        self.myparent.outautoload = self.autoload.get()
-        self.myparent.csdimported = self.csdtext.get(0.0, "end")
+#        self.myparent.outautoload = self.autoload.get()
+#        self.myparent.csdimported = self.csdtext.get(0.0, "end")
 
         flag = False
         if len(self.instmaybe) != len(self.myparent.instlist):
@@ -409,16 +413,17 @@ class instrumentpage:
         self.mutewidget.grid(row=2, column=1, padx=4)
         self.solowidget = tk.Checkbutton(self.toprow, bg='#00aa00', text='S', variable=self.solo, indicatoron=1, activebackground='#00aa00', selectcolor='#00ff00', width=1, height=1, bd=2, highlightthickness=0)
         self.solowidget.grid(row=2, column=2)
-        self.blank = tk.Entry(self.botrow, width=2)
-        self.blank.grid(row=0, column=0, pady=6, padx=20, sticky='w')
-        self.blank.bind("<Tab>", self.outputselect)
-        tk.Label(self.botrow, text="c/s/o").grid(row=1, column=0)
+#        self.blank = tk.Entry(self.botrow, width=2)
+#        self.blank.grid(row=0, column=0, pady=6, padx=20, sticky='w')
+#        self.blank.bind("<Tab>", self.outputselect)
+#        tk.Label(self.botrow, text="c/s/o").grid(row=1, column=0)
         self.widget.update_idletasks()
         bottomy = self.midrow.winfo_reqheight()
 #        print bottomy
         self.botrowoncanvas = self.canvas.create_window(0, bottomy, window=self.botrow, anchor="nw")
 #        self.myparent.outputfr.bind("<Return>", self.myparent.ok)
 #        self.myparent.outputfr.bind("<Escape>", self.myparent.cancel)
+        self.outputselect('m')
 
     def canvaswheel(self, arg1, event, arg3):
 #        print self.myinst.number, self.myparent.currentframe
@@ -504,28 +509,32 @@ class instrumentpage:
         pass
 
     def outputselect(self, event):
-        type = event.widget.get()
-        if event.widget == self.blank:
+#        type = event.widget.get()
+#        if event.widget == self.blank:
+        if self.myinst.outlist == []:
+            type = 'm'
             newout = newline = 0
-            if type == 's' or type == 'S':
-                newout = sf2out(self.myinst)
-                newline = sf2line(self, newout)
-            elif type == 'c' or type == 'C':
-                newout = csdout(self.myinst)
-                newline = csdline(self, newout)
-            elif type == 'o' or type == 'O':
-                newout = oscout(self.myinst)
-                newline = oscline(self, newout)
-            elif type == 'm' or type == 'M':
+#            if type == 's' or type == 'S':
+#                newout = sf2out(self.myinst)
+#                newline = sf2line(self, newout)
+#            elif type == 'c' or type == 'C':
+#                newout = csdout(self.myinst)
+#                newline = csdline(self, newout)
+#            elif type == 'o' or type == 'O':
+#                newout = oscout(self.myinst)
+#                newline = oscline(self, newout)
+            if type == 'm' or type == 'M':
                 newout = midout(self.myinst)
+                print("line 526")
                 newline = midline(self, newout)
+#                newline = midline(self, newout)
             if newout:
                 self.myinst.outlist.append(newout)
                 self.linelist.append(newline)
                 self.scrolladjust()
                 self.canvas.yview_moveto(1.0)
 
-            self.blank.delete(0,last='end')
+#            self.blank.delete(0,last='end')
 
 class sf2out:
     '''Created only by 's' type selection.
@@ -1182,7 +1191,135 @@ class csdline:
 #        print self.page.linelist
 #        del self.page.linelist[index]
 
-class midout:
+class ratout:
+    def __init__(self, parent):
+        self.instrument = parent
+        self.mute = 0
+        self.solo = 0
+        self.volume = 0
+
+class ratline:
+    def __init__(self, parent, out):
+        self.page = parent
+        self.out = out
+        self.place = len(self.out.instrument.outlist)
+#        self.place = self.out.instrument.outlist.index(self.out)
+        print("ratline init run")
+        self.mute = tk.BooleanVar()
+        self.mute.set(self.out.mute)
+        self.mute.trace("w", self.mutechange)
+        self.solo = tk.BooleanVar()
+        self.solo.set(self.out.solo)
+        self.solo.trace("w", self.solochange)
+        self.volume = tk.DoubleVar()
+        self.volume.set(self.out.volume)
+        self.volume.trace("w", self.volumechange)
+        self.frame = tk.Frame(self.page.midrow, bd=5, relief="ridge")
+        self.frame.grid(row=self.place, column=0, columnspan=2, sticky='ew')
+        self.mutewidget = tk.Checkbutton(self.frame, height=1, width=1, variable=self.mute, bg='#ffaaaa', selectcolor='#996666', padx=2, pady=0, indicatoron=0, activebackground='#ff8888')
+        self.mutewidget.grid(row=0, column=1, rowspan=1)
+        self.solowidget = tk.Checkbutton(self.frame, height=1, width=1, variable=self.solo, bg='#aaffaa', selectcolor='#669966', padx=2, pady=0, indicatoron=0, activebackground='#88ff88')
+        self.solowidget.grid(row=0, column=2, rowspan=1)
+#        self.x = tk.Button(self.frame, text="x", command=self.remove)
+#        self.x.grid(row=0, column=9, sticky='e', padx=40)
+#        tk.Label(self.frame, text="(inst, voice, time, dur, db, freq, region, num, den, a1, a2...)", font=("Times", 9)).grid(row=1, column=6, rowspan=1, columnspan=4, sticky='w', pady=1)
+#        self.volumewidget = tk.Scale(self.frame, orient="horizontal", width=7, fg='#552288', sliderlength=16, sliderrelief='raised', tickinterval=16, from_=-128, to=127, resolution=1, variable=self.volume)
+#        self.volumewidget.set(self.out.volume)
+#        self.volumewidget.grid(row=2, column=0, columnspan=11, sticky='ew', pady=1)
+        
+    def mutechange(self, *args):
+        self.out.mute = self.mute.get()
+
+    def solochange(self, *args):
+        self.out.solo = self.solo.get()
+
+        if self.out.solo == 0:
+            s = 0
+            for o in self.page.myinst.outlist:
+                if o.solo:
+                    s = 1
+                    break
+            self.page.myinst.gsolo = s
+        else:
+            self.page.myinst.gsolo = 1
+
+    def volumechange(self, *args):
+        self.out.volume = self.volume.get()
+
+
+    def remove(self):
+        index = self.place
+        self.frame.destroy()
+        for line in self.page.linelist:
+            if line.place > index:
+                line.place -= 1
+                line.frame.grid(row=line.place)
+#        print self.page.myinst.outlist
+        del self.page.myinst.outlist[index]
+#        print self.page.myinst.outlist
+        self.page.widget.update_idletasks()
+        if len(self.page.linelist) > 1:
+            bottomy = self.page.midrow.winfo_reqheight()
+        else:
+            bottomy=0
+        self.page.canvas.coords(self.page.botrowoncanvas, 0, bottomy)
+        self.page.scrolladjust()
+        del self.page.linelist[index]
+
+
+class midout(ratout):
+    def __init__(self, parent, device='', channel=1):
+        self.device = device
+        self.channel = channel
+        super().__init__(parent)
+
+class midline(ratline):
+    def __init__(self, parent, out):
+        super().__init__(parent, out)
+        self.flag = 'm'
+        self.frame.columnconfigure(0, weight=0)
+        self.frame.columnconfigure(1, weight=0)
+        self.frame.columnconfigure(2, weight=0)
+        self.frame.columnconfigure(3, weight=0)
+        self.frame.columnconfigure(4, weight=0)
+        self.frame.columnconfigure(5, weight=0)
+        self.frame.columnconfigure(6, weight=0)
+        self.frame.columnconfigure(7, weight=0)
+        self.frame.columnconfigure(8, weight=0)
+        self.frame.columnconfigure(9, weight=0)
+        self.frame.columnconfigure(10, weight=0)
+        self.frame.columnconfigure(11, weight=1)
+        self.frame.columnconfigure(12, weight=0)
+        tk.Label(self.frame, text="MIDI Tuning Standard Instrument Output").grid(row=1, column=3, sticky='w', columnspan=6)
+        self.deviceName = tk.StringVar()
+        self.deviceName.set(self.out.device)
+        self.deviceName.trace("w", self.deviceChange)
+        self.channel = tk.IntVar()
+        self.channel.set(self.out.channel)
+        self.channel.trace("w", self.channelChange)
+        tk.Label(self.frame, text="Device:").grid(row=2, column=4, sticky='w', columnspan=3)
+        self.deviceSelector = tk.Menubutton(self.frame, textvariable=self.deviceName, bg="#aa9999", activebackground="#bbaaaa", width=35, relief="raised", padx=0, indicatoron=1)
+        self.deviceSelectorMenu = tk.Menu(self.deviceSelector, tearoff=0)
+        for devname in self.page.myparent.myparent.midiOutDevices:
+            self.deviceSelectorMenu.add_command(label=devname, command = lambda arg1=devname: self.changeMidiOutputDev(arg1))
+        self.deviceSelector['menu'] = self.deviceSelectorMenu
+        self.deviceSelector.grid(row=3, column=4, sticky='w')
+        self.channelSelector = tk.Spinbox(self.frame, width=4, textvariable=self.channel, from_=1, to=16)
+        tk.Label(self.frame, text="Channel:").grid(row=2, column=8, sticky='w', columnspan=3)
+        self.channelSelector.grid(row=3, column=8, padx=3, sticky='')
+
+    def changeMidiOutputDev(self, devname):
+        if self.deviceName.get() != devname:
+            self.deviceName.set(devname)
+
+    def deviceChange(self, *args):
+        self.out.device = self.deviceName.get()
+
+    def channelChange(self, *args):
+        self.out.channel = self.channel.get()
+
+
+class midoutold:
     '''Created only by 'm' type selection.
 
     ...Not quite implemented!
@@ -1200,7 +1337,7 @@ class midout:
         self.solo = 0
         self.volume = 0
 
-class midline:
+class midlineold:
     def __init__(self, parent, out):
         self.page = parent
         self.out = out
