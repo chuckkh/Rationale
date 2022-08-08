@@ -15,17 +15,27 @@
 //    You should have received a copy of the GNU General Public License
 //    along with Rationale.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <string>
 #include "JuceHeader.h"
 #include "RatIO.h"
 
 #pragma once
 
-class RatMIDIOut : public RatIO
+class RatMidiOut : public RatIO
 {
 public:
-
+	RatMidiOut(juce::String, uint8);
+	RatMidiOut(juce::String, int);
+	RatMidiOut();
+	RatMidiOut(std::string, uint8);
+	RatMidiOut(std::string, int);
+	void setOutputDeviceKey(juce::String);
+	juce::String getOutputDeviceKey();
+	void setChannel(uint8);
+	uint8 getChannel();
 private:
 	std::shared_ptr<juce::MidiOutput> outputDevice;
+	juce::String outputDeviceKey;
 	uint8 channel;
 };
 

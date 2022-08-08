@@ -21,7 +21,7 @@ import socket
 import queue
 import time
 import sys
-import chardet
+#import chardet
 import pathlib
 import os
 
@@ -72,7 +72,7 @@ class RatEngineInterface:
 #                cbtext += wtf
                     while cbtext.count("CB"):
                         cmd, cbtext = cbtext.split("CB", 1)
-                        print("Engine to Rationale:", cmd)
+#                        print("Engine to Rationale:", cmd)
                         if cmd == "END" or cbtext == "ENDCB":
                             #print("Ennnnnndaaa")
                             self.parent.engineActive = 0

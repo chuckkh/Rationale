@@ -8,3 +8,18 @@ sysex
 251 11111011 CONTINUE
 252 11111100 STOP
 
+beatclock 248
+isController
+isSongPositionPointer 242
+isMidiStart 250
+isMidiStop 252
+isMidiContinue 251
+isMidiMachineControlGoto
+isMidiMachineControlMessage
+
+MMC
+1 stop
+2 play
+4 ffwd
+5 rew
+9 pause

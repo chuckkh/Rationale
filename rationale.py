@@ -64,15 +64,15 @@ class rationale(object):
         self.myparent.rowconfigure(0, weight=1)
         self.myparent.columnconfigure(0, weight=1)
         self.active = 1
-        self.engineActive = 1
-        self.engine = ratengineinterface.RatEngineInterface(self)
-        self.engine.launch(0)
+        self.engine = None
+        self.notelist = []
+        self.instlist = []
+        self.regionlist = []
+        self.midiTimingInDevice = MidiTimingInDevice(self)
+        self.startEngine()
         self.messageFromEngine = False
         self.bufferFromEngine = []
-        self.midiInDevices = []
-        self.midiOutDevices = []
         self.requestMidiDevices()
-
         self.populateLists()
         self.loadImages()
 
@@ -160,8 +160,38 @@ You should have received a copy of the GNU General Public License along with Rat
 #                self.write('%s: File Not Found' % sys.argv[1])
         self.openoutputdialog()
 
+    def startEngine(self):
+        if self.engine:
+            
+            try:
+                self.engine.communicate()
+            except:
+                print("Unable to restart engine: def startEngine(self):")
+        self.engineActive = 1
+        self.engine = ratengineinterface.RatEngineInterface(self)
+        self.engine.launch(0)
+        self.engine.sendToEngine("resetAll")
+        for nt in self.notelist:
+            sendStr = "addNote:id:" + str(nt.id)
+            d = nt.__dict__['dict']
+            for k in d:
+                sendStr += (":"+str(k)+":"+str(d[k]))
+            sendStr += ":sel:"+str(nt.sel)
+            self.engine.sendToEngine(sendStr)
+        for ind in range(len(self.regionlist)):
+            r = self.regionlist[ind]
+            self.engine.sendToEngine("addRegion:"+str(ind)+":"+str(r.num)+":"+str(r.den))
+        self.engine.sendToEngine("midiTimingInDevice:"+str(self.midiTimingInDevice.name))
+        for ind in range(1,len(self.instlist)):
+            self.engine.sendToEngine("addInst:"+str(self.instlist[ind].number))
+            for out in self.instlist[ind].outlist:
+                self.engine.sendToEngine("addOut:"+str(ind)+":"+str(out.__class__)[16:-2]+":"+str(out.device)+":"+str(out.channel))
+            
+
     def requestMidiDevices(self):
         self.bufferFromEngine = []
+        self.midiInDevices = []
+        self.midiOutDevices = []
         self.engine.sendToEngine("GetMidiIn")
         while len(self.bufferFromEngine) == 0:
             time.sleep(0.01)
@@ -176,9 +206,9 @@ You should have received a copy of the GNU General Public License along with Rat
                 if msg != "MidiInEnd":
                     self.midiInDevices.append(msg)
                 ind += 1
-        print("Got MIDI In Devices:")
-        for nm in self.midiInDevices:
-            print(nm)
+#        print("Got MIDI In Devices:")
+#        for nm in self.midiInDevices:
+#            print(nm)
         self.bufferFromEngine = []
         self.engine.sendToEngine("GetMidiOut")
         while len(self.bufferFromEngine) == 0:
@@ -194,15 +224,15 @@ You should have received a copy of the GNU General Public License along with Rat
                 if msg != "MidiOutEnd":
                     self.midiOutDevices.append(msg)
                 ind += 1
-        print("Got MIDI Out Devices:")
-        for nm in self.midiOutDevices:
-            print(nm)        
+#        print("Got MIDI Out Devices:")
+#        for nm in self.midiOutDevices:
+#            print(nm)        
         
         
         
     def populateLists(self):
         #note: instr/voice, time, dur, db, num, den, region, bar, selected, guihandle, arb-tuple
-        self.notelist = []
+#        self.notelist = []
         self.notewidgetlist = []
         #meter: bar, beats, count
         self.meterlist = []
@@ -1424,8 +1454,9 @@ endin
 
 ### Play ###
     def play(self, instlist=None, sf2list=None, method=None, sr=None, ksmps=None, nchnls=None, amodule=None, dac=None, b=None, B=None, aifffile=None, wavfile=None, commandline=None, commandlineuse=None):
-        self.engine.sendToEngine("GetMidiOut")
         '''This currently only prints the notes in the score. Rationale is in the process of migrating from Python with Csound to C++ with JUCE, and this is one of the first parts that needs to be moved.'''
+        if instlist==None:
+            instlist = self.instlist
         print()
         print("Score:")
         for nt in self.notelist:
@@ -2067,6 +2098,9 @@ endin
 #        print event.keysym_num
 #        print "event.serial:", event.serial, event.keysym
 #        print "event.type:", event.type
+        if event.keysym.count("z"):
+#            self.engine.sendToEngine("ENDCB")
+            self.startEngine()
         if event.keysym.count("Shift"):
             self.hinstch = 0
             self.editinst = 0
@@ -2824,12 +2858,21 @@ endin
 #        self.altkey = 0
 #        self.ctlkeyzero()
 
-    def removehidemenu(self):
-        for ind, i in enumerate(self.instlist):
-            if ind:
-                self.menuview.delete(ind+5)
+    def removehidemenu(self, which=None):
+        if which:
+            self.menuview.delete(which+5)
+        else:
+#            self.menuview.delete(6, len(self.instlist)+5)
+            for ind, i in enumerate(self.instlist):
+                if ind > 0:
+                    try:
+#                        print("remove ind", ind)
+                        self.menuview.delete(6)
+                    except:
+                        pass
 
     def createhidemenu(self):
+#        self.removehidemenu()
 #       print 'createhidemenu'
         for ind, inst in enumerate(self.instlist):
             if ind:
@@ -4600,6 +4643,14 @@ endin
         else:
             self.scrubtimelist = []
 
+class MidiTimingInDevice:
+    def __init__(self, parent):
+        self.name = ''
+        self.myparent = parent
+    def set(self, devname):
+        self.myparent.engine.sendToEngine("midiTimingInDevice:"+str(devname))
+        self.name = devname
+            
 class scorewindow(object):
     def __init__(self, parent):
         pass
@@ -6747,6 +6798,7 @@ class cominstnew(object):
     def do(self):
         self.myparent.write('New Instrument: %d' % self.instch)
         newinst = odialog.instrument(self, self.instch, '#999999')
+        self.myparent.engine.sendToEngine("addInst:"+str(len(self.myparent.instlist)))
         self.myparent.instlist.append(newinst)
         self.myparent.menuview.add_command(label='Hide i%d' % self.instch, command=lambda arg1=self.instch: self.myparent.hidethis(arg1), accelerator='%s-%d' % (self.myparent.altacc, self.instch))
         try:
@@ -6768,7 +6820,9 @@ class cominstnew(object):
             self.myparent.statusinst.configure(text='Inst %d' % self.myparent.hover.hinst)
             self.myparent.write(str(self.myparent.hover.hinst))
             self.myparent.hover.colorupdate(self.myparent)
+
         self.myparent.instlist.pop()
+        self.myparent.engine.sendToEngine("unAddInst:"+str(len(self.myparent.instlist)))
         self.myparent.menuview.delete(len(self.myparent.instlist)+5)
         ## remove instpage from odialog??
 

@@ -86,6 +86,9 @@ class outputdialog:
         self.instpagelist = []
         self.sf2list = copy.deepcopy(self.myparent.sf2list)
 #        self.csdpage = self.nb.add('csd', label='CSD')
+        self.timingIn = tk.StringVar()
+        self.timingIn.set(self.myparent.midiTimingInDevice.name)
+#        self.timingIn.trace("w", self.timingInDeviceChange)
         self.globalPage = self.add(label='Global')
         self.globalPage.rowconfigure(0, weight=0)
         self.globalPage.rowconfigure(1, weight=0)
@@ -93,7 +96,15 @@ class outputdialog:
         self.globalPage.rowconfigure(3, weight=0)
 #        self.globalPage.columnconfigure(0, weight=1)
         self.globalPage.columnconfigure(1, weight=1)
-        tk.Label(self.globalPage, text="MIDI Timing Input & Transport Output").grid(row=0, column=0, columnspan=2, sticky='w')
+        self.timingInFrame = tk.Frame(self.globalPage, relief="ridge", bd=2)
+        self.timingInFrame.grid(row=1, column=0, sticky='w', padx=10)
+        tk.Label(self.timingInFrame, text="MIDI Transport and Timing Input").grid(row=0, column=0, columnspan=2, sticky='w')
+        self.timingInSelector = tk.Menubutton(self.timingInFrame, textvariable=self.timingIn, bg="#aa9999", activebackground="#bbaaaa", width=35, relief="raised", padx=0, indicatoron=1)
+        self.timingInSelectorMenu = tk.Menu(self.timingInSelector, tearoff=0)
+        for devname in self.myparent.midiInDevices:
+            self.timingInSelectorMenu.add_command(label=devname, command = lambda arg1=devname: self.changeTimingInDevice(arg1))
+        self.timingInSelector['menu'] = self.timingInSelectorMenu
+        self.timingInSelector.grid(row=1, column=0, columnspan=2, sticky='w')
 #        tk.Label(self.globalPage, text="CSD file load/edit: Edit in this space, or load with the button below.").grid(row=0, column=0, columnspan=2, sticky='w')
 #        if self.myparent.csdimport:
 #            lab = os.path.split(self.myparent.csdimport)
@@ -143,6 +154,13 @@ class outputdialog:
         self.tabs.winfo_children()[0].invoke()
 #        self.tablist[0].select()
 #        self.tablist[0].invoke()
+
+    def changeTimingInDevice(self, devname):
+        if self.timingIn.get() != devname:
+            self.timingIn.set(devname)
+
+    def timingInDeviceChange(self, *args):
+        self.myparent.midiTimingInDevice.set(self.timingIn.get())
 
     def add(self, label):
         ####tablist, framelist
@@ -261,10 +279,11 @@ class outputdialog:
         del self.myparent.out
 
     def audition(self):
-        self.myparent.play()
+        self.myparent.play(instlist = self.instmaybe)
         #self.myparent.play(self.instmaybe, self.sf2list, self.myparent.outputmethod, self.myparent.sr, self.myparent.ksmps, self.myparent.nchnls, self.myparent.audiomodule, self.myparent.dac, self.myparent.b, self.myparent.B, self.myparent.aifffile, self.myparent.wavfile, self.myparent.csdcommandline, self.myparent.csdcommandlineuse)
 
     def apply(self):
+        self.timingInDeviceChange()
 
 #        self.myparent.outautoload = self.autoload.get()
 #        self.myparent.csdimported = self.csdtext.get(0.0, "end")
@@ -298,13 +317,13 @@ class outputdialog:
                                         flag = True
                                         break
         if flag:
+#            self.myparent.removehidemenu()
             com = comodialog(self.myparent, self.instmaybe)
-            self.myparent.removehidemenu()
             if self.myparent.dispatcher.push(com):
                 self.myparent.dispatcher.do()
 #            self.myparent.instlist = copy.deepcopy(self.instmaybe)
-            self.myparent.createhidemenu()
-        self.myparent.sf2list = copy.deepcopy(self.sf2list)
+#            self.myparent.createhidemenu()
+#        self.myparent.sf2list = copy.deepcopy(self.sf2list)
         for nw in self.myparent.notewidgetlist:
             nw.updateinst()
         color = self.myparent.instlist[self.myparent.hover.hinst].color
@@ -1703,12 +1722,28 @@ class comodialog(object):
         self.string = "Output Changes"
 
     def do(self):
+        self.myparent.removehidemenu()
         self.myparent.instlist, self.instlist = self.instlist, self.myparent.instlist
+        for ind in range(len(self.instlist), len(self.myparent.instlist)):
+            self.myparent.engine.sendToEngine("addInst:"+str(ind))
+        self.myparent.engine.sendToEngine("resetOuts")
+        for inst in range(1,len(self.myparent.instlist)):
+            for out in self.myparent.instlist[inst].outlist:
+                self.myparent.engine.sendToEngine("addOut:"+str(inst)+":"+str(out.__class__)[16:-2]+":"+str(out.device)+":"+str(out.channel))
+        if self.myparent.mode.get() == 0:
+            self.myparent.hover.colorupdate()
+        for nw in self.myparent.notewidgetlist:
+            nw.updateinst()
+        self.myparent.createhidemenu()
+
+    def undo(self):
+        self.myparent.removehidemenu()
+        self.myparent.instlist, self.instlist = self.instlist, self.myparent.instlist
+        for ind in range(len(self.instlist)-1, len(self.myparent.instlist)-1, -1):
+            self.myparent.engine.sendToEngine("unAddInst:"+str(ind))
         if self.myparent.mode.get() == 0:
             self.myparent.hover.colorupdate()
         for nw in self.myparent.notewidgetlist:
             nw.updateinst()        
-
-    def undo(self):
-        self.do()
+        self.myparent.createhidemenu()
 

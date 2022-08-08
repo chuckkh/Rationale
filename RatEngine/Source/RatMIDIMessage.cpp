@@ -18,21 +18,32 @@
 /*
   ==============================================================================
 
-    RatMIDIMessage.cpp
+    RatMidiMessage.cpp
     Created: 2 Aug 2022 10:41:36pm
     Author:  Home
 
   ==============================================================================
 */
 
-#include "RatMIDIMessage.h"
+#include "RatMidiMessage.h"
 
-juce::MidiOutput* RatMIDIMessage::getMIDIOutput()
+juce::MidiOutput* RatMidiMessage::getMidiOutput()
 {
     return myOutput.get();
+
 }
 
-void RatMIDIMessage::setMIDIOutput(juce::MidiOutput* myOutput_)
+void RatMidiMessage::setMidiOutput(juce::MidiOutput* myOutput_)
 {
     myOutput.reset(myOutput_);
+}
+
+juce::String RatMidiMessage::getMidiOut()
+{
+    return myMidiOut;
+}
+
+void RatMidiMessage::setMidiOut(juce::String _myMidiOut)
+{
+    myMidiOut = _myMidiOut;
 }

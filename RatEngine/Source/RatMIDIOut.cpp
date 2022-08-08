@@ -16,4 +16,53 @@
 //    along with Rationale.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "JuceHeader.h"
-#include "RatMIDIOut.h"
+#include "RatMidiOut.h"
+
+RatMidiOut::RatMidiOut()
+{
+	
+}
+
+RatMidiOut::RatMidiOut(std::string _name, uint8 _channel)
+{
+	outputDeviceKey = juce::String(_name);
+	channel = _channel;
+}
+
+RatMidiOut::RatMidiOut(std::string _name, int _channel)
+{
+	outputDeviceKey = juce::String(_name);
+	channel = uint8(_channel);
+}
+
+RatMidiOut::RatMidiOut(juce::String _name, uint8 _channel)
+{
+	outputDeviceKey = _name;
+	channel = _channel;
+}
+
+RatMidiOut::RatMidiOut(juce::String _name, int _channel)
+{
+	outputDeviceKey = _name;
+	channel = uint8(_channel);
+}
+
+void RatMidiOut::setOutputDeviceKey(juce::String _name)
+{
+	outputDeviceKey = _name;
+}
+
+juce::String RatMidiOut::getOutputDeviceKey()
+{
+	return outputDeviceKey;
+}
+
+void RatMidiOut::setChannel(uint8 _channel)
+{
+	channel = _channel;
+}
+
+uint8 RatMidiOut::getChannel()
+{
+	return channel;
+}

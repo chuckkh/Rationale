@@ -28,14 +28,16 @@
 #pragma once
 
 #include <JuceHeader.h>
-#include "RatMIDIOut.h"
+#include "RatMidiOut.h"
 
-class RatMIDIMessage : public juce::MidiMessage
+class RatMidiMessage : public juce::MidiMessage
 {
 public:
-    juce::MidiOutput* getMIDIOutput();
-    void setMIDIOutput(juce::MidiOutput*);
+    juce::MidiOutput* getMidiOutput();
+    void setMidiOutput(juce::MidiOutput*);
+    juce::String getMidiOut();
+    void setMidiOut(juce::String);
 private:
     std::shared_ptr<juce::MidiOutput> myOutput;
-
+    juce::String myMidiOut;
 };
