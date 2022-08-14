@@ -76,6 +76,7 @@ class rationale(object):
         self.populateLists()
         self.loadImages()
 
+        self.odialogopen = False
         self.out = None
         self.outautoload = False
         self.norepeat = 0
@@ -186,7 +187,8 @@ You should have received a copy of the GNU General Public License along with Rat
             self.engine.sendToEngine("addInst:"+str(self.instlist[ind].number))
             for out in self.instlist[ind].outlist:
                 self.engine.sendToEngine("addOut:"+str(ind)+":"+str(out.__class__)[16:-2]+":"+str(out.device)+":"+str(out.channel))
-            
+        self.engine.sendToEngine("GetMidiIn")
+        self.engine.sendToEngine("GetMidiOut")
 
     def requestMidiDevices(self):
         self.bufferFromEngine = []
@@ -2385,7 +2387,7 @@ endin
         if event.keysym.count("Shift"):
             if self.mode.get() == 0:
                 oldinst = self.hover.hinst
-                if self.hinstch >= len(self.instlist):
+                if self.hinstch >= len(self.instlist) and self.odialogopen==False:
                     self.hinstch = len(self.instlist)
                     com = cominstnew(self, self.hinstch)
                     if self.dispatcher.push(com):

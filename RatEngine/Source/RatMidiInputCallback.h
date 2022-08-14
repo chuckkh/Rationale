@@ -16,11 +16,10 @@
 //    along with Rationale.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
-#include "RatEvent.h"
 #include "JuceHeader.h"
-class RatNoteOff :
-    public RatEvent, juce::MidiMessage
+
+class RatMidiInputCallback : public juce::MidiInputCallback
 {
-    int trigger() override;
+	void handleIncomingMidiMessage(juce::MidiInput*, const juce::MidiMessage&) override;
 };
 

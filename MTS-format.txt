@@ -1,0 +1,28 @@
+F0 7F id 08 02 tt ll [kk xx yy zz]x(ll) F7
+
+tt = tuning table
+
+ll = number of notes to change
+kk = target note
+xx = reference note
+yy = /128s of semitone
+zz = 1/16384s of semitone
+
+7F 7F 7F = no change
+
+
+
+Tuning program change
+Bn 64 00 65 03 06 tt (data entry)
+Bn 64 00 65 03 60 7F increment
+Bn 64 00 65 03 61 7F decrement
+
+Tuning bank change
+Bn 64 00 65 04 06 tt (data entry)
+Bn 64 00 65 04 60 7F increment
+Bn 64 00 65 04 61 7F decrement
+
+from
+http://www.microtonal-synthesis.com/MIDItuning.html
+and
+http://www.somascape.org/midi/tech/spec.html#rusx_ts (also MMC...)

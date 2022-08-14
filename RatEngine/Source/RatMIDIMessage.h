@@ -18,7 +18,7 @@
 /*
   ==============================================================================
 
-    RatMIDIMessage.h
+    RatMidiMessage.h
     Created: 2 Aug 2022 10:41:36pm
     Author:  Home
 

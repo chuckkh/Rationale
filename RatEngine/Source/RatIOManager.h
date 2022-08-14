@@ -24,7 +24,7 @@
 
 #pragma once
 
-class RatIOManager : juce::Timer	
+class RatIOManager //: juce::Timer	
 {
 public:
 	

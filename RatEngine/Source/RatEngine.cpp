@@ -130,11 +130,12 @@ void RatEngine::sendAvailableMidiInDevices()
     std::cout << "Getting Available MIDI In Devices..." << std::endl;
     auto iDevices = MidiInput::getAvailableDevices();
     sendString("MidiInBegin");
+    midiManager.clearMidiInDevices();
     for (juce::MidiDeviceInfo& dev : iDevices) {
         auto name = dev.name.dropLastCharacters(std::max(0, dev.name.length() - 56));
         sendString(name);
 //        sendString(dev.identifier.dropLastCharacters(std::max(0, dev.identifier.length()-56)));
-        midiInDevices[name] = dev.identifier;
+        midiManager.addMidiInDevice(name, dev.identifier);
     }
     sendString("MidiInEnd");
 }
@@ -144,11 +145,12 @@ void RatEngine::sendAvailableMidiOutDevices()
     std::cout << "Getting Available MIDI Out Devices..." << std::endl;
     auto oDevices = MidiOutput::getAvailableDevices();
     sendString("MidiOutBegin");
+    midiManager.clearMidiOutDevices();
     for (juce::MidiDeviceInfo& dev : oDevices) {
         auto name = dev.name.dropLastCharacters(std::max(0, dev.name.length() - 56));
 //        sendString(dev.identifier.dropLastCharacters(std::max(0, dev.identifier.length()-56)));
         sendString(name);
-        midiOutDevices[name] = dev.identifier;
+        midiManager.addMidiOutDevice(name, dev.identifier);
 /*        if (dev.name.compare("loopMIDI Port") == 0)
         {
             mdout = juce::MidiOutput::openDevice(dev.identifier);
@@ -161,6 +163,23 @@ void RatEngine::sendAvailableMidiOutDevices()
         }*/
     }
     sendString("MidiOutEnd");
+    sendSysExTest();
+}
+
+void RatEngine::sendSysExTest()
+{
+    juce::Array<MidiDeviceInfo> devices = juce::MidiOutput::getAvailableDevices();
+
+    //juce::MidiOutput midout();
+    auto midout = juce::MidiOutput::openDevice(devices[1].identifier);
+    uint8 data[] = {127, 127, 8, 2, 0, 1, 60, 61, 100, 100};
+    int sz = 10;
+
+    juce::MidiMessage msg = juce::MidiMessage::createSysExMessage(data, sz);
+
+    midout->sendMessageNow(msg);
+    std::cerr << "MTS sent!";
+    std::cout << "MTS sent!";
 }
 
 void RatEngine::endItAll() {
@@ -205,6 +224,10 @@ void RatEngine::messageReceived(const juce::MemoryBlock &msg)
 //        app.quit();
 //        app.systemRequestedQuit();
         //shutdown();
+    }
+    else if (textMessage.startsWith("midiTimingInDevice:")) {
+        juce::String device = textMessage.substring(19);
+        midiManager.setActiveMidiInput(device);
     }
     juce::MemoryBlock checker = msg;
     int a = 0;

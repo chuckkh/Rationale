@@ -27,6 +27,7 @@ import sys
 class outputdialog:
     def __init__(self, parent=None):
         self.myparent = parent
+        self.myparent.odialogopen = True
         self.myroot = self.myparent.myparent
         self.instmaybe = copy.deepcopy(self.myparent.instlist)
         for i, inst in enumerate(self.instmaybe):
@@ -276,6 +277,7 @@ class outputdialog:
 
     def cancel(self, *args):
         self.outputfr.destroy()
+        self.myparent.odialogopen = False
         del self.myparent.out
 
     def audition(self):

@@ -35,7 +35,7 @@ private:
 	uint32 num;
 	uint32 den;
 	uint32 cents;
-	std::shared_ptr<RatEvent> noteOn, noteOff;
+	std::shared_ptr<RatEvent> tuningMessage, noteOn, noteOff;
 //	uint32 beat;
 //	uint32 beatSubNum;
 //	uint32 beatSubDen;

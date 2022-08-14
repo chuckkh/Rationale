@@ -26,12 +26,13 @@
 */
 
 #pragma once
+//#include "RatIOManager.h"
+#include "RatNote.h"
+#include "RatMidiManager.h"
 #include <JuceHeader.h>
 #include <string>
 #include <algorithm>
 #include <map>
-#include "RatIOManager.h"
-#include "RatNote.h"
 
 class RatEngine : public juce::InterprocessConnection
 {
@@ -53,6 +54,7 @@ public:
     void sendAvailableMidiOutDevices();
     void setCbPort(int);
     void addNote(int);
+    void sendSysExTest();
 //    bool sendMessageNoHeader(const MemoryBlock&);
 //    void timerCallback();
 
@@ -61,8 +63,9 @@ private:
     bool active = true;
     std::unique_ptr<juce::MidiOutput> mdout;
 
-    juce::OwnedArray<RatIOManager> ioManagers;
-    JUCEApplication& app;
+    //juce::OwnedArray<RatIOManager> ioManagers;
+    juce::JUCEApplication& app;
+    RatMidiManager midiManager;
     std::map<uint32, std::unique_ptr<RatNote>> score;
     std::map<juce::String, juce::String> midiInDevices;
     std::map<juce::String, juce::String> midiOutDevices;

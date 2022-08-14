@@ -16,34 +16,65 @@
 //    along with Rationale.  If not, see <http://www.gnu.org/licenses/>.
 					  
 #include "JuceHeader.h"
-#include "RatMIDIManager.h"
+#include "RatMidiManager.h"
 
-RatMIDIManager::RatMIDIManager()
+RatMidiManager::RatMidiManager()
 {
 	
 }
 
-void RatMIDIManager::addInput(juce::String inputName)
+void RatMidiManager::addInput(juce::String inputName)
 {
 
 }
 
-void RatMIDIManager::addOutput(juce::String outputName)
+void RatMidiManager::addOutput(juce::String outputName)
 {
 
 }
 
-void RatMIDIManager::removeInput(juce::String inputName)
+void RatMidiManager::removeInput(juce::String inputName)
 {
 
 }
 
-void RatMIDIManager::removeOutput(juce::String outputName)
+void RatMidiManager::removeOutput(juce::String outputName)
 {
 
 }
 
-int RatMIDIManager::sendMIDI(RatMIDIMessage msg)
+int RatMidiManager::sendMidi(RatMidiMessage msg)
 {
 	return 0;
+}
+
+void RatMidiManager::clearMidiInDevices()
+{
+	midiInDevices.clear();
+}
+
+void RatMidiManager::clearMidiOutDevices()
+{
+	midiOutDevices.clear();
+}
+
+void RatMidiManager::addMidiInDevice(juce::String name, juce::String dev)
+{
+	midiInDevices[name] = dev;
+}
+
+void RatMidiManager::addMidiOutDevice(juce::String name, juce::String dev)
+{
+	midiOutDevices[name] = dev;
+}
+
+void RatMidiManager::setActiveMidiInput(juce::String name)
+{
+	if (midiInDevices.count(name))
+	{
+		juce::String device = midiInDevices[name];
+		activeMidiInput = juce::MidiInput::openDevice(device, &midiInputCallback);
+		activeMidiInput->start();
+	}
+//	activeMidiInput.reset(juce::MidiInput::openDevice())
 }

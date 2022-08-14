@@ -15,12 +15,25 @@
 //    You should have received a copy of the GNU General Public License
 //    along with Rationale.  If not, see <http://www.gnu.org/licenses/>.
 
-#pragma once
-#include "RatEvent.h"
-#include "JuceHeader.h"
-class RatNoteOff :
-    public RatEvent, juce::MidiMessage
-{
-    int trigger() override;
-};
+#include "RatMidiInputCallback.h"
 
+void RatMidiInputCallback::handleIncomingMidiMessage(juce::MidiInput* input, const juce::MidiMessage& msg)
+{
+
+	if (msg.isSongPositionPointer()) {
+		std::cout << "\nReceived: SPP: " << msg.getSongPositionPointerMidiBeat();
+	}
+	else if (msg.isMidiClock()) {
+		std::cout << "...tick ";
+	}
+	else if (msg.isMidiStart()) { std::cout << '\n' << "Received: MIDI Start"; }
+	else if (msg.isMidiStop()) { std::cout << '\n' << "Received: MIDI Stop"; }
+	else if (msg.isMidiContinue()) { std::cout << '\n' << "Received: MIDI Continue"; }
+	else if (msg.isSysEx()) {
+		std::cout << '\n' << "Received SysEx:";
+		int sz = msg.getSysExDataSize();
+		for (int i = 0; i < sz; i++) {
+			std::cout << " " << * (msg.getSysExData() + i);
+		}
+	}
+}

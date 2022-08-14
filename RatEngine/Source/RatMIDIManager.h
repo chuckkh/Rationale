@@ -17,25 +17,37 @@
 					  
 #pragma once
 
-#include "RatIOManager.h"
-#include "RatMIDIMessage.h"
+//#include "RatIOManager.h"
+#include "RatMidiMessage.h"
+#include "RatMidiInputCallback.h"
 #include "JuceHeader.h"
 #include <queue>
 #include <map>
 #include <memory>
-class RatMIDIManager : public RatIOManager
+#include <bitset>
+
+class RatMidiManager : public juce::MidiMessageSequence
 {
 public:
-	RatMIDIManager();
+	RatMidiManager();
 	void addInput(juce::String);
 	void addOutput(juce::String);
 	void removeInput(juce::String);
 	void removeOutput(juce::String);
-	int sendMIDI(RatMIDIMessage);
+	int sendMidi(RatMidiMessage);
+	void setActiveMidiInput(juce::String);
+	void clearMidiInDevices();
+	void addMidiInDevice(juce::String, juce::String);
+	void clearMidiOutDevices();
+	void addMidiOutDevice(juce::String, juce::String);
 	
 private:
-	std::map <juce::String, std::pair<juce::MidiInput, uint16>> activeMidiInputs;
+	//std::map <juce::String, std::pair<juce::MidiInput, uint16>> activeMidiInputs;
+	std::unique_ptr<juce::MidiInput> activeMidiInput;
+	RatMidiInputCallback midiInputCallback;
 	std::map <juce::String, std::pair<juce::MidiOutput, uint16>> activeMidiOutputs;
-
+	std::map<juce::String, juce::String> midiInDevices;
+	std::map<juce::String, juce::String> midiOutDevices;
+	std::bitset<128> noteNumbers;
 };
 
