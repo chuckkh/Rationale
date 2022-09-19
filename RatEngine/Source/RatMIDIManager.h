@@ -40,14 +40,17 @@ public:
 	void addMidiInDevice(juce::String, juce::String);
 	void clearMidiOutDevices();
 	void addMidiOutDevice(juce::String, juce::String);
-	
+	void resetOuts();
+	void addOut(uint32, juce::String, uint8);
+	uint8 findAvailableNoteNumber(uint8);
 private:
 	//std::map <juce::String, std::pair<juce::MidiInput, uint16>> activeMidiInputs;
 	std::unique_ptr<juce::MidiInput> activeMidiInput;
 	RatMidiInputCallback midiInputCallback;
-	std::map <juce::String, std::pair<juce::MidiOutput, uint16>> activeMidiOutputs;
+	std::map <juce::String, juce::MidiOutput> activeMidiOutputs;
 	std::map<juce::String, juce::String> midiInDevices;
 	std::map<juce::String, juce::String> midiOutDevices;
 	std::bitset<128> noteNumbers;
+	std::vector<std::vector<RatMidiOut>> ratMidiOuts;
 };
 

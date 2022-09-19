@@ -18,23 +18,58 @@
 #pragma once
 #include "JuceHeader.h"
 #include "RatEvent.h"
+#include "RatNoteOn.h"
+#include "RatNoteOff.h"
 #include <memory>
 
 class RatNote //: public RatEvent
 {
 public:
 	RatNote(int, int, int);
+	RatNote(uint32, uint32, uint32, double, uint8, uint8, uint8, uint8);
+	int createNoteOn();
+	int createNoteOff();
+	void updateNoteOn();
+	void updateNoteOff();
+
 	int play();
+	static uint8 tonalCenter;
+	static double globalCentsOffset;
+	uint32 getId();
+	uint8 getInstrument();
+	uint8 getVoice();
+	uint8 getVel();
+	uint8 getRegion();
+	bool getSelected();
+	uint32 getNum();
+	uint32 getDen();
+	double getCentOffset();
+	double getTime();
+	double getDuration();
+	void setId(uint32);
+	void setInstrument(uint8);
+	void setVoice(uint8);
+	void setVel(uint8);
+	void setRegion(uint8);
+	void setSelected(bool);
+	void setNum(uint32);
+	void setDen(uint32);
+	void setCentOffset(double);
+	void setTime(double);
+	void setDuration(double);
+
 private:
-	uint16 id;
+	uint32 id;
 	uint8 instrument;
 	uint8 voice;
-	uint8 dB;
+	uint8 vel;
 	uint8 region;
+	double time, duration;
 	bool selected;
 	uint32 num;
 	uint32 den;
-	uint32 cents;
+//	uint32 cents;
+	double centOffset;
 	std::shared_ptr<RatEvent> tuningMessage, noteOn, noteOff;
 //	uint32 beat;
 //	uint32 beatSubNum;

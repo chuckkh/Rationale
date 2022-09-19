@@ -21,7 +21,7 @@
 
 #pragma once
 
-class RatMidiOut : public RatIO
+class RatMidiOut //: public RatIO
 {
 public:
 	RatMidiOut(juce::String, uint8);
@@ -34,7 +34,7 @@ public:
 	void setChannel(uint8);
 	uint8 getChannel();
 private:
-	std::shared_ptr<juce::MidiOutput> outputDevice;
+//	std::shared_ptr<juce::MidiOutput> outputDevice;
 	juce::String outputDeviceKey;
 	uint8 channel;
 };

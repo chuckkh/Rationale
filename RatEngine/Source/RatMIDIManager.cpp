@@ -78,3 +78,26 @@ void RatMidiManager::setActiveMidiInput(juce::String name)
 	}
 //	activeMidiInput.reset(juce::MidiInput::openDevice())
 }
+
+void RatMidiManager::resetOuts()
+{
+	ratMidiOuts.clear();
+}
+
+void RatMidiManager::addOut(uint32 instNumber, juce::String devName, uint8 channel)
+{
+	while (ratMidiOuts.size() < uint64(instNumber + 1))
+	{
+		std::vector<RatMidiOut> temp;
+		ratMidiOuts.push_back(temp);
+	}
+
+	ratMidiOuts[instNumber].push_back(RatMidiOut(devName, channel));
+}
+
+uint8 RatMidiManager::findAvailableNoteNumber(uint8 requested)
+{
+	uint8 outp = requested;
+	uint8 offset = 1;
+
+}

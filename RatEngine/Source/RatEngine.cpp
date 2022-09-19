@@ -57,7 +57,7 @@ RatEngine::RatEngine(int port, JUCEApplication &a) :
     cbport(port),
     juce::InterprocessConnection::InterprocessConnection(false),
     app(a) {
-
+    setTonalCenter(60);
 }
 
 /*RatEngine::RatEngine(int port) :
@@ -183,6 +183,7 @@ void RatEngine::sendSysExTest()
 }
 
 void RatEngine::endItAll() {
+//    std::cout << "endItAll: line 186" << std::endl;
     for (int r = 0; r < 1; r++) {
         MemoryBlock myMessage;
         std::string mystr = "ENDCB";
@@ -203,6 +204,7 @@ void RatEngine::endItAll() {
 }
 
 RatEngine::~RatEngine() {
+//    std::cout << "~RatEngine: line 207" << std::endl;
     disconnect();
 }
 
@@ -229,6 +231,99 @@ void RatEngine::messageReceived(const juce::MemoryBlock &msg)
         juce::String device = textMessage.substring(19);
         midiManager.setActiveMidiInput(device);
     }
+    else if (textMessage.startsWith("addNote:")) {
+        int c1 = 8;
+        int c2 = textMessage.indexOf(c1, ":")+1;
+        int c3 = textMessage.indexOf(c2, ":")+1;
+        int id = textMessage.substring(c1, c2).getIntValue();
+        int inst = textMessage.substring(c2, c3).getIntValue();
+        int region = textMessage.substring(c3).getIntValue();
+        if (score.count(id) == 0)
+        {
+            score[id] = std::make_unique<RatNote>(1,1,0);
+        }
+        std::cout << "RtoE: addNote:" << id << ":" << inst << ":" << region << std::endl;
+    }
+    else if (textMessage.startsWith("modNote:")) {
+        int c1 = 8;
+        int c2 = textMessage.indexOf(c1, ":") + 1;
+        int c3 = textMessage.indexOf(c2, ":") + 1;
+        int id = textMessage.substring(c1, c2).getIntValue();
+        juce::String attribute = textMessage.substring(c2, c3);
+        if (attribute.compare("inst") == 0)
+        {
+            score[id]->setInstrument(uint8(textMessage.substring(c3).getIntValue()));
+        }
+        else if (attribute.compare("voice") == 0)
+        {
+            score[id]->setVoice(uint8(textMessage.substring(c3).getIntValue()));
+        }
+        else if (attribute.compare("region") == 0)
+        {
+            score[id]->setRegion(uint8(textMessage.substring(c3).getIntValue()));
+        }
+        else if (attribute.compare("time") == 0)
+        {
+            score[id]->setTime(textMessage.substring(c3).getDoubleValue());
+        }
+        else if (attribute.compare("dur") == 0)
+        {
+            score[id]->setDuration(textMessage.substring(c3).getDoubleValue());
+        }
+        else if (attribute.compare("db") == 0)
+        {
+            score[id]->setVel(uint8(textMessage.substring(c3).getIntValue()));
+        }
+        else if (attribute.compare("num") == 0)
+        {
+            score[id]->setNum(uint32(textMessage.substring(c3).getIntValue()));
+        }
+        else if (attribute.compare("den") == 0)
+        {
+            score[id]->setDen(uint32(textMessage.substring(c3).getIntValue()));
+        }
+        std::cout << "RtoE: modNote" << std::endl;
+    }
+    else if (textMessage.startsWith("delNote:")) {
+        uint32 id = uint32(textMessage.substring(8).getIntValue());
+        deleteBuffer[id] = std::move(score[id]);
+        score.erase(id);
+        std::cout << "RtoE: delNote" << std::endl;
+    }
+    else if (textMessage.startsWith("undelNote:")) {
+        uint32 id = uint32(textMessage.substring(10).getIntValue());
+        score[id] = std::move(deleteBuffer[id]);
+        deleteBuffer.erase(id);
+        std::cout << "RtoE: undelNote" << std::endl;
+    }
+    else if (textMessage.startsWith("definitiveDelNote:")) {
+        uint32 id = uint32(textMessage.substring(18).getIntValue());
+        score.erase(id);
+        std::cout << "RtoE: definitiveDelNote" << std::endl;
+    }
+    else if (textMessage.startsWith("addRegion:")) {
+        std::cout << "RtoE: addRegion" << std::endl;
+    }
+    else if (textMessage.startsWith("modRegion:")) {
+        std::cout << "RtoE: modRegion" << std::endl;
+    }
+    else if (textMessage.startsWith("addInst:")) {
+        std::cout << "RtoE: addInst" << std::endl;
+    }
+    else if (textMessage.startsWith("unAddInst")) {
+        std::cout << "RtoE: unAddInst" << std::endl;
+    }
+    else if (textMessage.startsWith("addOut:")) {
+        std::cout << "RtoE: addOut" << std::endl;
+    }
+    else if (textMessage.startsWith("unaddRegion:")) {
+        std::cout << "RtoE: unaddRegion" << std::endl;
+    }
+    else if (textMessage.startsWith("resetAll")) {
+        score.clear();
+        deleteBuffer.clear();
+        std::cout << "RtoE: resetAll" << std::endl;
+    }
     juce::MemoryBlock checker = msg;
     int a = 0;
 //    std::cin >> a;
@@ -251,3 +346,14 @@ void RatEngine::addNote(int id)
 
     }
 }
+
+int RatEngine::getTonalCenter()
+{
+    //return RatEngine::tonalCenter;
+}
+
+void RatEngine::setTonalCenter(int tc=60)
+{
+    //RatEngine::tonalCenter = tc;
+}
+

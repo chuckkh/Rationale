@@ -28,11 +28,12 @@ int RatNoteOn::trigger()
 }
 
 void RatNoteOn::setMTS(const void *data, int sz)
-{
+{	
 	MTSMessage.reset(&juce::MidiMessage::createSysExMessage(data, sz));
+
 }
 
 std::shared_ptr<juce::MidiMessage> RatNoteOn::getMTS()
 {
-
+	return MTSMessage;
 }

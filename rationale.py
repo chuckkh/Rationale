@@ -5492,7 +5492,7 @@ class note(noteSuperClass):
         super().__init__(parent, id, inst, voice, time, dur, db, num, den, region, sel, arb)
     def __setattr__(self, k, v):
         if not (k in dir(self) and self.__getattribute__(k) == v):
-            if k != "myparent" and k != "id":
+            if k != "myparent" and k != "id" and k != "dict":
                 self.myparent.engine.sendToEngine("modNote:"+str(self.id)+":"+str(k)+":"+str(v))
             super().__setattr__(k, v)
     def __del__(self):

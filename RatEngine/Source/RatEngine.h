@@ -57,7 +57,9 @@ public:
     void sendSysExTest();
 //    bool sendMessageNoHeader(const MemoryBlock&);
 //    void timerCallback();
-
+    int getTonalCenter();
+    void setTonalCenter(int);
+//    static int tonalCenter;
 private:
     int cbport;
     bool active = true;
@@ -66,9 +68,9 @@ private:
     //juce::OwnedArray<RatIOManager> ioManagers;
     juce::JUCEApplication& app;
     RatMidiManager midiManager;
-    std::map<uint32, std::unique_ptr<RatNote>> score;
+    std::map<uint32, std::unique_ptr<RatNote>> score, deleteBuffer;
     std::map<juce::String, juce::String> midiInDevices;
     std::map<juce::String, juce::String> midiOutDevices;
-
+//    static int tonalCenter;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (RatEngine)
 };

@@ -24,10 +24,11 @@ class RatNoteOn :
 {
 public:
     RatNoteOn::RatNoteOn(uint8, uint8, uint32, uint8, uint8, uint8);
+    int trigger() override;
     void setMTS(const void *, int);
     std::shared_ptr<juce::MidiMessage> getMTS();
 private:
-    int trigger() override;
     std::shared_ptr<juce::MidiMessage> MTSMessage;
+    juce::String out;
 };
 

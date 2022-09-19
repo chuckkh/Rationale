@@ -50,8 +50,8 @@ class RatEngineInterface:
         end = "END"
         endIndex = 0
         print("delegating...")
-        print("self.active = ", self.active)
-        print("self.parent.engineActive = ", self.parent.engineActive)
+        print("self.active =", self.active)
+        print("self.parent.engineActive =", self.parent.engineActive)
         while self.active == 1:
             #bb = bytearray()
             time.sleep(0.2)
@@ -74,7 +74,7 @@ class RatEngineInterface:
                         cmd, cbtext = cbtext.split("CB", 1)
 #                        print("Engine to Rationale:", cmd)
                         if cmd == "END" or cbtext == "ENDCB":
-                            #print("Ennnnnndaaa")
+                            print("Ennnnnndaaa: ratengineinterface.py line 77")
                             self.parent.engineActive = 0
                             self.active = 0
                             break

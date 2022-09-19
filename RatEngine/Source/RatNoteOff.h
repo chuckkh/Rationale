@@ -21,6 +21,10 @@
 class RatNoteOff :
     public RatEvent, juce::MidiMessage
 {
+public:
     int trigger() override;
+    int play();
+private:
+    juce::String out;
 };
 
