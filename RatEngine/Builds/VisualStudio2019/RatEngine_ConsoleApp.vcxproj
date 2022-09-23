@@ -2284,6 +2284,7 @@
       <AdditionalOptions> /bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_gui_extra.cpp" />
+    <ClCompile Include="..\..\Source\RatRegion.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Source\RatEngine.h" />
@@ -3187,6 +3188,7 @@
     <ClInclude Include="..\..\..\..\JUCE-for-Rationale\modules\juce_gui_extra\juce_gui_extra.h" />
     <ClInclude Include="..\..\JuceLibraryCode\AppConfig.h" />
     <ClInclude Include="..\..\JuceLibraryCode\JuceHeader.h" />
+    <ClInclude Include="..\..\Source\RatRegion.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\..\JUCE-for-Rationale\modules\juce_audio_devices\native\oboe\CMakeLists.txt" />

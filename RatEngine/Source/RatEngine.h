@@ -28,12 +28,13 @@
 #pragma once
 //#include "RatIOManager.h"
 #include "RatNote.h"
+#include "RatRegion.h"
 #include "RatMidiManager.h"
 #include <JuceHeader.h>
 #include <string>
 #include <algorithm>
 #include <map>
-
+#include <vector>
 class RatEngine : public juce::InterprocessConnection
 {
 public:
@@ -60,6 +61,7 @@ public:
     int getTonalCenter();
     void setTonalCenter(int);
 //    static int tonalCenter;
+    static std::vector<RatRegion> regions;
 private:
     int cbport;
     bool active = true;

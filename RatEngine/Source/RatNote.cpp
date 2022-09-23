@@ -18,7 +18,7 @@
 #include "RatIO.h"
 #include "RatNote.h"
 
-uint8 RatNote::tonalCenter = 60;
+uint8 RatNote::globalTonalCenter = 60;
 
 RatNote::RatNote(uint32 _id, uint32 _num = 1, uint32 _den = 1, double _centOffset = 0, uint8 _instrument = 1, uint8 _voice = 0, uint8 _vel = 100, uint8 _region = 0)
 {
@@ -42,6 +42,23 @@ RatNote::RatNote(int _num, int _den, int _cents=0) : num(_num), den(_den), centO
 	instrument = 1;
 	vel = 100;
 	centOffset = 0;
+
+}
+
+int RatNote::createNoteOn()
+{
+
+}
+int RatNote::createNoteOff()
+{
+
+}
+void RatNote::updateNoteOn()
+{
+
+}
+void RatNote::updateNoteOff()
+{
 
 }
 

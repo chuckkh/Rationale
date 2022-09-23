@@ -171,6 +171,9 @@ void RatEngine::sendSysExTest()
     juce::Array<MidiDeviceInfo> devices = juce::MidiOutput::getAvailableDevices();
 
     //juce::MidiOutput midout();
+    if (devices.isEmpty()) {
+        return;
+    }
     auto midout = juce::MidiOutput::openDevice(devices[1].identifier);
     uint8 data[] = {127, 127, 8, 2, 0, 1, 60, 61, 100, 100};
     int sz = 10;
@@ -301,27 +304,81 @@ void RatEngine::messageReceived(const juce::MemoryBlock &msg)
         score.erase(id);
         std::cout << "RtoE: definitiveDelNote" << std::endl;
     }
-    else if (textMessage.startsWith("addRegion:")) {
-        std::cout << "RtoE: addRegion" << std::endl;
-    }
-    else if (textMessage.startsWith("modRegion:")) {
-        std::cout << "RtoE: modRegion" << std::endl;
+    else if (textMessage.startsWith("addRegion:") || textMessage.startsWith("modRegion:")) {
+        uint32 id, num, den;
+        double centOffset = 0;
+        int c1 = 10;
+        int c2 = textMessage.indexOf(c1, ":") + 1;
+        int c3 = textMessage.indexOf(c2, ":") + 1;
+        id = textMessage.substring(c1, c2 - 1).getIntValue();
+        num = textMessage.substring(c2, c3 - 1).getIntValue();
+        den = textMessage.substring(c3).getIntValue();
+        while (RatNote::regions.size() <= id)
+        {
+            RatNote::regions.push_back(std::make_unique<RatRegion>(num, den, centOffset));
+        }
+        RatNote::regions[id]->setDen(den);
+        RatNote::regions[id]->setNum(num);
+        RatNote::regions[id]->setCentOffset(centOffset);
+        std::cout << "RtoE: " << textMessage.substring(0,10) << " " << id <<" : " << num <<" : " << den << std::endl;
     }
     else if (textMessage.startsWith("addInst:")) {
+        uint32 id = textMessage.substring(8).getIntValue();
+        while (RatNote::instruments.size() <= id) {
+            // Note that the first instrument is 1, not 0.
+            // But for now, we'll leave an empty instrument in 0.
+            std::vector<std::pair<juce::String, uint8>> temp;
+            RatNote::instruments.push_back(temp);
+        }
         std::cout << "RtoE: addInst" << std::endl;
     }
-    else if (textMessage.startsWith("unAddInst")) {
+    else if (textMessage.startsWith("unAddInst:")) {
+        uint32 id = textMessage.substring(10).getIntValue();
+        while (RatNote::instruments.size() > id) {
+            RatNote::instruments.pop_back();
+        }
         std::cout << "RtoE: unAddInst" << std::endl;
     }
     else if (textMessage.startsWith("addOut:")) {
+        int c1 = 7;
+        int c2 = textMessage.indexOf(c1, ":") + 1;
+        int c3 = textMessage.indexOf(c2, ":") + 1;
+        int c4 = textMessage.indexOf(c3, ":") + 1;
+        uint32 instrument = textMessage.substring(c1, c2 - 1).getIntValue();
+        juce::String type = textMessage.substring(c2, c3 - 1);
+        juce::String dev = textMessage.substring(c3, c4 - 1);
+        uint8 channel = textMessage.substring(c4).getIntValue();
+        while (RatNote::instruments.size() <= instrument) {
+            std::vector<std::pair<juce::String, uint8>> temp;
+            RatNote::instruments.push_back(temp);
+        }
+        RatNote::instruments[instrument].push_back(std::make_pair(dev, channel));
         std::cout << "RtoE: addOut" << std::endl;
     }
+    else if (textMessage.startsWith("resetOuts:")) {
+        auto it = RatNote::instruments.begin();
+        auto itEnd = RatNote::instruments.end();
+        while (it != itEnd) {
+            it->clear();
+        }
+        std::cout << "RtoE: resetOuts" << std::endl;
+    }
     else if (textMessage.startsWith("unaddRegion:")) {
+        uint32 id = textMessage.substring(12).getIntValue();
+        while (RatNote::regions.size() > id) {
+            RatNote::regions.pop_back();
+        }
         std::cout << "RtoE: unaddRegion" << std::endl;
     }
     else if (textMessage.startsWith("resetAll")) {
         score.clear();
         deleteBuffer.clear();
+        RatNote::regions.clear();
+        RatNote::instruments.clear();
+        while (RatNote::instruments.size() < 2) {
+            std::vector<std::pair<juce::String, uint8>> temp;
+            RatNote::instruments.push_back(temp);
+        }
         std::cout << "RtoE: resetAll" << std::endl;
     }
     juce::MemoryBlock checker = msg;

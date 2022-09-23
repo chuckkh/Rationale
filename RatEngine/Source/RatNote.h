@@ -18,9 +18,11 @@
 #pragma once
 #include "JuceHeader.h"
 #include "RatEvent.h"
+#include "RatRegion.h"
 #include "RatNoteOn.h"
 #include "RatNoteOff.h"
 #include <memory>
+#include <vector>
 
 class RatNote //: public RatEvent
 {
@@ -33,7 +35,7 @@ public:
 	void updateNoteOff();
 
 	int play();
-	static uint8 tonalCenter;
+	static uint8 globalTonalCenter;
 	static double globalCentsOffset;
 	uint32 getId();
 	uint8 getInstrument();
@@ -57,7 +59,8 @@ public:
 	void setCentOffset(double);
 	void setTime(double);
 	void setDuration(double);
-
+	static std::vector<std::unique_ptr<RatRegion>> regions;
+	static std::vector<std::vector<std::pair<juce::String, uint8>>> instruments;
 private:
 	uint32 id;
 	uint8 instrument;

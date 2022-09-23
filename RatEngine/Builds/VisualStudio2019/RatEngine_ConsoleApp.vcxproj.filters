@@ -2769,6 +2769,9 @@
     <ClCompile Include="..\..\Source\RatMidiInputCallback.cpp">
       <Filter>RatEngine\Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\RatRegion.cpp">
+      <Filter>RatEngine\Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Source\RatEngine.h">
@@ -5472,6 +5475,9 @@
       <Filter>JUCE Library Code</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\RatMidiInputCallback.h">
+      <Filter>RatEngine\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\RatRegion.h">
       <Filter>RatEngine\Source</Filter>
     </ClInclude>
   </ItemGroup>
