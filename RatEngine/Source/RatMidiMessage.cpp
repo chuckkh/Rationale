@@ -27,23 +27,47 @@
 
 #include "RatMidiMessage.h"
 
-juce::MidiOutput* RatMidiMessage::getMidiOutput()
+/*
+RatMidiMessage::RatMidiMessage(uint8 nn_, uint8 vel_, uint8 channel_, double timestamp_, juce::String out_)
+    : juce::MidiMessage(144 + (channel_ % 17), nn_ & 127, vel_ & 127, timestamp_)
 {
-    return myOutput.get();
+    preMessage = nullptr;
+}
+*/
 
+RatMidiMessage::RatMidiMessage(uint8 b1, uint8 b2, uint8 b3, double timestamp_, juce::String out_)
+    : juce::MidiMessage(b1, b2, b3, timestamp_)
+{
+    preMessage = nullptr;
+    setOut(out_);
 }
 
-void RatMidiMessage::setMidiOutput(juce::MidiOutput* myOutput_)
+juce::String RatMidiMessage::getOut()
 {
-    myOutput.reset(myOutput_);
+    return out;
 }
 
-juce::String RatMidiMessage::getMidiOut()
+void RatMidiMessage::setOut(juce::String out_)
 {
-    return myMidiOut;
+    out = out_;
 }
 
-void RatMidiMessage::setMidiOut(juce::String _myMidiOut)
+void RatMidiMessage::setPreMessage(const void* data, int sz)
 {
-    myMidiOut = _myMidiOut;
+    preMessage.reset(&juce::MidiMessage::createSysExMessage(data, sz));
+}
+
+std::shared_ptr<juce::MidiMessage> RatMidiMessage::getPreMessage()
+{
+    return preMessage;
+}
+
+void RatMidiMessage::setPreMessageOut(juce::String out_)
+{
+    preMessage->setOut(out_);
+}
+
+int RatMidiMessage::trigger()
+{
+    return 0;
 }

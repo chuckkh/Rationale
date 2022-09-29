@@ -17,23 +17,22 @@
 
 #include "RatNoteOn.h"
 
-RatNoteOn::RatNoteOn(uint8 nn, uint8 vel, uint32 timestamp, uint8 tonalCenter, uint8 offsetMSB, uint8 offsetLSB)
+RatNoteOn::RatNoteOn(uint8 nn_, uint8 vel_, uint8 channel_, double timestamp_, juce::String out_)
+	: RatMidiMessage(144 + (channel_ % 17), nn_ & 127, vel_ & 127, timestamp_, out_)
+	// (nn_, vel_, channel_, timestamp_, out_)
 {
-
+	nn = nn_;
+	vel = vel_;
+	timestampInt = uint32(this->getTimeStamp());
+//	timestamp = timestamp_;
+	channel_ %= 17;
+	channel = channel_;
 }
+
 
 int RatNoteOn::trigger()
 {
 	return 0;
 }
 
-void RatNoteOn::setMTS(const void *data, int sz)
-{	
-	MTSMessage.reset(&juce::MidiMessage::createSysExMessage(data, sz));
 
-}
-
-std::shared_ptr<juce::MidiMessage> RatNoteOn::getMTS()
-{
-	return MTSMessage;
-}

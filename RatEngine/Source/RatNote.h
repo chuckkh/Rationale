@@ -28,7 +28,7 @@ class RatNote //: public RatEvent
 {
 public:
 	RatNote(int, int, int);
-	RatNote(uint32, uint32, uint32, double, uint8, uint8, uint8, uint8);
+	RatNote(uint32, double, double, uint32, uint32, double, uint8, uint8, uint8, uint8);
 	int createNoteOn();
 	int createNoteOff();
 	void updateNoteOn();
@@ -48,6 +48,9 @@ public:
 	double getCentOffset();
 	double getTime();
 	double getDuration();
+	uint8 getIdealNn();
+	uint8 getMtsByte1();
+	uint8 getMtsByte2();
 	void setId(uint32);
 	void setInstrument(uint8);
 	void setVoice(uint8);
@@ -59,8 +62,16 @@ public:
 	void setCentOffset(double);
 	void setTime(double);
 	void setDuration(double);
+	void setIdealNn(uint8);
+	void setMtsByte1(uint8);
+	void setMtsByte2(uint8);
+	void resetTuning();
 	static std::vector<std::unique_ptr<RatRegion>> regions;
 	static std::vector<std::vector<std::pair<juce::String, uint8>>> instruments;
+	static double bit7;
+	static double bit14;
+	static double semitone;
+
 private:
 	uint32 id;
 	uint8 instrument;
@@ -73,7 +84,11 @@ private:
 	uint32 den;
 //	uint32 cents;
 	double centOffset;
-	std::shared_ptr<RatEvent> tuningMessage, noteOn, noteOff;
+	std::shared_ptr<RatMidiMessage> tuningMessage, noteOn, noteOff;
+	uint8 idealNn;
+	uint8 mtsByte1;
+	uint8 mtsByte2;
+	std::vector<uint8> tuningBytes;
 //	uint32 beat;
 //	uint32 beatSubNum;
 //	uint32 beatSubDen;

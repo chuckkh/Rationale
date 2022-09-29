@@ -18,17 +18,21 @@
 #pragma once
 #include "RatEvent.h"
 #include "JuceHeader.h"
+#include "RatMidiMessage.h"
 
 class RatNoteOn :
-    public RatEvent, juce::MidiMessage
+    public RatEvent, RatMidiMessage
 {
 public:
-    RatNoteOn::RatNoteOn(uint8, uint8, uint32, uint8, uint8, uint8);
+    RatNoteOn(uint8, uint8, uint8, double, juce::String);
+
     int trigger() override;
-    void setMTS(const void *, int);
-    std::shared_ptr<juce::MidiMessage> getMTS();
 private:
-    std::shared_ptr<juce::MidiMessage> MTSMessage;
-    juce::String out;
+//    juce::String out;
+    uint32 timestampInt;
+//  double timestamp;
+    uint8 nn;
+    uint8 vel;
+    uint8 channel;
 };
 

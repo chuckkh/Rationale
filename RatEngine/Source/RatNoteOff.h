@@ -18,13 +18,18 @@
 #pragma once
 #include "RatEvent.h"
 #include "JuceHeader.h"
+#include "RatMidiMessage.h"
+
 class RatNoteOff :
-    public RatEvent, juce::MidiMessage
+    public RatEvent, RatMidiMessage
 {
 public:
-    int trigger() override;
+    RatNoteOff(uint8, uint8, uint8, double, juce::String);
     int play();
 private:
-    juce::String out;
+//    juce::String out;
+    uint8 nn;
+    uint8 vel;
+    uint8 channel;
 };
 

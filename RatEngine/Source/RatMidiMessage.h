@@ -29,15 +29,19 @@
 
 #include <JuceHeader.h>
 #include "RatMidiOut.h"
+#include "RatEvent.h"
 
-class RatMidiMessage : public juce::MidiMessage
+class RatMidiMessage : public juce::MidiMessage, RatEvent
 {
 public:
-    juce::MidiOutput* getMidiOutput();
-    void setMidiOutput(juce::MidiOutput*);
-    juce::String getMidiOut();
-    void setMidiOut(juce::String);
+    RatMidiMessage(uint8, uint8, uint8, double, juce::String);
+    juce::String getOut();
+    void setOut(juce::String);
+    int trigger() override;
+    void setPreMessage(const void*, int);
+    std::shared_ptr<juce::MidiMessage> getPreMessage();
+    void setPreMessageOut(juce::String);
 private:
-    std::shared_ptr<juce::MidiOutput> myOutput;
-    juce::String myMidiOut;
+    std::shared_ptr<RatMidiMessage> preMessage;
+    juce::String out;
 };

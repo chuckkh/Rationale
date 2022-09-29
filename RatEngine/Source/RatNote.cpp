@@ -14,35 +14,20 @@
 //
 //    You should have received a copy of the GNU General Public License
 //    along with Rationale.  If not, see <http://www.gnu.org/licenses/>.
-					  
+
+#include <cmath>
 #include "RatIO.h"
 #include "RatNote.h"
 
 uint8 RatNote::globalTonalCenter = 60;
+double RatNote::bit7 = pow(2, 7);
+double RatNote::bit14 = pow(2, 14);
+double RatNote::semitone = pow(2, 1.0 / 12.0);
 
-RatNote::RatNote(uint32 _id, uint32 _num = 1, uint32 _den = 1, double _centOffset = 0, uint8 _instrument = 1, uint8 _voice = 0, uint8 _vel = 100, uint8 _region = 0)
+RatNote::RatNote(uint32 id_, double time_, double duration_, uint32 num_ = 1, uint32 den_ = 1, double centOffset_ = 0, uint8 instrument_ = 1, uint8 voice_ = 0, uint8 vel_ = 100, uint8 region_ = 0)
+	: id(id_), time(time_), duration(duration_), num(num_), den(den_), voice(voice_), region(region_), instrument(instrument_), vel(vel_), centOffset(centOffset_), selected(false)
 {
-	id = _id;
-	num = _num;
-	den = _den;
-	voice = _voice;
-	region = _region;
-	selected = 0;
-	instrument = _instrument;
-	vel = _vel;
-	centOffset = _centOffset;
-	selected = false;
-}
-RatNote::RatNote(int _num, int _den, int _cents=0) : num(_num), den(_den), centOffset(_cents)
-{
-	id = 0;
-	voice = 0;
-	region = 0;
-	selected = false;
-	instrument = 1;
-	vel = 100;
-	centOffset = 0;
-
+	resetTuning();
 }
 
 int RatNote::createNoteOn()
@@ -122,59 +107,120 @@ double RatNote::getDuration()
 	return duration;
 }
 
+uint8 RatNote::getIdealNn()
+{
+	return idealNn;
+}
+
+uint8 RatNote::getMtsByte1()
+{
+	return mtsByte1;
+}
+
+uint8 RatNote::getMtsByte2()
+{
+	return mtsByte2;
+}
+
 void RatNote::setId(uint32 _id)
 {
 	id = _id;
 }
 
-void RatNote::setInstrument(uint8 _instrument)
+void RatNote::setInstrument(uint8 instrument_)
 {
-	instrument = _instrument;
+	instrument = instrument_;
+
+//	noteOn->setOut(instrument_);
+//	noteOn->setPreMessageOut(instrument_);
+//	noteOff->setOut(instrument_);
+	// update NoteOn / NoteOff
 }
 
 void RatNote::setVoice(uint8 _voice)
 {
 	voice = _voice;
+	// update NoteOn / NoteOff
 }
 
-void RatNote::setVel(uint8 _vel)
+void RatNote::setVel(uint8 vel_)
 {
-	vel = _vel;
+	vel = vel_;
+	noteOn->setVelocity(float(vel_) / 127.0);
 }
 
-void RatNote::setRegion(uint8 _region)
+void RatNote::setRegion(uint8 region_)
 {
-	region = _region;
+	region = region_;
 }
 
-void RatNote::setSelected(bool _selected)
+void RatNote::setSelected(bool selected_)
 {
-	selected = _selected;
+	selected = selected_;
 }
 
-void RatNote::setNum(uint32 _num)
+void RatNote::setNum(uint32 num_)
 {
-	num = _num;
+	num = num_;
+	resetTuning();
 }
 
-void RatNote::setDen(uint32 _den)
+void RatNote::setDen(uint32 den_)
 {
-	den = _den;
+	den = den_;
+	resetTuning();
 }
 
-void RatNote::setCentOffset(double _centOffset)
+void RatNote::setCentOffset(double centOffset_)
 {
-	centOffset = _centOffset;
+	centOffset = centOffset_;
+	resetTuning();
 }
 
-void RatNote::setTime(double _time)
+void RatNote::setTime(double time_)
 {
-	time = _time;
+	double timeDelta = time_ - noteOn->getTimeStamp();
+	time = time_;
+	noteOn->addToTimeStamp(timeDelta);
+	noteOff->addToTimeStamp(timeDelta);
 }
 
-void RatNote::setDuration(double _duration)
+void RatNote::setDuration(double duration_)
 {
-	duration = _duration;
+	double current = noteOff->getTimeStamp();
+	duration = duration_;
+	noteOff->addToTimeStamp(duration_ - current);
+}
+
+void RatNote::setIdealNn(uint8 idealNn_)
+{
+	idealNn = idealNn_;
+}
+
+void RatNote::setMtsByte1(uint8 mtsByte1_)
+{
+	mtsByte1 = mtsByte1_;
+}
+
+void RatNote::setMtsByte2(uint8 mtsByte2_)
+{
+	mtsByte2 = mtsByte2_;
+}
+
+void RatNote::resetTuning()
+{
+	double goal = (log(num / den) / log(semitone)) * RatNote::regions[region]->getNum() / RatNote::regions[region]->getDen() + centOffset * 0.01 + RatNote::globalTonalCenter;
+	goal = round(goal * bit14 / bit14);
+	tuningBytes = { 127, 127, 8, 2, 1, 1, uint8(goal), uint8(goal) };
+	setIdealNn(uint8(goal));
+	goal -= idealNn;
+	goal *= bit7;
+	tuningBytes.push_back(uint8(goal));
+	setMtsByte1(uint8(goal));
+	goal *= bit7;
+	tuningBytes.push_back(uint8(goal));
+	setMtsByte2(uint8(goal));
+	noteOn->setPreMessage(&tuningBytes, 10);
 }
 
 int createNoteOn()
