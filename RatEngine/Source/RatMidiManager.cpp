@@ -98,6 +98,62 @@ void RatMidiManager::addOut(uint32 instNumber, juce::String devName, uint8 chann
 uint8 RatMidiManager::findAvailableNoteNumber(uint8 requested)
 {
 	uint8 outp = requested;
-	uint8 offset = 1;
+	int16 offset = 1;
+	int8 sign = 1;
+	while (noteNumbers.test(requested))
+	{
+		requested += offset * sign;
+		offset += 1;
+		sign = -sign;
+		if (requested < 0 || requested > 127)
+		{
+			requested += offset * sign;
+			offset += 1;
+			sign = -sign;
+		}
+	}
+	noteNumbers.set(requested);
+	return requested;
+}
 
+void RatMidiManager::clearAvailableNoteNumber(uint8 nn)
+{
+	noteNumbers.set(nn, false);
+}
+
+void RatMidiManager::addMidiMessage(std::shared_ptr<RatMidiMessage> message_)
+{
+	midiScore.push_back(message_);
+//	midiScore.insert(std::pair<double, std::shared_ptr<RatMidiMessage>>(time_, message_));
+}
+
+bool compareRatMidiMessages(const RatMidiMessage& first, const RatMidiMessage& second)
+{
+	return (first.getTimeStamp() < second.getTimeStamp());
+}
+
+void RatMidiManager::sortMidiScore()
+{
+	midiScore.sort(compareRatMidiMessages);
+}
+
+void RatMidiManager::eraseMidiMessage(uint32 id_)
+{
+	std::list<std::shared_ptr<RatMidiMessage>>::iterator it = midiScore.begin(), theEnd = midiScore.end();
+	while (it != theEnd)
+	{
+		if ((*it)->getId() == id_)
+		{
+			it = midiScore.erase(it);
+		}
+		else
+		{
+			it++;
+		}
+	}
+}
+
+void RatMidiManager::clearMidiScore()
+{
+	midiScore.clear();
 }

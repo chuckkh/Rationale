@@ -24,7 +24,7 @@ class RatNoteOff :
     public RatEvent, RatMidiMessage
 {
 public:
-    RatNoteOff(uint8, uint8, uint8, double, juce::String);
+    RatNoteOff(uint8, uint8, uint8, double, uint8, uint32);
     int play();
 private:
 //    juce::String out;

@@ -24,7 +24,7 @@ class RatNoteOn :
     public RatEvent, RatMidiMessage
 {
 public:
-    RatNoteOn(uint8, uint8, uint8, double, juce::String);
+    RatNoteOn(uint8, uint8, uint8, double, uint8, uint32);
 
     int trigger() override;
 private:

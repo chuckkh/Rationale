@@ -51,6 +51,8 @@ public:
 	uint8 getIdealNn();
 	uint8 getMtsByte1();
 	uint8 getMtsByte2();
+	std::shared_ptr<RatMidiMessage> getNoteOn();
+	std::shared_ptr<RatMidiMessage> getNoteOff();
 	void setId(uint32);
 	void setInstrument(uint8);
 	void setVoice(uint8);

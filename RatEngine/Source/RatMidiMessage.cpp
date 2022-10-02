@@ -35,11 +35,13 @@ RatMidiMessage::RatMidiMessage(uint8 nn_, uint8 vel_, uint8 channel_, double tim
 }
 */
 
-RatMidiMessage::RatMidiMessage(uint8 b1, uint8 b2, uint8 b3, double timestamp_, juce::String out_)
+RatMidiMessage::RatMidiMessage(uint8 b1, uint8 b2, uint8 b3, double timestamp_, uint8 instrument_, uint32 id_)
     : juce::MidiMessage(b1, b2, b3, timestamp_)
 {
     preMessage = nullptr;
-    setOut(out_);
+    setInstrument(instrument_);
+    setId(id_);
+    //setOut(out_);
 }
 
 juce::String RatMidiMessage::getOut()
@@ -70,4 +72,24 @@ void RatMidiMessage::setPreMessageOut(juce::String out_)
 int RatMidiMessage::trigger()
 {
     return 0;
+}
+
+uint8 RatMidiMessage::getInstrument()
+{
+    return instrument;
+}
+
+void RatMidiMessage::setInstrument(uint8 instrument_)
+{
+    instrument = instrument_;
+}
+
+uint32 RatMidiMessage::getId()
+{
+    return id;
+}
+
+void RatMidiMessage::setId(uint32 id_)
+{
+    id = id_;
 }

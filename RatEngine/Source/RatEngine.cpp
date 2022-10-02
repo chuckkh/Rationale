@@ -28,6 +28,7 @@
 #include "RatEngine.h"
 #include <string>
 #include <iostream>
+#include <memory>
 //#include <chrono>
 //#include <thread>
 /*
@@ -58,6 +59,8 @@ RatEngine::RatEngine(int port, JUCEApplication &a) :
     juce::InterprocessConnection::InterprocessConnection(false),
     app(a) {
     setTonalCenter(60);
+    setCurrentScoreTime(0);
+    currentScoreIndex = 0;
 }
 
 /*RatEngine::RatEngine(int port) :
@@ -245,6 +248,12 @@ void RatEngine::messageReceived(const juce::MemoryBlock &msg)
         {
             score[id] = std::make_unique<RatNote>(1,1,0);
         }
+        else
+        {
+            score[id].reset(new RatNote(1, 1, 0));
+        }
+        midiManager.addMidiMessage(score[id]->getNoteOn());
+        midiManager.addMidiMessage(score[id]->getNoteOff());
         std::cout << "RtoE: addNote:" << id << ":" << inst << ":" << region << std::endl;
     }
     else if (textMessage.startsWith("modNote:")) {
@@ -289,6 +298,7 @@ void RatEngine::messageReceived(const juce::MemoryBlock &msg)
     }
     else if (textMessage.startsWith("delNote:")) {
         uint32 id = uint32(textMessage.substring(8).getIntValue());
+        midiManager.eraseMidiMessage(id);
         deleteBuffer[id] = std::move(score[id]);
         score.erase(id);
         std::cout << "RtoE: delNote" << std::endl;
@@ -297,10 +307,14 @@ void RatEngine::messageReceived(const juce::MemoryBlock &msg)
         uint32 id = uint32(textMessage.substring(10).getIntValue());
         score[id] = std::move(deleteBuffer[id]);
         deleteBuffer.erase(id);
+        score[id]->createNoteOn();
+        score[id]->createNoteOff();
+        score[id]->resetTuning();
         std::cout << "RtoE: undelNote" << std::endl;
     }
     else if (textMessage.startsWith("definitiveDelNote:")) {
         uint32 id = uint32(textMessage.substring(18).getIntValue());
+        midiManager.eraseMidiMessage(id);
         score.erase(id);
         std::cout << "RtoE: definitiveDelNote" << std::endl;
     }
@@ -371,6 +385,7 @@ void RatEngine::messageReceived(const juce::MemoryBlock &msg)
         std::cout << "RtoE: unaddRegion" << std::endl;
     }
     else if (textMessage.startsWith("resetAll")) {
+        midiManager.clearMidiScore();
         score.clear();
         deleteBuffer.clear();
         RatNote::regions.clear();
@@ -414,3 +429,76 @@ void RatEngine::setTonalCenter(int tc=60)
     //RatEngine::tonalCenter = tc;
 }
 
+void RatEngine::startPlayback()
+{
+    midiManager.sortMidiScore();
+    //
+    // I have to redo this! To find the right score index for the starting point.
+    //
+    playing = true;
+    //currentScoreIndex = midiManager.getNextIndexAtTime(currentScoreTime);
+    //scoreCursor = midiManager.begin();
+}
+
+void RatEngine::stopPlayback()
+{
+    playing = false;
+}
+
+void RatEngine::continuePlayback()
+{
+    playing = true;
+}
+
+void RatEngine::setSPP(uint16 sixteenths)
+{
+    setCurrentScoreTime(double(sixteenths) * 0.25);
+    //
+    // I have to redo this! To find the right score index for the starting point.
+    //
+
+}
+
+void RatEngine::incrementMidiBeatClock()
+{
+    double t_ = getCurrentScoreTime() + 1.0 / 24.0;
+    setCurrentScoreTime(t_);
+    if (playing)
+    {
+
+        while (currentScoreTime >= midiManager.getEventTime(currentScoreIndex))
+        {
+            auto eventHolder = midiManager.getEventPointer(currentScoreIndex);
+            
+            std::shared_ptr<RatMidiMessage> scoreEvent = std::dynamic_pointer_cast<RatMidiMessage>(std::make_shared<juce::MidiMessage>(eventHolder->message));
+            std::shared_ptr<juce::MidiMessage> pre = scoreEvent->getPreMessage();
+            if (pre == nullptr)
+                // noteoff
+            {
+                //send message
+                midiManager.clearAvailableNoteNumber(scoreEvent->getChannel());
+            }
+            else
+                // noteon
+            {
+
+            }
+
+        }
+    }
+}
+
+void RatEngine::sendMidiMessage(juce::MidiMessage)
+{
+
+}
+
+void RatEngine::setCurrentScoreTime(double t_)
+{
+    currentScoreTime = t_;
+}
+
+double RatEngine::getCurrentScoreTime()
+{
+    return currentScoreTime;
+}

@@ -27,21 +27,31 @@ double RatNote::semitone = pow(2, 1.0 / 12.0);
 RatNote::RatNote(uint32 id_, double time_, double duration_, uint32 num_ = 1, uint32 den_ = 1, double centOffset_ = 0, uint8 instrument_ = 1, uint8 voice_ = 0, uint8 vel_ = 100, uint8 region_ = 0)
 	: id(id_), time(time_), duration(duration_), num(num_), den(den_), voice(voice_), region(region_), instrument(instrument_), vel(vel_), centOffset(centOffset_), selected(false)
 {
+	createNoteOn();
+	createNoteOff();
 	resetTuning();
+
 }
 
 int RatNote::createNoteOn()
 {
-
+	//uint8 nn_, uint8 vel_, uint8 channel_, double timestamp_, juce::String out_
+	noteOn = std::make_shared<RatNoteOn>(idealNn, vel, RatNote::instruments[instrument][0].second, time, instrument);
+	return 0;
 }
+
 int RatNote::createNoteOff()
 {
-
+	//uint8 nn_, uint8 vel_, uint8 channel_, double timestamp_, juce::String out_
+	noteOff = std::make_shared<RatNoteOff>(idealNn, 0, RatNote::instruments[instrument][0].second, time+duration, instrument);
+	return 0;
 }
+
 void RatNote::updateNoteOn()
 {
 
 }
+
 void RatNote::updateNoteOff()
 {
 
@@ -122,6 +132,16 @@ uint8 RatNote::getMtsByte2()
 	return mtsByte2;
 }
 
+std::shared_ptr<RatMidiMessage> RatNote::getNoteOn()
+{
+	return noteOn;
+}
+
+std::shared_ptr<RatMidiMessage> RatNote::getNoteOff()
+{
+	return noteOff;
+}
+
 void RatNote::setId(uint32 _id)
 {
 	id = _id;
@@ -130,7 +150,8 @@ void RatNote::setId(uint32 _id)
 void RatNote::setInstrument(uint8 instrument_)
 {
 	instrument = instrument_;
-
+	noteOn->setInstrument(instrument_);
+	noteOff->setInstrument(instrument_);
 //	noteOn->setOut(instrument_);
 //	noteOn->setPreMessageOut(instrument_);
 //	noteOff->setOut(instrument_);
@@ -179,17 +200,17 @@ void RatNote::setCentOffset(double centOffset_)
 
 void RatNote::setTime(double time_)
 {
-	double timeDelta = time_ - noteOn->getTimeStamp();
 	time = time_;
-	noteOn->addToTimeStamp(timeDelta);
-	noteOff->addToTimeStamp(timeDelta);
+	noteOn->setTimeStamp(time_);
+	noteOff->setTimeStamp(time_ + duration);
 }
 
 void RatNote::setDuration(double duration_)
 {
-	double current = noteOff->getTimeStamp();
+//	double current = noteOff->getTimeStamp();
 	duration = duration_;
-	noteOff->addToTimeStamp(duration_ - current);
+//	noteOff->addToTimeStamp(duration_ - current);
+	noteOff->setTimeStamp(time + duration_);
 }
 
 void RatNote::setIdealNn(uint8 idealNn_)
@@ -220,11 +241,13 @@ void RatNote::resetTuning()
 	goal *= bit7;
 	tuningBytes.push_back(uint8(goal));
 	setMtsByte2(uint8(goal));
-	noteOn->setPreMessage(&tuningBytes, 10);
-}
-
-int createNoteOn()
-{
-	
-	return 0;
+	if (noteOn != nullptr)
+	{
+		noteOn->setNoteNumber(idealNn);
+		noteOn->setPreMessage(&tuningBytes, 10);
+	}
+	if (noteOff != nullptr)
+	{
+		noteOff->setNoteNumber(idealNn);
+	}
 }

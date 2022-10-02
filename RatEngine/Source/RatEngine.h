@@ -60,9 +60,20 @@ public:
 //    void timerCallback();
     int getTonalCenter();
     void setTonalCenter(int);
+    void startPlayback();
+    void stopPlayback();
+    void continuePlayback();
+    void setSPP(uint16);
+    void incrementMidiBeatClock();
+    void sendMidiMessage(juce::MidiMessage);
+    double getCurrentScoreTime();
+    void setCurrentScoreTime(double);
+//    juce::MidiMessageSequence::MidiEventHolder** scoreCursor;
+
 //    static int tonalCenter;
     static std::vector<RatRegion> regions;
 private:
+    bool playing;
     int cbport;
     bool active = true;
     std::unique_ptr<juce::MidiOutput> mdout;
@@ -73,6 +84,8 @@ private:
     std::map<uint32, std::unique_ptr<RatNote>> score, deleteBuffer;
     std::map<juce::String, juce::String> midiInDevices;
     std::map<juce::String, juce::String> midiOutDevices;
+    double currentScoreTime;
+    uint64 currentScoreIndex;
 //    static int tonalCenter;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (RatEngine)
 };

@@ -25,6 +25,8 @@
 #include <map>
 #include <memory>
 #include <bitset>
+#include <forward_list>
+#include <list>
 
 class RatMidiManager : public juce::MidiMessageSequence
 {
@@ -43,6 +45,11 @@ public:
 	void resetOuts();
 	void addOut(uint32, juce::String, uint8);
 	uint8 findAvailableNoteNumber(uint8);
+	void clearAvailableNoteNumber(uint8);
+	void addMidiMessage(std::shared_ptr<RatMidiMessage>);
+	void sortMidiScore();
+	void eraseMidiMessage(uint32);
+	void clearMidiScore();
 private:
 	//std::map <juce::String, std::pair<juce::MidiInput, uint16>> activeMidiInputs;
 	std::unique_ptr<juce::MidiInput> activeMidiInput;
@@ -51,6 +58,9 @@ private:
 	std::map<juce::String, juce::String> midiInDevices;
 	std::map<juce::String, juce::String> midiOutDevices;
 	std::bitset<128> noteNumbers;
+//	std::map<double, std::forward_list<std::shared_ptr<RatMidiMessage>>> midiScore;
+//	std::map<double, std::shared_ptr<RatMidiMessage>> midiScore;
+	std::list<std::shared_ptr<RatMidiMessage>> midiScore;
 	std::vector<std::vector<RatMidiOut>> ratMidiOuts;
 };
 

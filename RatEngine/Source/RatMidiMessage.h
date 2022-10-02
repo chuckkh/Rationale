@@ -34,14 +34,20 @@
 class RatMidiMessage : public juce::MidiMessage, RatEvent
 {
 public:
-    RatMidiMessage(uint8, uint8, uint8, double, juce::String);
+    RatMidiMessage(uint8, uint8, uint8, double, uint8, uint32);
     juce::String getOut();
     void setOut(juce::String);
     int trigger() override;
     void setPreMessage(const void*, int);
     std::shared_ptr<juce::MidiMessage> getPreMessage();
     void setPreMessageOut(juce::String);
+    void setInstrument(uint8);
+    uint8 getInstrument();
+    uint32 getId();
+    void setId(uint32);
 private:
     std::shared_ptr<RatMidiMessage> preMessage;
     juce::String out;
+    uint8 instrument;
+    uint32 id;
 };
