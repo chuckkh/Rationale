@@ -21,6 +21,7 @@ void RatMidiInputCallback::handleIncomingMidiMessage(juce::MidiInput* input, con
 {
 
 	if (msg.isSongPositionPointer()) {
+
 		std::cout << "\nReceived: SPP: " << msg.getSongPositionPointerMidiBeat();
 	}
 	else if (msg.isMidiClock()) {

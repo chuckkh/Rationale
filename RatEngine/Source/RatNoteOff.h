@@ -21,11 +21,13 @@
 #include "RatMidiMessage.h"
 
 class RatNoteOff :
-    public RatEvent, RatMidiMessage
+    public RatMidiMessage
 {
 public:
     RatNoteOff(uint8, uint8, uint8, double, uint8, uint32);
+    virtual ~RatNoteOff();
     int play();
+    int trigger() override;
 private:
 //    juce::String out;
     uint8 nn;

@@ -29,8 +29,8 @@
 #include <string>
 #include <iostream>
 #include <memory>
-//#include <chrono>
-//#include <thread>
+#include <thread>
+#include <chrono>
 /*
 RatEngine::RatEngine(int portno) {
     cbport = portno;
@@ -94,6 +94,7 @@ void RatEngine::run() {
         }
         sent = sendMessage(myMessage);
     }*/
+    std::thread (keepCheckingCurrentMidiScoreTime);
     std::cout << "running..." << std::endl;
 //    int g;
 //    std::cin >> g;
@@ -246,14 +247,14 @@ void RatEngine::messageReceived(const juce::MemoryBlock &msg)
         int region = textMessage.substring(c3).getIntValue();
         if (score.count(id) == 0)
         {
-            score[id] = std::make_unique<RatNote>(1,1,0);
+            score[id] = std::make_unique<RatNote>(id, 0.0, 1.0, 1, 1, 1.0, 1, 0, 0, 0);
         }
         else
         {
-            score[id].reset(new RatNote(1, 1, 0));
+            score[id].reset(new RatNote(id, 0.0, 1.0, 1, 1, 1.0, 1, 0, 0, 0));
         }
         midiManager.addMidiMessage(score[id]->getNoteOn());
-        midiManager.addMidiMessage(score[id]->getNoteOff());
+        midiManager.addMidiMessage(score[id]->getNoteOff());`
         std::cout << "RtoE: addNote:" << id << ":" << inst << ":" << region << std::endl;
     }
     else if (textMessage.startsWith("modNote:")) {
@@ -298,9 +299,13 @@ void RatEngine::messageReceived(const juce::MemoryBlock &msg)
     }
     else if (textMessage.startsWith("delNote:")) {
         uint32 id = uint32(textMessage.substring(8).getIntValue());
+        std::cerr << "RtoE delNote " << id << std::endl;
         midiManager.eraseMidiMessage(id);
+        std::cerr << "line 304" << '\n';
         deleteBuffer[id] = std::move(score[id]);
+        std::cerr << "line 306" << '\n';
         score.erase(id);
+//        midiManager.clearMidiScoreDelete();
         std::cout << "RtoE: delNote" << std::endl;
     }
     else if (textMessage.startsWith("undelNote:")) {
@@ -314,7 +319,9 @@ void RatEngine::messageReceived(const juce::MemoryBlock &msg)
     }
     else if (textMessage.startsWith("definitiveDelNote:")) {
         uint32 id = uint32(textMessage.substring(18).getIntValue());
+        std::cerr << "RtoE def " << id << '\n';
         midiManager.eraseMidiMessage(id);
+        std::cerr << "line 323" << '\n';
         score.erase(id);
         std::cout << "RtoE: definitiveDelNote" << std::endl;
     }
@@ -329,6 +336,7 @@ void RatEngine::messageReceived(const juce::MemoryBlock &msg)
         den = textMessage.substring(c3).getIntValue();
         while (RatNote::regions.size() <= id)
         {
+//            RatNote::regions.emplace()
             RatNote::regions.push_back(std::make_unique<RatRegion>(num, den, centOffset));
         }
         RatNote::regions[id]->setDen(den);
@@ -422,6 +430,7 @@ void RatEngine::addNote(int id)
 int RatEngine::getTonalCenter()
 {
     //return RatEngine::tonalCenter;
+    return 0;
 }
 
 void RatEngine::setTonalCenter(int tc=60)
@@ -431,7 +440,7 @@ void RatEngine::setTonalCenter(int tc=60)
 
 void RatEngine::startPlayback()
 {
-    midiManager.sortMidiScore();
+    midiManager.prepareToPlay();
     //
     // I have to redo this! To find the right score index for the starting point.
     //
@@ -461,6 +470,7 @@ void RatEngine::setSPP(uint16 sixteenths)
 
 void RatEngine::incrementMidiBeatClock()
 {
+    /*
     double t_ = getCurrentScoreTime() + 1.0 / 24.0;
     setCurrentScoreTime(t_);
     if (playing)
@@ -486,6 +496,7 @@ void RatEngine::incrementMidiBeatClock()
 
         }
     }
+    */
 }
 
 void RatEngine::sendMidiMessage(juce::MidiMessage)
@@ -501,4 +512,23 @@ void RatEngine::setCurrentScoreTime(double t_)
 double RatEngine::getCurrentScoreTime()
 {
     return currentScoreTime;
+}
+
+double RatEngine::getCurrentMidiScoreTime()
+{
+    return midiManager.getCurrentMidiScoreTime();
+}
+
+void RatEngine::keepCheckingCurrentMidiScoreTime()
+{
+    double currentMidiScoreTime = midiManager.getCurrentMidiScoreTime();
+    while (active)
+    {
+        if (currentMidiScoreTime != currentScoreTime)
+        {
+            setCurrentScoreTime(currentMidiScoreTime);
+            sendString(juce::String(currentMidiScoreTime));
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
 }

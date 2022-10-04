@@ -27,7 +27,17 @@ RatNoteOff::RatNoteOff(uint8 nn_, uint8 vel_, uint8 channel_, double timestamp_,
 	channel = channel_;
 }
 
+RatNoteOff::~RatNoteOff()
+{
+
+}
+
 int RatNoteOff::play()
+{
+	return 0;
+}
+
+int RatNoteOff::trigger()
 {
 	return 0;
 }

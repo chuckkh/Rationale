@@ -30,6 +30,10 @@ RatNoteOn::RatNoteOn(uint8 nn_, uint8 vel_, uint8 channel_, double timestamp_, u
 
 }
 
+RatNoteOn::~RatNoteOn()
+{
+
+}
 
 int RatNoteOn::trigger()
 {

@@ -23,6 +23,8 @@ uint8 RatNote::globalTonalCenter = 60;
 double RatNote::bit7 = pow(2, 7);
 double RatNote::bit14 = pow(2, 14);
 double RatNote::semitone = pow(2, 1.0 / 12.0);
+std::vector<std::unique_ptr<RatRegion>> RatNote::regions;
+std::vector<std::vector<std::pair<juce::String, uint8>>> RatNote::instruments;
 
 RatNote::RatNote(uint32 id_, double time_, double duration_, uint32 num_ = 1, uint32 den_ = 1, double centOffset_ = 0, uint8 instrument_ = 1, uint8 voice_ = 0, uint8 vel_ = 100, uint8 region_ = 0)
 	: id(id_), time(time_), duration(duration_), num(num_), den(den_), voice(voice_), region(region_), instrument(instrument_), vel(vel_), centOffset(centOffset_), selected(false)
@@ -33,17 +35,42 @@ RatNote::RatNote(uint32 id_, double time_, double duration_, uint32 num_ = 1, ui
 
 }
 
+RatNote::RatNote(int a, int b, int c)
+{
+	//uint32 id_, double time_, double duration_, uint32 num_ = 1, uint32 den_ = 1, double centOffset_ = 0, uint8 instrument_ = 1, uint8 voice_ = 0, uint8 vel_ = 100, uint8 region_ = 0
+	id = a;
+	instrument = b;
+	voice = 0;
+	vel = 0;
+	region = 0;
+	time = 0.0;
+	duration = 1.0;
+	selected = false;
+	num = 1;
+	den = 1;
+	centOffset = 0.0;
+	idealNn = c;
+	mtsByte1 = 0;
+	mtsByte2 = 0;
+
+}
+
 int RatNote::createNoteOn()
 {
 	//uint8 nn_, uint8 vel_, uint8 channel_, double timestamp_, juce::String out_
-	noteOn = std::make_shared<RatNoteOn>(idealNn, vel, RatNote::instruments[instrument][0].second, time, instrument);
+	//RatNoteOn temp(idealNn, vel, RatNote::instruments[instrument][0].second, time, instrument, id);
+//	noteOn = std::make_shared<RatNoteOn>(idealNn, vel, RatNote::instruments[instrument][0].second, time, instrument);
+	noteOn.reset(new RatNoteOn(idealNn, vel, RatNote::instruments[instrument][0].second, time, instrument, id));
+	std::cerr << "noteOn created : " << noteOn->getId() << std::endl;
 	return 0;
 }
 
 int RatNote::createNoteOff()
 {
 	//uint8 nn_, uint8 vel_, uint8 channel_, double timestamp_, juce::String out_
-	noteOff = std::make_shared<RatNoteOff>(idealNn, 0, RatNote::instruments[instrument][0].second, time+duration, instrument);
+	//noteOff = std::make_shared<RatNoteOff>(idealNn, 0, RatNote::instruments[instrument][0].second, time+duration, instrument);
+//	RatNoteOff temp(idealNn, 0, RatNote::instruments[instrument][0].second, time + duration, instrument, id);
+	noteOff.reset(new RatNoteOff(idealNn, 0, RatNote::instruments[instrument][0].second, time + duration, instrument, id));
 	return 0;
 }
 

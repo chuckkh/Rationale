@@ -17,10 +17,35 @@
 					  
 #include "JuceHeader.h"
 #include "RatMidiManager.h"
+#include <iostream>
+#include <typeinfo>
 
 RatMidiManager::RatMidiManager()
+	: currentMidiScoreTime(0)
 {
 	
+}
+
+void RatMidiManager::handleIncomingMidiMessage(juce::MidiInput* input, const juce::MidiMessage& msg)
+{
+
+	if (msg.isSongPositionPointer()) {
+
+		std::cout << "\nReceived: SPP: " << msg.getSongPositionPointerMidiBeat();
+	}
+	else if (msg.isMidiClock()) {
+		std::cout << "...tick ";
+	}
+	else if (msg.isMidiStart()) { std::cout << '\n' << "Received: MIDI Start"; }
+	else if (msg.isMidiStop()) { std::cout << '\n' << "Received: MIDI Stop"; }
+	else if (msg.isMidiContinue()) { std::cout << '\n' << "Received: MIDI Continue"; }
+	else if (msg.isSysEx()) {
+		std::cout << '\n' << "Received SysEx:";
+		int sz = msg.getSysExDataSize();
+		for (int i = 0; i < sz; i++) {
+			std::cout << " " << *(msg.getSysExData() + i);
+		}
+	}
 }
 
 void RatMidiManager::addInput(juce::String inputName)
@@ -73,7 +98,7 @@ void RatMidiManager::setActiveMidiInput(juce::String name)
 	if (midiInDevices.count(name))
 	{
 		juce::String device = midiInDevices[name];
-		activeMidiInput = juce::MidiInput::openDevice(device, &midiInputCallback);
+		activeMidiInput = juce::MidiInput::openDevice(device, this);
 		activeMidiInput->start();
 	}
 //	activeMidiInput.reset(juce::MidiInput::openDevice())
@@ -123,13 +148,27 @@ void RatMidiManager::clearAvailableNoteNumber(uint8 nn)
 
 void RatMidiManager::addMidiMessage(std::shared_ptr<RatMidiMessage> message_)
 {
-	midiScore.push_back(message_);
+	std::cerr << "not done line 151\n";
+	std::shared_ptr<RatMidiMessage> temp = std::make_shared<RatMidiMessage>(144, 60, 100, 0.0, 1, 1);
+	temp = message_;
+	midiScore.push_back(temp);
+	
+//	midiScore.push_back(message_);
+//	midiScore.insert(midiScore.end(), message_);
+//	midiScore.push_back(std::make_shared<RatMidiMessage>(1, 1, 1, 1.0, 1, 1));
+//	midiScore.back() = message_;
+	std::cerr << "done?" << '\n';
+//	std::wcerr << midiScore.back()->getId() << '\n';
+//	std::shared_ptr<RatMidiMessage> temp;
+//	temp = message_;
+//	std::wcerr << temp->getId() << ' ' << temp->isNoteOn() << '\n';
+//	midiScore.push_back(temp);
 //	midiScore.insert(std::pair<double, std::shared_ptr<RatMidiMessage>>(time_, message_));
 }
 
-bool compareRatMidiMessages(const RatMidiMessage& first, const RatMidiMessage& second)
+bool compareRatMidiMessages(const std::shared_ptr<RatMidiMessage> first, const std::shared_ptr<RatMidiMessage> second)
 {
-	return (first.getTimeStamp() < second.getTimeStamp());
+	return (first->getTimeStamp() < second->getTimeStamp());
 }
 
 void RatMidiManager::sortMidiScore()
@@ -139,21 +178,110 @@ void RatMidiManager::sortMidiScore()
 
 void RatMidiManager::eraseMidiMessage(uint32 id_)
 {
-	std::list<std::shared_ptr<RatMidiMessage>>::iterator it = midiScore.begin(), theEnd = midiScore.end();
-	while (it != theEnd)
+	std::cerr << "eraseMidiMessage line 165\n";
+	auto it = midiScore.begin();
+//	std::list<std::shared_ptr<RatMidiMessage>>::iterator it = midiScore.begin();
+	std::cerr << "line 167\n";
+	std::cerr << "size of MidiScore: " << midiScore.size() << '\n';
+//	std::list<RatMidiMessage*>::iterator tempIt = midiScoreDelete.begin();
+/*	while (true)
 	{
-		if ((*it)->getId() == id_)
+		while ((*it)->getId() != id_)
 		{
-			it = midiScore.erase(it);
+			++it;
+		}
+		if (it != midiScore.end())
+		{
+			midiScoreDelete.splice(tempIt, midiScore, it);
+			++tempIt;
 		}
 		else
 		{
-			it++;
+			break;
 		}
 	}
+*/
+	/*
+	auto removeNotes = [&](std::shared_ptr<RatMidiMessage> ptr) -> bool
+	{
+		return ptr->getId() == id_;
+	};
+	std::cerr << "line 173\n";
+	auto removeIterator = std::remove_if(midiScore.begin(), midiScore.end(), removeNotes);
+	std::cerr << "line 175\n";
+/*	*/
+
+	//midiScore.erase(removeIterator, midiScore.end());
+
+	for (std::shared_ptr<RatMidiMessage> mm : midiScore)
+	{
+		std::cerr << "erasing?? \n";
+		std::cerr << typeid(mm.get()).name() << '\n';
+		auto wtf = mm.get();
+		if (wtf == nullptr)
+		{
+			std::cerr << "null\n";
+		}
+		else
+		{
+			std::cerr << wtf->getId() << '\n';
+		}
+	}
+
+	while (it != midiScore.end())
+	{
+		std::cerr << "erasing? \n";
+		std::cerr << typeid(*it).name() << std::endl;
+//		std::cerr << (**it).getId() << std::endl;
+		if (false)
+//		if ((*it)->getId() == id_)
+		{
+			std::cerr << "erasing\n";
+			auto temp = midiScore.erase(it);
+			it = temp;
+			std::cerr << "erased\n";
+		}
+		else
+		{
+			std::cerr << "not erasing\n";
+			it++;
+			std::cerr << "not erased\n";
+		}
+	}/**/
+	std::cerr << "line 187\n";
 }
 
 void RatMidiManager::clearMidiScore()
 {
 	midiScore.clear();
+}
+
+void RatMidiManager::prepareToPlay()
+{
+	sortMidiScore();
+	midiScoreIt = midiScore.begin();
+	while ((*midiScoreIt)->getTimeStamp() < currentMidiScoreTime)
+	{
+		++midiScoreIt;
+	}
+}
+
+double RatMidiManager::getCurrentMidiScoreTime()
+{
+	return currentMidiScoreTime;
+}
+
+void RatMidiManager::setCurrentMidiScoreTime(double t_)
+{
+	currentMidiScoreTime = t_;
+}
+
+void RatMidiManager::addToCurrentMidiScoreTime(double delta_)
+{
+	currentMidiScoreTime = currentMidiScoreTime + delta_;
+}
+
+void RatMidiManager::clearMidiScoreDelete()
+{
+	midiScoreDelete.clear();
 }

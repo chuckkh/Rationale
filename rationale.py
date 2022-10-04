@@ -159,7 +159,7 @@ You should have received a copy of the GNU General Public License along with Rat
                 self.filesave()
                 self.write('File Created: %s' % sys.argv[1])
 #                self.write('%s: File Not Found' % sys.argv[1])
-        self.openoutputdialog()
+#        self.openoutputdialog()
 
     def startEngine(self):
         if self.engine:

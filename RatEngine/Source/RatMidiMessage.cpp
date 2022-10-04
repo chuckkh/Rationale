@@ -44,6 +44,11 @@ RatMidiMessage::RatMidiMessage(uint8 b1, uint8 b2, uint8 b3, double timestamp_, 
     //setOut(out_);
 }
 
+RatMidiMessage::~RatMidiMessage()
+{
+    std::cerr << "Destroying base RatMidiMessage\n";
+}
+
 juce::String RatMidiMessage::getOut()
 {
     return out;
@@ -56,17 +61,19 @@ void RatMidiMessage::setOut(juce::String out_)
 
 void RatMidiMessage::setPreMessage(const void* data, int sz)
 {
-    preMessage.reset(&juce::MidiMessage::createSysExMessage(data, sz));
+    juce::MidiMessage* temp = new juce::MidiMessage();
+    *temp = juce::MidiMessage::createSysExMessage(data, sz);
+    preMessage.reset(temp);
 }
 
-std::shared_ptr<juce::MidiMessage> RatMidiMessage::getPreMessage()
+juce::MidiMessage* RatMidiMessage::getPreMessage()
 {
-    return preMessage;
+    return preMessage.get();
 }
 
 void RatMidiMessage::setPreMessageOut(juce::String out_)
 {
-    preMessage->setOut(out_);
+//    preMessage->setOut(out_);
 }
 
 int RatMidiMessage::trigger()

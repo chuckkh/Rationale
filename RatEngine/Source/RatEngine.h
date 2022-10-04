@@ -68,10 +68,13 @@ public:
     void sendMidiMessage(juce::MidiMessage);
     double getCurrentScoreTime();
     void setCurrentScoreTime(double);
+    double getCurrentMidiScoreTime();
+    void keepCheckingCurrentMidiScoreTime();
+
 //    juce::MidiMessageSequence::MidiEventHolder** scoreCursor;
 
 //    static int tonalCenter;
-    static std::vector<RatRegion> regions;
+//    static std::vector<RatRegion> regions;
 private:
     bool playing;
     int cbport;

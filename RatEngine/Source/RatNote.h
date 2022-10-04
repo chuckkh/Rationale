@@ -27,8 +27,8 @@
 class RatNote //: public RatEvent
 {
 public:
-	RatNote(int, int, int);
 	RatNote(uint32, double, double, uint32, uint32, double, uint8, uint8, uint8, uint8);
+	RatNote(int, int, int);
 	int createNoteOn();
 	int createNoteOff();
 	void updateNoteOn();
@@ -86,7 +86,9 @@ private:
 	uint32 den;
 //	uint32 cents;
 	double centOffset;
-	std::shared_ptr<RatMidiMessage> tuningMessage, noteOn, noteOff;
+	std::shared_ptr<RatMidiMessage> noteOn, noteOff;
+//	std::shared_ptr<RatNoteOn> noteOn;
+//	std::shared_ptr<RatNoteOff> noteOff;
 	uint8 idealNn;
 	uint8 mtsByte1;
 	uint8 mtsByte2;

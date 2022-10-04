@@ -31,22 +31,23 @@
 #include "RatMidiOut.h"
 #include "RatEvent.h"
 
-class RatMidiMessage : public juce::MidiMessage, RatEvent
+class RatMidiMessage : public juce::MidiMessage, public RatEvent
 {
 public:
     RatMidiMessage(uint8, uint8, uint8, double, uint8, uint32);
+    virtual ~RatMidiMessage();
     juce::String getOut();
     void setOut(juce::String);
     int trigger() override;
     void setPreMessage(const void*, int);
-    std::shared_ptr<juce::MidiMessage> getPreMessage();
+    juce::MidiMessage* getPreMessage();
     void setPreMessageOut(juce::String);
     void setInstrument(uint8);
     uint8 getInstrument();
     uint32 getId();
     void setId(uint32);
 private:
-    std::shared_ptr<RatMidiMessage> preMessage;
+    std::shared_ptr<juce::MidiMessage> preMessage;
     juce::String out;
     uint8 instrument;
     uint32 id;
