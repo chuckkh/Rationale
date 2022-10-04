@@ -178,41 +178,11 @@ void RatMidiManager::sortMidiScore()
 
 void RatMidiManager::eraseMidiMessage(uint32 id_)
 {
-	std::cerr << "eraseMidiMessage line 165\n";
-	auto it = midiScore.begin();
-//	std::list<std::shared_ptr<RatMidiMessage>>::iterator it = midiScore.begin();
-	std::cerr << "line 167\n";
+	std::list<std::shared_ptr<RatMidiMessage>>::iterator it = midiScore.begin();
 	std::cerr << "size of MidiScore: " << midiScore.size() << '\n';
-//	std::list<RatMidiMessage*>::iterator tempIt = midiScoreDelete.begin();
-/*	while (true)
-	{
-		while ((*it)->getId() != id_)
-		{
-			++it;
-		}
-		if (it != midiScore.end())
-		{
-			midiScoreDelete.splice(tempIt, midiScore, it);
-			++tempIt;
-		}
-		else
-		{
-			break;
-		}
-	}
-*/
-	/*
-	auto removeNotes = [&](std::shared_ptr<RatMidiMessage> ptr) -> bool
-	{
-		return ptr->getId() == id_;
-	};
-	std::cerr << "line 173\n";
-	auto removeIterator = std::remove_if(midiScore.begin(), midiScore.end(), removeNotes);
-	std::cerr << "line 175\n";
-/*	*/
 
 	//midiScore.erase(removeIterator, midiScore.end());
-
+/*
 	for (std::shared_ptr<RatMidiMessage> mm : midiScore)
 	{
 		std::cerr << "erasing?? \n";
@@ -227,28 +197,28 @@ void RatMidiManager::eraseMidiMessage(uint32 id_)
 			std::cerr << wtf->getId() << '\n';
 		}
 	}
-
-	while (it != midiScore.end())
+/**/
+	while (!midiScore.empty() && it != midiScore.end())
 	{
-		std::cerr << "erasing? \n";
-		std::cerr << typeid(*it).name() << std::endl;
+//		std::cerr << "erasing? \n";
+//		std::cerr << typeid(*it).name() << std::endl;
 //		std::cerr << (**it).getId() << std::endl;
-		if (false)
-//		if ((*it)->getId() == id_)
+//		if (false)
+		if ((*it) != nullptr && (*it)->getId() == id_)
 		{
-			std::cerr << "erasing\n";
+			std::cerr << "erasing id" << id_ << "\n";
 			auto temp = midiScore.erase(it);
 			it = temp;
-			std::cerr << "erased\n";
+//			std::cerr << "erased\n";
 		}
 		else
 		{
-			std::cerr << "not erasing\n";
+			std::cerr << "not erasing id" << (*it)->getId() << "\n";
 			it++;
-			std::cerr << "not erased\n";
+//			std::cerr << "not erased\n";
 		}
 	}/**/
-	std::cerr << "line 187\n";
+	std::cerr << "size of MidiScore: " << midiScore.size() << '\n';
 }
 
 void RatMidiManager::clearMidiScore()

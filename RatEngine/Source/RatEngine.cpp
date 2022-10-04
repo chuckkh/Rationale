@@ -242,19 +242,20 @@ void RatEngine::messageReceived(const juce::MemoryBlock &msg)
         int c1 = 8;
         int c2 = textMessage.indexOf(c1, ":")+1;
         int c3 = textMessage.indexOf(c2, ":")+1;
-        int id = textMessage.substring(c1, c2).getIntValue();
+        uint32 id = uint32(textMessage.substring(c1, c2).getIntValue());
         int inst = textMessage.substring(c2, c3).getIntValue();
         int region = textMessage.substring(c3).getIntValue();
         if (score.count(id) == 0)
         {
-            score[id] = std::make_unique<RatNote>(id, 0.0, 1.0, 1, 1, 1.0, 1, 0, 0, 0);
+            score.emplace(id, std::make_unique<RatNote>(id, 0.0, 1.0, 1, 1, 1.0, 1, 0, 0, 0));
+//            score[id] = std::make_unique<RatNote>(id, 0.0, 1.0, 1, 1, 1.0, 1, 0, 0, 0);
         }
         else
         {
             score[id].reset(new RatNote(id, 0.0, 1.0, 1, 1, 1.0, 1, 0, 0, 0));
         }
         midiManager.addMidiMessage(score[id]->getNoteOn());
-        midiManager.addMidiMessage(score[id]->getNoteOff());`
+        midiManager.addMidiMessage(score[id]->getNoteOff());
         std::cout << "RtoE: addNote:" << id << ":" << inst << ":" << region << std::endl;
     }
     else if (textMessage.startsWith("modNote:")) {
@@ -299,13 +300,9 @@ void RatEngine::messageReceived(const juce::MemoryBlock &msg)
     }
     else if (textMessage.startsWith("delNote:")) {
         uint32 id = uint32(textMessage.substring(8).getIntValue());
-        std::cerr << "RtoE delNote " << id << std::endl;
         midiManager.eraseMidiMessage(id);
-        std::cerr << "line 304" << '\n';
         deleteBuffer[id] = std::move(score[id]);
-        std::cerr << "line 306" << '\n';
         score.erase(id);
-//        midiManager.clearMidiScoreDelete();
         std::cout << "RtoE: delNote" << std::endl;
     }
     else if (textMessage.startsWith("undelNote:")) {
@@ -315,13 +312,14 @@ void RatEngine::messageReceived(const juce::MemoryBlock &msg)
         score[id]->createNoteOn();
         score[id]->createNoteOff();
         score[id]->resetTuning();
+        midiManager.addMidiMessage(score[id]->getNoteOn());
+        midiManager.addMidiMessage(score[id]->getNoteOff());
         std::cout << "RtoE: undelNote" << std::endl;
     }
     else if (textMessage.startsWith("definitiveDelNote:")) {
         uint32 id = uint32(textMessage.substring(18).getIntValue());
         std::cerr << "RtoE def " << id << '\n';
         midiManager.eraseMidiMessage(id);
-        std::cerr << "line 323" << '\n';
         score.erase(id);
         std::cout << "RtoE: definitiveDelNote" << std::endl;
     }
