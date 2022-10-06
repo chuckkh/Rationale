@@ -1,0 +1,11 @@
+RatMidiManager::midiScore
+RatMidiManager::currentMidi...
+::midiInDevices (name -> id)
+::midiOutDevices
+::activeMidiInput
+::activeMidiOutputs
+static RatNote::instruments
+RatMidiMessage::preMessage
+::out
+::instrument
+

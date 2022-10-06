@@ -17,8 +17,11 @@
 					  
 #include "JuceHeader.h"
 #include "RatMidiManager.h"
+#include "RatNote.h"
 #include <iostream>
 #include <typeinfo>
+#include <map>
+#include <memory>
 
 RatMidiManager::RatMidiManager()
 	: currentMidiScoreTime(0)
@@ -47,6 +50,120 @@ void RatMidiManager::handleIncomingMidiMessage(juce::MidiInput* input, const juc
 		}
 	}
 }
+
+void RatMidiManager::sendRatMidiMessage(RatMidiMessage &msg)
+{
+	juce::String nm = RatNote::instruments[msg.getInstrument()][0].first;
+	juce::String identifier = midiOutDevices[nm];
+	if (msg.getPreMessage() != nullptr)
+	{
+		activeMidiOutputs[identifier]->sendMessageNow(*msg.getPreMessage());
+	}
+	activeMidiOutputs[identifier]->sendMessageNow(msg);
+}
+
+void RatMidiManager::stepThroughMidiScoreTo(double t_)
+{
+	std::bitset<128> nn_;
+	std::map<uint8, std::shared_ptr<RatNoteOn>> sn_;
+	double cmst_ = currentMidiScoreTime;
+	std::list<std::shared_ptr<RatMidiMessage>>::iterator msit_ = midiScore.begin();
+	if (t_ < cmst_)
+	{
+		nn_ = { 0 };
+		cmst_ = 0;
+	}
+	else if (t_ > cmst_)
+	{
+		nn_ = noteNumbers;
+		sn_ = soundingNotes;
+		while ((*msit_)->getTimeStamp() < cmst_)
+		{
+			++msit_;
+		}
+	}
+	while (cmst_ < t_)
+	{
+		// The time has to keep jumping to the next iterator until it's >= t_.
+		// Each msg has to go through find/clear note numbers
+		auto mm_ = *msit_;
+		if (mm_->isNoteOn())
+		{
+
+		}
+
+	}
+
+
+	int a = 0;
+}
+
+void RatMidiManager::startPlayback()
+{
+	prepareToPlay();
+	//
+	// I have to redo this! To find the right score index for the starting point.
+	//
+	playing = true;
+	playMode = RatPlayMode::Play;
+	//currentScoreIndex = midiManager.getNextIndexAtTime(currentScoreTime);
+	//scoreCursor = midiManager.begin();
+}
+
+void RatMidiManager::stopPlayback()
+{
+	playing = false;
+	playMode = RatPlayMode::Stop;
+}
+
+void RatMidiManager::continuePlayback()
+{
+	playing = true;
+	playMode = RatPlayMode::Play;
+}
+
+void RatMidiManager::setSPP(uint16 sixteenths)
+{
+	stepThroughMidiScoreTo(double(sixteenths) * 0.25);
+	setCurrentMidiScoreTime(double(sixteenths) * 0.25);
+	//
+	// I have to redo this! To find the right score index for the starting point.
+	//
+
+}
+
+void RatMidiManager::incrementMidiBeatClock()
+{
+	/*
+	double t_ = getCurrentScoreTime() + 1.0 / 24.0;
+	setCurrentScoreTime(t_);
+	if (playing)
+	{
+
+		while (currentScoreTime >= midiManager.getEventTime(currentScoreIndex))
+		{
+			auto eventHolder = midiManager.getEventPointer(currentScoreIndex);
+
+			std::shared_ptr<RatMidiMessage> scoreEvent = std::dynamic_pointer_cast<RatMidiMessage>(std::make_shared<juce::MidiMessage>(eventHolder->message));
+			std::shared_ptr<juce::MidiMessage> pre = scoreEvent->getPreMessage();
+			if (pre == nullptr)
+				// noteoff
+			{
+				//send message
+				midiManager.clearAvailableNoteNumber(scoreEvent->getChannel());
+			}
+			else
+				// noteon
+			{
+
+			}
+
+		}
+	}
+	*/
+}
+
+
 
 void RatMidiManager::addInput(juce::String inputName)
 {
@@ -104,14 +221,24 @@ void RatMidiManager::setActiveMidiInput(juce::String name)
 //	activeMidiInput.reset(juce::MidiInput::openDevice())
 }
 
+void RatMidiManager::addActiveMidiOutput(juce::String name)
+{
+	if (activeMidiOutputs.count(name) == 0)
+	{
+		juce::String device = midiOutDevices[name];
+		activeMidiOutputs[name] = juce::MidiOutput::openDevice(device);
+	}
+}
+
 void RatMidiManager::resetOuts()
 {
+	activeMidiOutputs.clear();
 	ratMidiOuts.clear();
 }
 
 void RatMidiManager::addOut(uint32 instNumber, juce::String devName, uint8 channel)
 {
-	while (ratMidiOuts.size() < uint64(instNumber + 1))
+	while (ratMidiOuts.size() < uint64(instNumber) + 1)
 	{
 		std::vector<RatMidiOut> temp;
 		ratMidiOuts.push_back(temp);
@@ -120,7 +247,7 @@ void RatMidiManager::addOut(uint32 instNumber, juce::String devName, uint8 chann
 	ratMidiOuts[instNumber].push_back(RatMidiOut(devName, channel));
 }
 
-uint8 RatMidiManager::findAvailableNoteNumber(uint8 requested)
+uint8 RatMidiManager::findAvailableNoteNumber(uint8 requested, std::bitset<128>&)
 {
 	uint8 outp = requested;
 	int16 offset = 1;
@@ -141,7 +268,7 @@ uint8 RatMidiManager::findAvailableNoteNumber(uint8 requested)
 	return requested;
 }
 
-void RatMidiManager::clearAvailableNoteNumber(uint8 nn)
+void RatMidiManager::clearAvailableNoteNumber(uint8 nn, std::bitset<128>&)
 {
 	noteNumbers.set(nn, false);
 }

@@ -20,6 +20,7 @@
 //#include "RatIOManager.h"
 #include "RatMidiMessage.h"
 #include "RatMidiInputCallback.h"
+#include "RatNoteOn.h"
 #include "JuceHeader.h"
 #include <queue>
 #include <map>
@@ -29,11 +30,20 @@
 #include <list>
 #include <atomic>
 
+enum class RatPlayMode { Stop, Play, Edit, Scrub };
+
 class RatMidiManager : public juce::MidiMessageSequence, public juce::MidiInputCallback
 {
 public:
 	RatMidiManager();
 	void handleIncomingMidiMessage(juce::MidiInput*, const juce::MidiMessage&) override;
+	void sendRatMidiMessage(RatMidiMessage&);
+	void stepThroughMidiScoreTo(double);
+	void startPlayback();
+	void stopPlayback();
+	void continuePlayback();
+	void setSPP(uint16);
+	void incrementMidiBeatClock();
 	void addInput(juce::String);
 	void addOutput(juce::String);
 	void removeInput(juce::String);
@@ -46,26 +56,28 @@ public:
 	void addMidiOutDevice(juce::String, juce::String);
 	void resetOuts();
 	void addOut(uint32, juce::String, uint8);
-	uint8 findAvailableNoteNumber(uint8);
-	void clearAvailableNoteNumber(uint8);
+	uint8 findAvailableNoteNumber(uint8, std::bitset<128>&);
+	void clearAvailableNoteNumber(uint8, std::bitset<128>&);
 	void addMidiMessage(std::shared_ptr<RatMidiMessage>);
 	void sortMidiScore();
 	void eraseMidiMessage(uint32);
-	void uneraseMidiMessage(uint32);
+//	void uneraseMidiMessage(uint32);
 	void clearMidiScore();
 	void prepareToPlay();
 	double getCurrentMidiScoreTime();
 	void setCurrentMidiScoreTime(double);
 	void addToCurrentMidiScoreTime(double);
 	void clearMidiScoreDelete();
+	void addActiveMidiOutput(juce::String);
 private:
 	//std::map <juce::String, std::pair<juce::MidiInput, uint16>> activeMidiInputs;
 	std::unique_ptr<juce::MidiInput> activeMidiInput;
 	RatMidiInputCallback midiInputCallback;
-	std::map <juce::String, juce::MidiOutput> activeMidiOutputs;
+	std::map<juce::String, std::unique_ptr<juce::MidiOutput>> activeMidiOutputs;
 	std::map<juce::String, juce::String> midiInDevices;
 	std::map<juce::String, juce::String> midiOutDevices;
 	std::bitset<128> noteNumbers;
+	std::map<uint8, std::shared_ptr<RatNoteOn>> soundingNotes;
 //	std::map<double, std::forward_list<std::shared_ptr<RatMidiMessage>>> midiScore;
 //	std::map<double, std::shared_ptr<RatMidiMessage>> midiScore;
 	
@@ -76,5 +88,7 @@ private:
 //	double currentMidiScoreTime;
 	std::atomic<double> currentMidiScoreTime;
 	std::list<std::shared_ptr<RatMidiMessage>>::iterator midiScoreIt;
+	bool playing;
+	RatPlayMode playMode = RatPlayMode::Stop;
 };
 

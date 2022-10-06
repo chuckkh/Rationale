@@ -30,11 +30,12 @@
 #include <JuceHeader.h>
 #include "RatMidiOut.h"
 #include "RatEvent.h"
+#include "RatNote.h"
 
 class RatMidiMessage : public juce::MidiMessage, public RatEvent
 {
 public:
-    RatMidiMessage(uint8, uint8, uint8, double, uint8, uint32);
+    RatMidiMessage(uint8, uint8, uint8, double, uint8, uint32, RatMidiMessage&);
     virtual ~RatMidiMessage();
     juce::String getOut();
     void setOut(juce::String);
@@ -46,9 +47,12 @@ public:
     uint8 getInstrument();
     uint32 getId();
     void setId(uint32);
+    void setPartner(RatMidiMessage&);
+    RatMidiMessage& getPartner();
 private:
     std::shared_ptr<juce::MidiMessage> preMessage;
     juce::String out;
     uint8 instrument;
     uint32 id;
+    RatMidiMessage& partner;
 };

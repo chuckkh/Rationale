@@ -62,11 +62,11 @@ int RatNote::createNoteOn()
 //	noteOn = std::make_shared<RatNoteOn>(idealNn, vel, RatNote::instruments[instrument][0].second, time, instrument);
 	if (noteOn == nullptr)
 	{
-		noteOn = std::make_unique <RatNoteOn>(60, vel, 1, time, instrument, id);
+		noteOn = std::make_unique <RatNoteOn>(60, vel, 1, time, instrument, id, noteOff);
 	}
 	else
 	{
-		noteOn.reset(new RatNoteOn(60, vel, 1, time, instrument, id));
+		noteOn.reset(new RatNoteOn(60, vel, 1, time, instrument, id, noteOff));
 	}
 	std::cerr << "noteOn created : " << noteOn->getId() << std::endl;
 	return 0;
@@ -77,12 +77,12 @@ int RatNote::createNoteOff()
 	//uint8 nn_, uint8 vel_, uint8 channel_, double timestamp_, juce::String out_
 	if (noteOff == nullptr)
 	{
-		noteOff = std::make_shared<RatNoteOff>(60, 0, 1, time + duration, instrument, id);
+		noteOff = std::make_shared<RatNoteOff>(60, 0, 1, time + duration, instrument, id, noteOn);
 	}
 //	RatNoteOff temp(idealNn, 0, RatNote::instruments[instrument][0].second, time + duration, instrument, id);
 	else
 	{
-		noteOff.reset(new RatNoteOff(60, 0, 1, time + duration, instrument, id));
+		noteOff.reset(new RatNoteOff(60, 0, 1, time + duration, instrument, id, noteOn));
 	}
 	return 0;
 }

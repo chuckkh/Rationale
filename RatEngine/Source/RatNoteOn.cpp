@@ -17,8 +17,8 @@
 
 #include "RatNoteOn.h"
 
-RatNoteOn::RatNoteOn(uint8 nn_, uint8 vel_, uint8 channel_, double timestamp_, uint8 instrument_, uint32 id_)
-	: RatMidiMessage(144 + (channel_ % 17), nn_ & 127, vel_ & 127, timestamp_, instrument_, id_)
+RatNoteOn::RatNoteOn(uint8 nn_, uint8 vel_, uint8 channel_, double timestamp_, uint8 instrument_, uint32 id_, RatMidiMessage& ptnr_)
+	: RatMidiMessage(144 + (channel_ % 17), nn_ & 127, vel_ & 127, timestamp_, instrument_, id_, ptnr_)
 	// (nn_, vel_, channel_, timestamp_, out_)
 {
 	nn = nn_;

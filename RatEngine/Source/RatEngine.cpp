@@ -368,11 +368,13 @@ void RatEngine::messageReceived(const juce::MemoryBlock &msg)
         juce::String type = textMessage.substring(c2, c3 - 1);
         juce::String dev = textMessage.substring(c3, c4 - 1);
         uint8 channel = textMessage.substring(c4).getIntValue();
+        std::cout << "device: " << dev << '\n';
         while (RatNote::instruments.size() <= instrument) {
             std::vector<std::pair<juce::String, uint8>> temp;
             RatNote::instruments.push_back(temp);
         }
         RatNote::instruments[instrument].push_back(std::make_pair(dev, channel));
+        midiManager.addActiveMidiOutput(dev);
         std::cout << "RtoE: addOut" << std::endl;
     }
     else if (textMessage.startsWith("resetOuts:")) {
@@ -381,6 +383,7 @@ void RatEngine::messageReceived(const juce::MemoryBlock &msg)
         while (it != itEnd) {
             it->clear();
         }
+        midiManager.resetOuts();
         std::cout << "RtoE: resetOuts" << std::endl;
     }
     else if (textMessage.startsWith("unaddRegion:")) {

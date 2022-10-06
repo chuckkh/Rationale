@@ -24,7 +24,7 @@ class RatNoteOn :
     public RatMidiMessage
 {
 public:
-    RatNoteOn(uint8, uint8, uint8, double, uint8, uint32);
+    RatNoteOn(uint8, uint8, uint8, double, uint8, uint32, RatMidiMessage&);
     virtual ~RatNoteOn();
     int trigger() override;
 private:
