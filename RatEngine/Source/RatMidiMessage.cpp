@@ -35,11 +35,11 @@ RatMidiMessage::RatMidiMessage(uint8 nn_, uint8 vel_, uint8 channel_, double tim
 }
 */
 
-RatMidiMessage::RatMidiMessage(uint8 b1, uint8 b2, uint8 b3, double timestamp_, uint8 instrument_, uint32 id_, RatMidiMessage& ptnr_)
+RatMidiMessage::RatMidiMessage(uint8 b1, uint8 b2, uint8 b3, double timestamp_, uint8 instrument_, uint32 id_, std::shared_ptr<RatMidiMessage> ptnr_)
     : juce::MidiMessage(b1, b2, b3, timestamp_),
-    partner(ptnr_)
+    partner(ptnr_), tuningBytes{ 240, 127, 127, 8, 2, 1, 1, 0, 0, 0, 0, 247 }
 {
-    preMessage = nullptr;
+    preMessage = std::make_shared<juce::MidiMessage>(&tuningBytes, 12);
     setInstrument(instrument_);
     setId(id_);
     //setOut(out_);
@@ -60,11 +60,39 @@ void RatMidiMessage::setOut(juce::String out_)
     out = out_;
 }
 
+/*
 void RatMidiMessage::setPreMessage(const void* data, int sz)
 {
-    juce::MidiMessage* temp = new juce::MidiMessage();
-    *temp = juce::MidiMessage::createSysExMessage(data, sz);
-    preMessage.reset(temp);
+//    juce::MidiMessage* temp = new juce::MidiMessage();
+//    std::shared_ptr<juce::MidiMessage> temp_ = std::make_shared<juce::MidiMessage>(juce::MidiMessage::createSysExMessage(data, sz));
+//    *temp = juce::MidiMessage::createSysExMessage(data, sz);
+    std::cerr << "tuningBytes: ";
+    for (auto bt_ : tuningBytes)
+    {
+        std::cerr << int(bt_) << " ";
+    }
+    std::cerr << std::endl;
+    preMessage = std::make_shared<juce::MidiMessage>(data, sz);
+//    preMessage = std::make_shared<juce::MidiMessage>(juce::MidiMessage::createSysExMessage(data, sz));
+//    preMessage.reset(temp);
+}
+/**/
+
+void RatMidiMessage::setPreMessage()
+{
+//    juce::MidiMessage* temp = new juce::MidiMessage();
+    std::cerr << "tuningBytes: ";
+    for (auto bt_ : tuningBytes)
+    {
+        std::cerr << int(bt_) << " ";
+    }
+    std::cerr << std::endl;
+//    int sz_ = tuningBytes.size();
+//    sz_ = (sz_ >= 12 ? 12 : sz_);
+    void* voidPtr{ &tuningBytes };
+    preMessage = std::make_shared<juce::MidiMessage>(voidPtr, 12);
+//    preMessage = std::make_shared<juce::MidiMessage>(juce::MidiMessage::createSysExMessage(&tuningBytes, sz_));
+//    *temp = juce::MidiMessage::createSysExMessage(&tuningBytes, sz_);
 }
 
 juce::MidiMessage* RatMidiMessage::getPreMessage()
@@ -102,12 +130,47 @@ void RatMidiMessage::setId(uint32 id_)
     id = id_;
 }
 
-void RatMidiMessage::setPartner(RatMidiMessage& prtnr_)
+void RatMidiMessage::setPartner(std::shared_ptr<RatMidiMessage> prtnr_)
 {
+    partner = prtnr_;
     //partner(prtnr_);
 }
 
-RatMidiMessage& RatMidiMessage::getPartner()
+std::shared_ptr<RatMidiMessage> RatMidiMessage::getPartner()
 {
     return partner;
+}
+
+void RatMidiMessage::setIdealNn(uint8 idealNn_)
+{
+    idealNn = idealNn_;
+}
+
+uint8 RatMidiMessage::getIdealNn()
+{
+    return idealNn;
+}
+
+uint8 RatMidiMessage::getTuningByte(uint8 ind_)
+{
+    if (12 <= ind_)
+    {
+        return -1;
+    }
+    else
+    {
+        return tuningBytes[ind_];
+    }
+}
+
+void RatMidiMessage::setTuningByte(uint8 ind_, uint8 val_)
+{
+//    while (tuningBytes.size() <= ind_)
+//    {
+//        tuningBytes.push_back(0);
+//    }
+    if (ind_ < 12)
+    {
+        tuningBytes[ind_] = val_;
+    }
 }

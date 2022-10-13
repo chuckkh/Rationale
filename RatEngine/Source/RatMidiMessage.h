@@ -30,29 +30,41 @@
 #include <JuceHeader.h>
 #include "RatMidiOut.h"
 #include "RatEvent.h"
-#include "RatNote.h"
+#include <memory>
+#include <array>
+//#include "RatNote.h"
 
 class RatMidiMessage : public juce::MidiMessage, public RatEvent
 {
 public:
-    RatMidiMessage(uint8, uint8, uint8, double, uint8, uint32, RatMidiMessage&);
+    RatMidiMessage(uint8, uint8, uint8, double, uint8, uint32, std::shared_ptr<RatMidiMessage>);
     virtual ~RatMidiMessage();
     juce::String getOut();
     void setOut(juce::String);
     int trigger() override;
-    void setPreMessage(const void*, int);
+    //void setPreMessage(const void*, int);
+    void setPreMessage();
     juce::MidiMessage* getPreMessage();
     void setPreMessageOut(juce::String);
     void setInstrument(uint8);
     uint8 getInstrument();
     uint32 getId();
     void setId(uint32);
-    void setPartner(RatMidiMessage&);
-    RatMidiMessage& getPartner();
+    void setPartner(std::shared_ptr<RatMidiMessage>);
+    std::shared_ptr<RatMidiMessage> getPartner();
+    void setIdealNn(uint8);
+    uint8 getIdealNn();
+    uint8 getTuningByte(uint8);
+    void setTuningByte(uint8, uint8);
 private:
+//    std::shared_ptr<juce::MidiMessage> preMessage;
     std::shared_ptr<juce::MidiMessage> preMessage;
     juce::String out;
     uint8 instrument;
     uint32 id;
-    RatMidiMessage& partner;
+    std::shared_ptr<RatMidiMessage> partner;
+
+    uint8 idealNn;
+    //std::vector<uint8> tuningBytes;
+    std::array<uint8, 12> tuningBytes;
 };

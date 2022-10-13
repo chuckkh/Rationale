@@ -19,6 +19,7 @@
 #include "JuceHeader.h"
 #include "RatEvent.h"
 #include "RatRegion.h"
+#include "RatMidiMessage.h"
 #include "RatNoteOn.h"
 #include "RatNoteOff.h"
 #include <memory>

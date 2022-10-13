@@ -172,13 +172,8 @@ You should have received a copy of the GNU General Public License along with Rat
         self.engine = ratengineinterface.RatEngineInterface(self)
         self.engine.launch(0)
         self.engine.sendToEngine("resetAll")
-        for nt in self.notelist:
-            sendStr = "addNote:id:" + str(nt.id)
-            d = nt.__dict__['dict']
-            for k in d:
-                sendStr += (":"+str(k)+":"+str(d[k]))
-            sendStr += ":sel:"+str(nt.sel)
-            self.engine.sendToEngine(sendStr)
+        self.engine.sendToEngine("GetMidiIn")
+        self.engine.sendToEngine("GetMidiOut")
         for ind in range(len(self.regionlist)):
             r = self.regionlist[ind]
             self.engine.sendToEngine("addRegion:"+str(ind)+":"+str(r.num)+":"+str(r.den))
@@ -187,8 +182,13 @@ You should have received a copy of the GNU General Public License along with Rat
             self.engine.sendToEngine("addInst:"+str(self.instlist[ind].number))
             for out in self.instlist[ind].outlist:
                 self.engine.sendToEngine("addOut:"+str(ind)+":"+str(out.__class__)[16:-2]+":"+str(out.device)+":"+str(out.channel))
-        self.engine.sendToEngine("GetMidiIn")
-        self.engine.sendToEngine("GetMidiOut")
+        for nt in self.notelist:
+            sendStr = "addNote:id:" + str(nt.id)
+            d = nt.__dict__['dict']
+            for k in d:
+                sendStr += (":"+str(k)+":"+str(d[k]))
+            sendStr += ":sel:"+str(nt.sel)
+            self.engine.sendToEngine(sendStr)
 
     def requestMidiDevices(self):
         self.bufferFromEngine = []
@@ -2236,6 +2236,7 @@ endin
 #            elif event.serial != self.norepeat and event.keysym == "s" or event.keysym == "S":
 #                self.menumode.invoke(3)
             if event.keysym == "space" and event.serial != self.norepeat:
+                self.engine.sendToEngine("play")
                 if self.numkey == 0:
                     if self.playing == 0:
                         self.play()
@@ -3155,6 +3156,7 @@ endin
         if self.mode.get() == 3:
             self.scrubtimelist = []
             self.scrubplay()
+#        self.startEngine()
 
     def filesave(self, *args):
 #       print sys._getframe().f_code.co_name

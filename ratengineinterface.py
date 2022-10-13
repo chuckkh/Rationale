@@ -78,6 +78,10 @@ class RatEngineInterface:
                             self.parent.engineActive = 0
                             self.active = 0
                             break
+                        elif cmd.startswith("TICK:"):
+                            position = float(cmd[5:])
+                            myparent.scrollabs(position)
+                            myparent.beat = position
                         else:
                             self.parent.bufferFromEngine.append(cmd)
 

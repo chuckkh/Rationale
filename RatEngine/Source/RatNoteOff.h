@@ -24,7 +24,7 @@ class RatNoteOff :
     public RatMidiMessage
 {
 public:
-    RatNoteOff(uint8, uint8, uint8, double, uint8, uint32, RatMidiMessage&);
+    RatNoteOff(uint8, uint8, uint8, double, uint8, uint32, std::shared_ptr<RatMidiMessage>);
     virtual ~RatNoteOff();
     int play();
     int trigger() override;

@@ -18,10 +18,10 @@
 #pragma once
 
 //#include "RatIOManager.h"
-#include "RatMidiMessage.h"
+#include "JuceHeader.h"
+//#include "RatMidiMessage.h"
 #include "RatMidiInputCallback.h"
 #include "RatNoteOn.h"
-#include "JuceHeader.h"
 #include <queue>
 #include <map>
 #include <memory>
@@ -29,12 +29,28 @@
 #include <forward_list>
 #include <list>
 #include <atomic>
+#include <set>
 
 enum class RatPlayMode { Stop, Play, Edit, Scrub };
+
 
 class RatMidiManager : public juce::MidiMessageSequence, public juce::MidiInputCallback
 {
 public:
+	struct AvailableNoteNumbers
+	{
+		std::bitset<128> noteNumbers;
+	};
+
+private:
+	class ChainOfAvailableNoteNumbers
+	{
+		std::list<AvailableNoteNumbers> seriesOfAvailableNoteNumbers;
+
+	};
+
+public:
+
 	RatMidiManager();
 	void handleIncomingMidiMessage(juce::MidiInput*, const juce::MidiMessage&) override;
 	void sendRatMidiMessage(RatMidiMessage&);
@@ -69,6 +85,16 @@ public:
 	void addToCurrentMidiScoreTime(double);
 	void clearMidiScoreDelete();
 	void addActiveMidiOutput(juce::String);
+
+	// In case a note is added or edited during playback, this retrieves a note
+	// number that is not used anywhere in the existing score.
+	uint8 getUnusedNoteNumber();
+
+	// In case a note added during playback ends, this returns its note number
+	// to the list.
+	void setUnusedNoteNumber(uint8);
+	void setUsedNoteNumber(uint8);
+	void clearUsedNoteNumber(uint8);
 private:
 	//std::map <juce::String, std::pair<juce::MidiInput, uint16>> activeMidiInputs;
 	std::unique_ptr<juce::MidiInput> activeMidiInput;
@@ -90,5 +116,7 @@ private:
 	std::list<std::shared_ptr<RatMidiMessage>>::iterator midiScoreIt;
 	bool playing;
 	RatPlayMode playMode = RatPlayMode::Stop;
+	std::queue<uint8> unusedNoteNumbers;
+	std::set<uint8> usedNoteNumbers;
 };
 

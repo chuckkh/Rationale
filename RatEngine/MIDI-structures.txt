@@ -3,9 +3,25 @@ RatMidiManager::currentMidi...
 ::midiInDevices (name -> id)
 ::midiOutDevices
 ::activeMidiInput
-::activeMidiOutputs
+::activeMidiOutputs (name)
 static RatNote::instruments
 RatMidiMessage::preMessage
 ::out
 ::instrument
 
+
+
+
+Every note that is added or modified must check for available note number!
+NOT on playback!
+
+This means there is a structure ...
+
+
+No.
+On playback (prepareToPlay), all the MIDI messages are assigned note numbers in order, from which are available (since two notes could need the same note number).
+A separate *queue* of AvailableNoteNumbers keeps track of all of the note numbers not used at all in the score. Any notes that are added or moved *during playback* take from this list; here it is not urgent to have a nearby note number, because this is user experimentation. When playback starts again, the messages will all be sorted again.
+
+
+
+The MIDI message is in

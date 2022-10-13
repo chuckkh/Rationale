@@ -14,14 +14,20 @@
 //
 //    You should have received a copy of the GNU General Public License
 //    along with Rationale.  If not, see <http://www.gnu.org/licenses/>.
-					  
+
+
 #include "JuceHeader.h"
 #include "RatMidiManager.h"
+//#include "RatMidiMessage.h"
 #include "RatNote.h"
+//#include "RatNoteOn.h"
+//#include "RatNoteOff.h"
 #include <iostream>
 #include <typeinfo>
 #include <map>
 #include <memory>
+
+class RatMidiMessage;
 
 RatMidiManager::RatMidiManager()
 	: currentMidiScoreTime(0)
@@ -31,17 +37,27 @@ RatMidiManager::RatMidiManager()
 
 void RatMidiManager::handleIncomingMidiMessage(juce::MidiInput* input, const juce::MidiMessage& msg)
 {
-
+	std::cerr << "MIDI received: " << msg.getDescription() << std::endl;
 	if (msg.isSongPositionPointer()) {
-
+		setSPP(msg.getSongPositionPointerMidiBeat());
 		std::cout << "\nReceived: SPP: " << msg.getSongPositionPointerMidiBeat();
 	}
 	else if (msg.isMidiClock()) {
+		incrementMidiBeatClock();
 		std::cout << "...tick ";
 	}
-	else if (msg.isMidiStart()) { std::cout << '\n' << "Received: MIDI Start"; }
-	else if (msg.isMidiStop()) { std::cout << '\n' << "Received: MIDI Stop"; }
-	else if (msg.isMidiContinue()) { std::cout << '\n' << "Received: MIDI Continue"; }
+	else if (msg.isMidiStart()) {
+		startPlayback();
+		std::cout << '\n' << "Received: MIDI Start"; 
+	}
+	else if (msg.isMidiStop()) { 
+		stopPlayback();
+		std::cout << '\n' << "Received: MIDI Stop"; 
+	}
+	else if (msg.isMidiContinue()) { 
+		startPlayback();
+		std::cout << '\n' << "Received: MIDI Continue"; 
+	}
 	else if (msg.isSysEx()) {
 		std::cout << '\n' << "Received SysEx:";
 		int sz = msg.getSysExDataSize();
@@ -53,13 +69,38 @@ void RatMidiManager::handleIncomingMidiMessage(juce::MidiInput* input, const juc
 
 void RatMidiManager::sendRatMidiMessage(RatMidiMessage &msg)
 {
+	uint8 instrNo_ = msg.getInstrument();
+	auto instr_ = RatNote::instruments[instrNo_];
+	auto zero = instr_[0];
+	auto fst = zero.first;
 	juce::String nm = RatNote::instruments[msg.getInstrument()][0].first;
 	juce::String identifier = midiOutDevices[nm];
-	if (msg.getPreMessage() != nullptr)
+	if (!activeMidiOutputs.count(identifier))
 	{
-		activeMidiOutputs[identifier]->sendMessageNow(*msg.getPreMessage());
+//		activeMidiOutputs.emplace(std::make_unique<juce::MidiOutput>());
+		activeMidiOutputs[identifier] = juce::MidiOutput::openDevice(identifier);
 	}
-	activeMidiOutputs[identifier]->sendMessageNow(msg);
+	if (activeMidiOutputs.count(identifier))
+	{
+		if (activeMidiOutputs[identifier] != nullptr)
+		{
+			if (msg.isNoteOn() && msg.getPreMessage() != nullptr)
+			{
+				juce::MidiMessage premsg = *msg.getPreMessage();
+				const void* preraw = premsg.getRawData();
+				const uint8* preint{ static_cast<const uint8*>(preraw) };
+				int presz_ = premsg.getRawDataSize();
+				std::cerr << presz_ << " premessage bytes......";
+				for (int i = 0; i < presz_; i++)
+				{
+					std::cerr << int(preint[i]) << " ";
+				}
+				std::cerr << std::endl;
+				activeMidiOutputs[identifier]->sendMessageNow(premsg);
+			}
+			activeMidiOutputs[identifier]->sendMessageNow(msg);
+		}
+	}
 }
 
 void RatMidiManager::stepThroughMidiScoreTo(double t_)
@@ -86,7 +127,7 @@ void RatMidiManager::stepThroughMidiScoreTo(double t_)
 	{
 		// The time has to keep jumping to the next iterator until it's >= t_.
 		// Each msg has to go through find/clear note numbers
-		auto mm_ = *msit_;
+		std::shared_ptr<RatMidiMessage> mm_ = *msit_;
 		if (mm_->isNoteOn())
 		{
 
@@ -124,7 +165,9 @@ void RatMidiManager::continuePlayback()
 
 void RatMidiManager::setSPP(uint16 sixteenths)
 {
-	stepThroughMidiScoreTo(double(sixteenths) * 0.25);
+	// I don't think "step through" is necessary anymore because
+	// notes added or edited during playback have a separate queue...
+//	stepThroughMidiScoreTo(double(sixteenths) * 0.25);
 	setCurrentMidiScoreTime(double(sixteenths) * 0.25);
 	//
 	// I have to redo this! To find the right score index for the starting point.
@@ -134,16 +177,19 @@ void RatMidiManager::setSPP(uint16 sixteenths)
 
 void RatMidiManager::incrementMidiBeatClock()
 {
-	/*
-	double t_ = getCurrentScoreTime() + 1.0 / 24.0;
-	setCurrentScoreTime(t_);
-	if (playing)
+	double t_ = getCurrentMidiScoreTime() + 1.0 / 24.0;
+	setCurrentMidiScoreTime(t_);
+	if (playMode == RatPlayMode::Play)
 	{
+		std::list<std::shared_ptr<RatMidiMessage>>::iterator midiScoreEndIt = midiScore.end();
 
-		while (currentScoreTime >= midiManager.getEventTime(currentScoreIndex))
+//		while (currentMidiScoreTime >= getEventTime(currentMidiScoreIndex))
+		while (midiScoreIt != midiScoreEndIt && currentMidiScoreTime >= (*midiScoreIt)->getTimeStamp())
 		{
-			auto eventHolder = midiManager.getEventPointer(currentScoreIndex);
-
+			sendRatMidiMessage(**midiScoreIt);
+			++midiScoreIt;
+//			auto eventHolder = midiManager.getEventPointer(currentScoreIndex);
+			/*
 			std::shared_ptr<RatMidiMessage> scoreEvent = std::dynamic_pointer_cast<RatMidiMessage>(std::make_shared<juce::MidiMessage>(eventHolder->message));
 			std::shared_ptr<juce::MidiMessage> pre = scoreEvent->getPreMessage();
 			if (pre == nullptr)
@@ -157,10 +203,9 @@ void RatMidiManager::incrementMidiBeatClock()
 			{
 
 			}
-
+			/**/
 		}
 	}
-	*/
 }
 
 
@@ -223,11 +268,14 @@ void RatMidiManager::setActiveMidiInput(juce::String name)
 
 void RatMidiManager::addActiveMidiOutput(juce::String name)
 {
-	if (activeMidiOutputs.count(name) == 0)
-	{
-		juce::String device = midiOutDevices[name];
-		activeMidiOutputs[name] = juce::MidiOutput::openDevice(device);
-	}
+//	if (activeMidiOutputs.count(name) == 0)
+//	{
+	juce::String device = midiOutDevices[name];
+	activeMidiOutputs[name] = juce::MidiOutput::openDevice(device);
+	juce::MidiDeviceInfo devInfo = activeMidiOutputs[name]->getDeviceInfo();
+
+	std::cerr << "Device info: " << devInfo.name << "/" << devInfo.identifier << std::endl;
+//	}
 }
 
 void RatMidiManager::resetOuts()
@@ -275,10 +323,10 @@ void RatMidiManager::clearAvailableNoteNumber(uint8 nn, std::bitset<128>&)
 
 void RatMidiManager::addMidiMessage(std::shared_ptr<RatMidiMessage> message_)
 {
-	std::cerr << "not done line 151\n";
-	std::shared_ptr<RatMidiMessage> temp = std::make_shared<RatMidiMessage>(144, 60, 100, 0.0, 1, 1);
-	temp = message_;
-	midiScore.push_back(temp);
+	std::cerr << "not done line 284\n";
+//	std::shared_ptr<RatMidiMessage> temp = std::make_shared<RatMidiMessage>(144, 60, 100, 0.0, 1, 1, message_);
+//	temp = message_;
+	midiScore.push_back(message_);
 	
 //	midiScore.push_back(message_);
 //	midiScore.insert(midiScore.end(), message_);
@@ -355,12 +403,51 @@ void RatMidiManager::clearMidiScore()
 
 void RatMidiManager::prepareToPlay()
 {
+	std::cerr << "prepareToPlay " << midiScore.size() << " MIDI messages line 364" << std::endl;
 	sortMidiScore();
 	midiScoreIt = midiScore.begin();
-	while ((*midiScoreIt)->getTimeStamp() < currentMidiScoreTime)
+	std::list<std::shared_ptr<RatMidiMessage>>::iterator endIt = midiScore.end();
+	while (midiScoreIt != endIt && (*midiScoreIt)->getTimeStamp() < currentMidiScoreTime)
 	{
 		++midiScoreIt;
+		std::cerr << "advanced 1 msg..." << std::endl;
 	}
+	std::list<std::shared_ptr<RatMidiMessage>>::iterator tempIt = midiScore.begin();
+	std::bitset<128> nn_;
+	while (tempIt != endIt)
+	{
+		if ((*tempIt)->isNoteOn())
+		{
+			uint8 realNote = findAvailableNoteNumber((*tempIt)->getIdealNn(), nn_);
+
+//			juce::MidiMessage* msg = (*tempIt)->getPreMessage();
+			(*tempIt)->setTuningByte(7, realNote);
+			(*tempIt)->setPreMessage();
+//			std::cerr << " MTS Byte 6: " << (*tempIt)->getTuningByte(6);
+			std::cerr << "Used note: " << int((*tempIt)->getTuningByte(7)) << " for note: " << int((*tempIt)->getTuningByte(8)) << std::endl;
+			(*tempIt)->setNoteNumber(realNote);
+//			RatMidiMessage& msg2 = (*tempIt)->getPartner();
+//			msg2.setNoteNumber(realNote);
+
+			(*tempIt)->getPartner()->setNoteNumber(realNote);
+			setUsedNoteNumber(realNote);
+			
+		}
+		else
+		{
+			clearAvailableNoteNumber((*tempIt)->getNoteNumber(), nn_);
+		}
+		std::cerr << "NoteNumber: " << (*tempIt)->getNoteNumber() << std::endl;
+		++tempIt;
+	}
+	for (uint8 i = 1; i < 128; i++)
+	{
+		if (!usedNoteNumbers.count(i))
+		{
+			setUnusedNoteNumber(i);
+		}
+	}
+
 }
 
 double RatMidiManager::getCurrentMidiScoreTime()
@@ -381,4 +468,30 @@ void RatMidiManager::addToCurrentMidiScoreTime(double delta_)
 void RatMidiManager::clearMidiScoreDelete()
 {
 	midiScoreDelete.clear();
+}
+
+uint8 RatMidiManager::getUnusedNoteNumber()
+{
+	uint8 nn_ = unusedNoteNumbers.front();
+	unusedNoteNumbers.pop();
+	return nn_;
+}
+
+void RatMidiManager::setUnusedNoteNumber(uint8 nn_)
+{
+	unusedNoteNumbers.push(nn_);
+}
+
+void RatMidiManager::setUsedNoteNumber(uint8 nn_)
+{
+	usedNoteNumbers.emplace(nn_);
+}
+
+void RatMidiManager::clearUsedNoteNumber(uint8 nn_)
+{
+	if (usedNoteNumbers.count(nn_))
+	{
+		usedNoteNumbers.erase(nn_);
+		setUnusedNoteNumber(nn_);
+	}
 }

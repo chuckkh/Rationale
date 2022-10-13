@@ -17,7 +17,7 @@
 
 #include "RatNoteOff.h"
 
-RatNoteOff::RatNoteOff(uint8 nn_, uint8 vel_, uint8 channel_, double timestamp_, uint8 instrument_, uint32 id_, RatMidiMessage& ptnr_)
+RatNoteOff::RatNoteOff(uint8 nn_, uint8 vel_, uint8 channel_, double timestamp_, uint8 instrument_, uint32 id_, std::shared_ptr<RatMidiMessage> ptnr_)
 	: RatMidiMessage(128 + (channel_ % 17), nn_ & 127, vel_ & 127, timestamp_, instrument_, id_, ptnr_)
 //	: juce::MidiMessage(128 + (channel_ % 17), nn_ & 127, vel_ & 127, timestamp_)
 {

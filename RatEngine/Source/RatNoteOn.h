@@ -19,12 +19,13 @@
 #include "RatEvent.h"
 #include "JuceHeader.h"
 #include "RatMidiMessage.h"
+#include <vector>
 
 class RatNoteOn :
     public RatMidiMessage
 {
 public:
-    RatNoteOn(uint8, uint8, uint8, double, uint8, uint32, RatMidiMessage&);
+    RatNoteOn(uint8, uint8, uint8, double, uint8, uint32, std::shared_ptr<RatMidiMessage>);
     virtual ~RatNoteOn();
     int trigger() override;
 private:
@@ -34,5 +35,7 @@ private:
     uint8 nn;
     uint8 vel;
     uint8 channel;
+    
 };
+
 

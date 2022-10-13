@@ -60,15 +60,21 @@ int RatNote::createNoteOn()
 	//uint8 nn_, uint8 vel_, uint8 channel_, double timestamp_, juce::String out_
 	//RatNoteOn temp(idealNn, vel, RatNote::instruments[instrument][0].second, time, instrument, id);
 //	noteOn = std::make_shared<RatNoteOn>(idealNn, vel, RatNote::instruments[instrument][0].second, time, instrument);
+	uint8 nn_ = 60;
+	uint8 arg3_ = 1;
 	if (noteOn == nullptr)
 	{
-		noteOn = std::make_unique <RatNoteOn>(60, vel, 1, time, instrument, id, noteOff);
+		noteOn = std::make_unique <RatNoteOn>(nn_, vel, arg3_, time, instrument, id, noteOff);
 	}
 	else
 	{
-		noteOn.reset(new RatNoteOn(60, vel, 1, time, instrument, id, noteOff));
+		noteOn.reset(new RatNoteOn(nn_, vel, arg3_, time, instrument, id, noteOff));
 	}
 	std::cerr << "noteOn created : " << noteOn->getId() << std::endl;
+	if (noteOff != nullptr)
+	{
+		noteOff->setPartner(noteOn);
+	}
 	return 0;
 }
 
@@ -83,6 +89,10 @@ int RatNote::createNoteOff()
 	else
 	{
 		noteOff.reset(new RatNoteOff(60, 0, 1, time + duration, instrument, id, noteOn));
+	}
+	if (noteOn != nullptr)
+	{
+		noteOn->setPartner(noteOff);
 	}
 	return 0;
 }
@@ -182,9 +192,10 @@ std::shared_ptr<RatMidiMessage> RatNote::getNoteOff()
 	return noteOff;
 }
 
-void RatNote::setId(uint32 _id)
+void RatNote::setId(uint32 id_)
 {
-	id = _id;
+	id = id_;
+	std::cerr << "id is now: " << id << std::endl;
 }
 
 void RatNote::setInstrument(uint8 instrument_)
@@ -192,15 +203,17 @@ void RatNote::setInstrument(uint8 instrument_)
 	instrument = instrument_;
 	noteOn->setInstrument(instrument_);
 	noteOff->setInstrument(instrument_);
+	std::cerr << "inst is now: " << instrument << std::endl;
 //	noteOn->setOut(instrument_);
 //	noteOn->setPreMessageOut(instrument_);
 //	noteOff->setOut(instrument_);
 	// update NoteOn / NoteOff
 }
 
-void RatNote::setVoice(uint8 _voice)
+void RatNote::setVoice(uint8 voice_)
 {
-	voice = _voice;
+	voice = voice_;
+	std::cerr << "voice is now: " << voice << std::endl;
 	// update NoteOn / NoteOff
 }
 
@@ -208,39 +221,46 @@ void RatNote::setVel(uint8 vel_)
 {
 	vel = vel_;
 	noteOn->setVelocity(float(vel_) / 127.0);
+	std::cerr << "vel is now: " << vel << std::endl;
 }
 
 void RatNote::setRegion(uint8 region_)
 {
 	region = region_;
+	std::cerr << "reg is now: " << region << std::endl;
 }
 
 void RatNote::setSelected(bool selected_)
 {
 	selected = selected_;
+	std::cerr << "sel is now: " << selected << std::endl;
 }
 
 void RatNote::setNum(uint32 num_)
 {
 	num = num_;
+	std::cerr << "num is now: " << num << std::endl;
 	resetTuning();
 }
 
 void RatNote::setDen(uint32 den_)
 {
 	den = den_;
+	std::cerr << "den is now: " << den << std::endl;
 	resetTuning();
 }
 
 void RatNote::setCentOffset(double centOffset_)
 {
 	centOffset = centOffset_;
+	std::cerr << "centoffset is now: " << centOffset << std::endl;
 	resetTuning();
 }
 
 void RatNote::setTime(double time_)
 {
 	time = time_;
+	std::cerr << "time is now: " << time << std::endl;
 	noteOn->setTimeStamp(time_);
 	noteOff->setTimeStamp(time_ + duration);
 }
@@ -249,6 +269,7 @@ void RatNote::setDuration(double duration_)
 {
 //	double current = noteOff->getTimeStamp();
 	duration = duration_;
+	std::cerr << "duration is now: " << duration << std::endl;
 //	noteOff->addToTimeStamp(duration_ - current);
 	noteOff->setTimeStamp(time + duration_);
 }
@@ -256,6 +277,8 @@ void RatNote::setDuration(double duration_)
 void RatNote::setIdealNn(uint8 idealNn_)
 {
 	idealNn = idealNn_;
+	noteOn->setIdealNn(idealNn_);
+	noteOff->setIdealNn(idealNn_);
 }
 
 void RatNote::setMtsByte1(uint8 mtsByte1_)
@@ -270,21 +293,41 @@ void RatNote::setMtsByte2(uint8 mtsByte2_)
 
 void RatNote::resetTuning()
 {
-	double goal = (log(num / den) / log(semitone)) * RatNote::regions[region]->getNum() / RatNote::regions[region]->getDen() + centOffset * 0.01 + RatNote::globalTonalCenter;
-	goal = round(goal * bit14 / bit14);
-	tuningBytes = { 127, 127, 8, 2, 1, 1, uint8(goal), uint8(goal) };
-	setIdealNn(uint8(goal));
-	goal -= idealNn;
-	goal *= bit7;
-	tuningBytes.push_back(uint8(goal));
-	setMtsByte1(uint8(goal));
-	goal *= bit7;
-	tuningBytes.push_back(uint8(goal));
-	setMtsByte2(uint8(goal));
+	std::cerr << "resetTuning: " << std::endl;
+	uint32 rnum = RatNote::regions[region]->getNum();
+	uint32 rden = RatNote::regions[region]->getDen();
+	std::cerr << "ratio..." << (log(double(num) * double(rnum) / (double(den) * double(rden))) / log(semitone)) << std::endl;
+	double goal = (log(double(num) * double(rnum) / (double(den) * double(rden))) / log(semitone)) + centOffset * 0.01 + RatNote::globalTonalCenter;
+	std::cerr << " goal: " << goal;
+	uint8 b1 = trunc(goal);
+//	goal = round(goal * bit14 / bit14);
+	std::cerr << " goal: " << goal;
+	// Byte 7 here is the one that changes if the note number is not available.
+	noteOn->setTuningByte(7, b1);
+	noteOn->setTuningByte(8, b1);
+
+//	uint8 bytes[8] = { 127, 127, 8, 2, 1, 1, b1, b1 };
+//	for ()
+	setIdealNn(b1);
+//	goal -= idealNn;
+//	goal *= bit7;
+	goal = bit7 * (goal - b1);
+	std::cerr << " goal: " << goal;
+	b1 = trunc(goal);
+//	tuningBytes.push_back(b1);
+	noteOn->setTuningByte(9, b1);
+	setMtsByte1(b1);
+	goal = bit7 * (goal - b1);
+	std::cerr << " goal: " << goal << std::endl;
+	b1 = trunc(goal);
+//	tuningBytes.push_back(b1);
+	noteOn->setTuningByte(10, b1);
+
+	setMtsByte2(b1);
 	if (noteOn != nullptr)
 	{
 		noteOn->setNoteNumber(idealNn);
-		noteOn->setPreMessage(&tuningBytes, 10);
+		noteOn->setPreMessage();
 	}
 	if (noteOff != nullptr)
 	{
