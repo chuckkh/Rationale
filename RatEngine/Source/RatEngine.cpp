@@ -277,6 +277,7 @@ void RatEngine::messageReceived(const juce::MemoryBlock &msg)
         else if (attribute.compare("region") == 0)
         {
             score[id]->setRegion(uint8(textMessage.substring(c3).getIntValue()));
+            score[id]->resetTuning();
         }
         else if (attribute.compare("time") == 0)
         {
@@ -293,10 +294,12 @@ void RatEngine::messageReceived(const juce::MemoryBlock &msg)
         else if (attribute.compare("num") == 0)
         {
             score[id]->setNum(uint32(textMessage.substring(c3).getIntValue()));
+            score[id]->resetTuning();
         }
         else if (attribute.compare("den") == 0)
         {
             score[id]->setDen(uint32(textMessage.substring(c3).getIntValue()));
+            score[id]->resetTuning();
         }
 //        else if (attribute.compare("sdur") == 0)
 //        {
@@ -349,6 +352,15 @@ void RatEngine::messageReceived(const juce::MemoryBlock &msg)
         RatNote::regions[id]->setDen(den);
         RatNote::regions[id]->setNum(num);
         RatNote::regions[id]->setCentOffset(centOffset);
+        std::map<uint32, std::unique_ptr<RatNote>>::iterator noteIt = score.begin(), noteEndIt = score.end();
+        while (noteIt != noteEndIt)
+        {
+            if (noteIt->second->getRegion() == id)
+            {
+                noteIt->second->resetTuning();
+            }
+            ++noteIt;
+        }
         std::cout << "RtoE: " << textMessage.substring(0,10) << " " << id <<" : " << num <<" : " << den << std::endl;
     }
     else if (textMessage.startsWith("addInst:")) {
