@@ -61,6 +61,7 @@ RatEngine::RatEngine(int port, JUCEApplication &a) :
     setTonalCenter(60);
     setCurrentScoreTime(0);
     currentScoreIndex = 0;
+
 }
 
 /*RatEngine::RatEngine(int port) :
@@ -79,12 +80,27 @@ void RatEngine::setCbPort(int pno) {
     cbport = pno;
 }
 
+void RatEngine::keepCheckingCurrentMidiScoreTime()
+{
+    double currentMidiScoreTime;
+    while (active)
+    {
+        currentMidiScoreTime = midiManager.getCurrentMidiScoreTime();
+        if (currentMidiScoreTime != currentScoreTime)
+        {
+            setCurrentScoreTime(currentMidiScoreTime);
+            sendString(juce::String("TICK:" + juce::String(currentMidiScoreTime)));
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+    std::cerr << "Score time checker thread finished." << std::endl;
+}
+
 void RatEngine::run() {
-    std::cout << "Well howdy do!" << std::endl;
+//    std::cout << "Well howdy do!" << std::endl;
     //int cbport = 5899;
     bool connected = connectToSocket("127.0.0.1", cbport, 5000);
-    std::cout << (connected ? "Connected " : "Not connected ") << cbport << std::endl;
-    std::string mystr = "Hello World!";
+    std::cout << "Engine " << (connected ? "Connected " : "Not connected ") << cbport << std::endl;
     //bool sent;
 /*    for (int r = 0; r < 4; r++) {
         MemoryBlock myMessage;
@@ -94,10 +110,13 @@ void RatEngine::run() {
         }
         sent = sendMessage(myMessage);
     }*/
-    std::thread (keepCheckingCurrentMidiScoreTime);
-    std::cout << "running..." << std::endl;
+//    std::thread kCCMST(RatEngine::keepCheckingCurrentMidiScoreTime);
+//     std::thread scoreTimeChecker([this]() {keepCheckingCurrentMidiScoreTime();  });
+//    std::thread scoreTimeChecker(&RatEngine::keepCheckingCurrentMidiScoreTime, this);
+//    std::cout << "running..." << std::endl;
 //    int g;
 //    std::cin >> g;
+    midiScoreTimeCheckThread = std::make_unique<RatEngine::MidiScoreTimeCheckThread>(this, &midiManager);
 }
 
 void RatEngine::sendStdString(const std::string& outMsg)
@@ -186,7 +205,6 @@ void RatEngine::sendSysExTest()
 
     midout->sendMessageNow(msg);
     std::cerr << "MTS sent!";
-    std::cout << "MTS sent!";
 }
 
 void RatEngine::endItAll() {
@@ -215,9 +233,9 @@ RatEngine::~RatEngine() {
     disconnect();
 }
 
-void RatEngine::messageReceived(const juce::MemoryBlock &msg) 
+void RatEngine::messageReceived(const juce::MemoryBlock& msg)
 {
-//    sendMessage(msg);
+    //    sendMessage(msg);
     juce::String textMessage = msg.toString();
     std::cout << "Rationale to Engine: " << textMessage << std::endl;
     if (textMessage.compare("GetMidiIn") == 0) {
@@ -230,9 +248,9 @@ void RatEngine::messageReceived(const juce::MemoryBlock &msg)
         std::cout << "That's all, folks!" << std::endl;
         active = 0;
         endItAll();
-//        app.quit();
-//        app.systemRequestedQuit();
-        //shutdown();
+        //        app.quit();
+        //        app.systemRequestedQuit();
+                //shutdown();
     }
     else if (textMessage.startsWith("midiTimingInDevice:")) {
         juce::String device = textMessage.substring(19);
@@ -240,15 +258,15 @@ void RatEngine::messageReceived(const juce::MemoryBlock &msg)
     }
     else if (textMessage.startsWith("addNote:")) {
         int c1 = 8;
-        int c2 = textMessage.indexOf(c1, ":")+1;
-        int c3 = textMessage.indexOf(c2, ":")+1;
+        int c2 = textMessage.indexOf(c1, ":") + 1;
+        int c3 = textMessage.indexOf(c2, ":") + 1;
         uint32 id = uint32(textMessage.substring(c1, c2).getIntValue());
         int inst = textMessage.substring(c2, c3).getIntValue();
         int region = textMessage.substring(c3).getIntValue();
         if (score.count(id) == 0)
         {
             score.emplace(id, std::make_unique<RatNote>(id, 0.0, 1.0, 1, 1, 1.0, 1, 0, 0, 0));
-//            score[id] = std::make_unique<RatNote>(id, 0.0, 1.0, 1, 1, 1.0, 1, 0, 0, 0);
+            //            score[id] = std::make_unique<RatNote>(id, 0.0, 1.0, 1, 1, 1.0, 1, 0, 0, 0);
         }
         else
         {
@@ -263,8 +281,8 @@ void RatEngine::messageReceived(const juce::MemoryBlock &msg)
         int c1 = 8;
         int c2 = textMessage.indexOf(c1, ":") + 1;
         int c3 = textMessage.indexOf(c2, ":") + 1;
-        int id = textMessage.substring(c1, c2-1).getIntValue();
-        juce::String attribute = textMessage.substring(c2, c3-1);
+        int id = textMessage.substring(c1, c2 - 1).getIntValue();
+        juce::String attribute = textMessage.substring(c2, c3 - 1);
         std::cerr << "   ID: " << id << " attribute: " << attribute << " IS " << textMessage.substring(c3) << std::endl;
         if (attribute.compare("inst") == 0)
         {
@@ -301,10 +319,10 @@ void RatEngine::messageReceived(const juce::MemoryBlock &msg)
             score[id]->setDen(uint32(textMessage.substring(c3).getIntValue()));
             score[id]->resetTuning();
         }
-//        else if (attribute.compare("sdur") == 0)
-//        {
-//            midiManager.prepareToPlay();
-//        }
+        //        else if (attribute.compare("sdur") == 0)
+        //        {
+        //            midiManager.prepareToPlay();
+        //        }
         std::cout << "RtoE: modNote: " << textMessage << std::endl;
     }
     else if (textMessage.startsWith("play")) {
@@ -346,7 +364,7 @@ void RatEngine::messageReceived(const juce::MemoryBlock &msg)
         den = textMessage.substring(c3).getIntValue();
         while (RatNote::regions.size() <= id)
         {
-//            RatNote::regions.emplace()
+            //            RatNote::regions.emplace()
             RatNote::regions.push_back(std::make_unique<RatRegion>(num, den, centOffset));
         }
         RatNote::regions[id]->setDen(den);
@@ -361,7 +379,7 @@ void RatEngine::messageReceived(const juce::MemoryBlock &msg)
             }
             ++noteIt;
         }
-        std::cout << "RtoE: " << textMessage.substring(0,10) << " " << id <<" : " << num <<" : " << den << std::endl;
+        std::cout << "RtoE: " << textMessage.substring(0, 10) << " " << id << " : " << num << " : " << den << std::endl;
     }
     else if (textMessage.startsWith("addInst:")) {
         uint32 id = textMessage.substring(8).getIntValue();
@@ -389,7 +407,7 @@ void RatEngine::messageReceived(const juce::MemoryBlock &msg)
         juce::String type = textMessage.substring(c2, c3 - 1);
         juce::String dev = textMessage.substring(c3, c4 - 1);
         uint8 channel = textMessage.substring(c4).getIntValue();
-        std::cout << "device: " << dev << '\n';
+        //        std::cout << "device: " << dev << '\n';
         while (RatNote::instruments.size() <= instrument) {
             std::vector<std::pair<juce::String, uint8>> temp;
             RatNote::instruments.push_back(temp);
@@ -398,11 +416,12 @@ void RatEngine::messageReceived(const juce::MemoryBlock &msg)
         midiManager.addActiveMidiOutput(dev);
         std::cout << "RtoE: addOut" << std::endl;
     }
-    else if (textMessage.startsWith("resetOuts:")) {
+    else if (textMessage.startsWith("resetOuts")) {
         auto it = RatNote::instruments.begin();
         auto itEnd = RatNote::instruments.end();
         while (it != itEnd) {
             it->clear();
+            ++it;
         }
         midiManager.resetOuts();
         std::cout << "RtoE: resetOuts" << std::endl;
@@ -426,8 +445,32 @@ void RatEngine::messageReceived(const juce::MemoryBlock &msg)
         }
         std::cout << "RtoE: resetAll" << std::endl;
     }
+    else if (textMessage.startsWith("triggerDevAdd:")) {
+        juce::String devname = textMessage.substring(14);
+        if (devname.length())
+        {
+            midiManager.addActiveMidiOutput(devname);
+        }
+    }
+    else if (textMessage.startsWith("triggerDevRemove:"))
+    {
+        
+    }
+    else if (textMessage.startsWith("trigger:")) {
+        int a = textMessage.indexOf(":") + 1;
+        int b = textMessage.indexOf(a, ":") + 1;
+        int c = textMessage.indexOf(b, ":") + 1;
+        int d = textMessage.indexOf(c, ":") + 1;
+        juce::String devname = textMessage.substring(a, b - 1);
+        uint8 channel = uint8(textMessage.substring(b, c - 1).getIntValue());
+        uint8 cc = uint8(textMessage.substring(c, d - 1).getIntValue());
+        uint8 value = uint8(textMessage.substring(d).getIntValue());
+
+        RatMidiMessage controlMessage{uint8(channel+176), cc, value, 0, 1, 0, nullptr};
+        midiManager.sendRatMidiMessage(controlMessage, devname);
+    }
+
     juce::MemoryBlock checker = msg;
-    int a = 0;
 //    std::cin >> a;
 }
 
@@ -541,16 +584,32 @@ double RatEngine::getCurrentMidiScoreTime()
     return midiManager.getCurrentMidiScoreTime();
 }
 
-void RatEngine::keepCheckingCurrentMidiScoreTime()
+RatEngine::MidiScoreTimeCheckThread::MidiScoreTimeCheckThread(RatEngine* engine_, RatMidiManager* midiManager_)
+    : juce::Thread("MIDI Score Time Check Thread")
 {
-    double currentMidiScoreTime = midiManager.getCurrentMidiScoreTime();
-    while (active)
+    engine = engine_;
+    midiManager = midiManager_;
+    startThread();
+}
+
+RatEngine::MidiScoreTimeCheckThread::~MidiScoreTimeCheckThread()
+{
+    stopThread(1000);
+}
+
+void RatEngine::MidiScoreTimeCheckThread::run()
+{
+    double currentMidiScoreTime;
+    while (!threadShouldExit())
     {
-        if (currentMidiScoreTime != currentScoreTime)
+        currentMidiScoreTime = midiManager->getCurrentMidiScoreTime();
+        if (currentMidiScoreTime != engine->currentScoreTime)
         {
-            setCurrentScoreTime(currentMidiScoreTime);
-            sendString(juce::String("TICK:"+juce::String(currentMidiScoreTime)));
+            engine->setCurrentScoreTime(currentMidiScoreTime);
+            engine->sendString(juce::String("TICK:" + juce::String(currentMidiScoreTime)));
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        wait(250);
     }
+    std::cerr << "Score time checker finished." << std::endl;
+
 }

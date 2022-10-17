@@ -80,8 +80,8 @@ class RatEngineInterface:
                             break
                         elif cmd.startswith("TICK:"):
                             position = float(cmd[5:])
-                            myparent.scrollabs(position)
-                            myparent.beat = position
+#                            print("Rat tick", position, file=sys.stderr)
+                            self.parent.cursor.scrollabs(position)
                         else:
                             self.parent.bufferFromEngine.append(cmd)
 
@@ -100,6 +100,7 @@ class RatEngineInterface:
                     print("Unable to send END.")
 
                 self.active = 0
+        self.parent.engineActive = -1
         print("Done delegating!")
 
 

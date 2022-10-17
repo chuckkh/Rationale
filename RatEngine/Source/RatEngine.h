@@ -38,6 +38,18 @@
 class RatEngine : public juce::InterprocessConnection
 {
 public:
+    class RatEngine::MidiScoreTimeCheckThread : public juce::Thread
+    {
+    public:
+        MidiScoreTimeCheckThread(RatEngine*, RatMidiManager*);
+        ~MidiScoreTimeCheckThread() override;
+        void keepCheckingCurrentMidiScoreTime();
+        void run() override;
+    private:
+        RatMidiManager* midiManager;
+        RatEngine* engine;
+        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RatEngine::MidiScoreTimeCheckThread);
+    };
     //RatEngine(bool, int);
     //RatEngine(int);
     RatEngine(int, juce::JUCEApplication&);
@@ -89,6 +101,7 @@ private:
     std::map<juce::String, juce::String> midiOutDevices;
     double currentScoreTime;
     uint64 currentScoreIndex;
+    std::unique_ptr<RatEngine::MidiScoreTimeCheckThread> midiScoreTimeCheckThread;
 //    static int tonalCenter;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (RatEngine)
 };

@@ -89,14 +89,55 @@ class outputdialog:
 #        self.csdpage = self.nb.add('csd', label='CSD')
         self.timingIn = tk.StringVar()
         self.timingIn.set(self.myparent.midiTimingInDevice.name)
+        self.triggerSpaceDev = tk.StringVar()
+        self.triggerSpaceDev.set(self.myparent.triggerSpaceKey.devname)
+        self.triggerPageUpDev = tk.StringVar()
+        self.triggerPageUpDev.set(self.myparent.triggerPageUpKey.devname)
+        self.triggerPageDownDev = tk.StringVar()
+        self.triggerPageDownDev.set(self.myparent.triggerPageDownKey.devname)
+        self.triggerHomeDev = tk.StringVar()
+        self.triggerHomeDev.set(self.myparent.triggerHomeKey.devname)
+        self.triggerEndDev = tk.StringVar()
+        self.triggerEndDev.set(self.myparent.triggerEndKey.devname)
+        self.triggerSpaceChannel = tk.IntVar()
+        self.triggerSpaceCC = tk.IntVar()
+        self.triggerPageUpChannel = tk.IntVar()
+        self.triggerPageUpCC = tk.IntVar()
+        self.triggerPageDownChannel = tk.IntVar()
+        self.triggerPageDownCC = tk.IntVar()
+        self.triggerHomeChannel = tk.IntVar()
+        self.triggerHomeCC = tk.IntVar()
+        self.triggerEndChannel = tk.IntVar()
+        self.triggerEndCC = tk.IntVar()
+        self.triggerSpaceChannel.set(self.myparent.triggerSpaceKey.channel)
+        self.triggerSpaceCC.set(self.myparent.triggerSpaceKey.cc)
+        self.triggerPageUpChannel.set(self.myparent.triggerPageUpKey.channel)
+        self.triggerPageUpCC.set(self.myparent.triggerPageUpKey.cc)
+        self.triggerPageDownChannel.set(self.myparent.triggerPageDownKey.channel)
+        self.triggerPageDownCC.set(self.myparent.triggerPageDownKey.cc)
+        self.triggerHomeChannel.set(self.myparent.triggerHomeKey.channel)
+        self.triggerHomeCC.set(self.myparent.triggerHomeKey.cc)
+        self.triggerEndChannel.set(self.myparent.triggerEndKey.channel)
+        self.triggerEndCC.set(self.myparent.triggerEndKey.cc)
+
 #        self.timingIn.trace("w", self.timingInDeviceChange)
         self.globalPage = self.add(label='Global')
         self.globalPage.rowconfigure(0, weight=0)
         self.globalPage.rowconfigure(1, weight=0)
-        self.globalPage.rowconfigure(2, weight=1)
+        self.globalPage.rowconfigure(2, weight=0)
         self.globalPage.rowconfigure(3, weight=0)
-#        self.globalPage.columnconfigure(0, weight=1)
-        self.globalPage.columnconfigure(1, weight=1)
+        self.globalPage.rowconfigure(4, weight=0)
+        self.globalPage.rowconfigure(5, weight=0)
+        self.globalPage.rowconfigure(6, weight=0)
+        self.globalPage.rowconfigure(7, weight=0)
+        self.globalPage.rowconfigure(8, weight=0)
+        self.globalPage.rowconfigure(9, weight=0)
+        self.globalPage.rowconfigure(10, weight=0)
+        self.globalPage.rowconfigure(11, weight=0)
+        self.globalPage.rowconfigure(12, weight=0)
+        self.globalPage.rowconfigure(13, weight=1)
+        self.globalPage.rowconfigure(14, weight=0)
+
         self.timingInFrame = tk.Frame(self.globalPage, relief="ridge", bd=2)
         self.timingInFrame.grid(row=1, column=0, sticky='w', padx=10)
         tk.Label(self.timingInFrame, text="MIDI Transport and Timing Input").grid(row=0, column=0, columnspan=2, sticky='w')
@@ -106,6 +147,19 @@ class outputdialog:
             self.timingInSelectorMenu.add_command(label=devname, command = lambda arg1=devname: self.changeTimingInDevice(arg1))
         self.timingInSelector['menu'] = self.timingInSelectorMenu
         self.timingInSelector.grid(row=1, column=0, columnspan=2, sticky='w')
+#        self.globalPage.columnconfigure(0, weight=1)
+
+        self.triggerSpace = TriggerKeyFrame(self, self.myparent.triggerSpaceKey, "Space", 4)
+        self.triggerPageUp = TriggerKeyFrame(self, self.myparent.triggerPageUpKey, "PageUp", 6)
+        self.triggerPageDown = TriggerKeyFrame(self, self.myparent.triggerPageDownKey, "PageDown", 8)
+        self.triggerHome = TriggerKeyFrame(self, self.myparent.triggerHomeKey, "Home", 10)
+        self.triggerEnd = TriggerKeyFrame(self, self.myparent.triggerEndKey, "End", 12)
+
+
+
+
+
+
 #        tk.Label(self.globalPage, text="CSD file load/edit: Edit in this space, or load with the button below.").grid(row=0, column=0, columnspan=2, sticky='w')
 #        if self.myparent.csdimport:
 #            lab = os.path.split(self.myparent.csdimport)
@@ -159,6 +213,77 @@ class outputdialog:
     def changeTimingInDevice(self, devname):
         if self.timingIn.get() != devname:
             self.timingIn.set(devname)
+
+    def changeTriggerSpaceDevice(self, devname):
+        if self.triggerSpaceDev.get() != devname:
+            self.triggerSpaceDev.set(devname)
+
+    def changeTriggerSpaceChannel(self, channel):
+        if self.triggerSpaceChannel.get() != channel:
+            self.triggerSpaceChannel.set(channel)
+
+    def changeTriggerSpaceCC(self, cc):
+        if self.triggerSpaceCC.get() != cc:
+            self.triggerSpaceCC.set(cc)
+
+
+    def changeTriggerPageUpDevice(self, devname):
+        if self.triggerPageUpDev.get() != devname:
+            self.triggerPageUpDev.set(devname)
+
+    def changeTriggerPageUpChannel(self, channel):
+        if self.triggerPageUpChannel.get() != channel:
+            self.triggerPageUpChannel.set(channel)
+
+    def changeTriggerPageUpCC(self, cc):
+        if self.triggerPageUpCC.get() != cc:
+            self.triggerPageUpCC.set(cc)
+
+
+    def changeTriggerPageDownDevice(self, devname):
+        if self.triggerPageDownDev.get() != devname:
+            self.triggerPageDownDev.set(devname)
+
+    def changeTriggerPageDownChannel(self, channel):
+        if self.triggerPageDownChannel.get() != channel:
+            self.triggerPageDownChannel.set(channel)
+
+    def changeTriggerPageDownCC(self, cc):
+        if self.triggerPageDownCC.get() != cc:
+            self.triggerPageDownCC.set(cc)
+
+
+    def changeTriggerHomeDevice(self, devname):
+        if self.triggerHomeDev.get() != devname:
+            self.triggerHomeDev.set(devname)
+
+    def changeTriggerHomeChannel(self, channel):
+        if self.triggerHomeChannel.get() != channel:
+            self.triggerHomeChannel.set(channel)
+
+    def changeTriggerHomeCC(self, cc):
+        if self.triggerHomeCC.get() != cc:
+            self.triggerHomeCC.set(cc)
+
+
+    def changeTriggerEndDevice(self, devname):
+        if self.triggerEndDev.get() != devname:
+            self.triggerEndDev.set(devname)
+
+    def changeTriggerEndChannel(self, channel):
+        if self.triggerEndChannel.get() != channel:
+            self.triggerEndChannel.set(channel)
+
+    def changeTriggerEndCC(self, cc):
+        if self.triggerEndCC.get() != cc:
+            self.triggerEndCC.set(cc)
+
+
+
+
+
+
+
 
     def timingInDeviceChange(self, *args):
         self.myparent.midiTimingInDevice.set(self.timingIn.get())
@@ -286,6 +411,11 @@ class outputdialog:
 
     def apply(self):
         self.timingInDeviceChange()
+        self.triggerSpace.apply()
+        self.triggerPageUp.apply()
+        self.triggerPageDown.apply()
+        self.triggerHome.apply()
+        self.triggerEnd.apply()
 
 #        self.myparent.outautoload = self.autoload.get()
 #        self.myparent.csdimported = self.csdtext.get(0.0, "end")
@@ -334,6 +464,122 @@ class outputdialog:
         self.myparent.score.itemconfigure(self.myparent.hover.hnumdisp, fill=color)
         self.myparent.score.itemconfigure(self.myparent.hover.hdendisp, fill=color)
         self.myparent.score.itemconfigure(self.myparent.hover.hvoicedisp, fill=color)
+
+class TriggerKeyInfo:
+    def __init__(self, parent):
+        self.myparent = parent
+        self.devname = ''
+        self.channel = 0
+        self.cc = 0
+        self.value = 127
+    def setDevname(self, devname):
+        if self.devname != '':
+            self.myparent.engine.sendToEngine("triggerDevRemove:"+self.devname)
+        self.devname = devname
+        self.myparent.engine.sendToEngine("triggerDevAdd:"+devname)
+    def setChannel(self, channel):
+        self.channel = channel
+    def setCC(self, cc):
+        self.cc = cc
+    def setValue(self, val):
+        self.value = val
+    def getDevname(self):
+        return self.devname
+    def getChannel(self):
+        return self.channel
+    def getCC(self):
+        return self.cc
+    def getValue(self):
+        return self.value
+    def trigger(self):
+        if self.devname != '' and -1<self.channel<16 and -1<self.cc<127 and -1<self.value<128:
+            self.myparent.engine.sendToEngine("trigger:"+self.devname+":"+str(self.channel)+":"+str(self.cc)+":"+str(self.value))
+
+class TriggerKeyFrame:
+    def __init__(self, parent, info, name, row_):
+        # parent is outputdialog
+        self.myparent = parent
+        self.name = name
+        self.info = info
+        self.row = row_
+        self.devname = tk.StringVar(value=info.getDevname())
+#        self.devname.trace("w", self.devnameChange)
+        self.channel = tk.IntVar(value=info.getChannel())
+#        self.channel.trace("w", self.channelChange)
+        self.cc = tk.IntVar(value=info.getCC())
+#        self.cc.trace("w", self.ccChange)
+        self.value = tk.IntVar(value=info.getValue())
+#        self.value.trace("w", self.valueChange)
+
+        self.triggerFrame = tk.Frame(self.myparent.globalPage, relief="ridge", bd=2)
+        self.triggerFrame.rowconfigure(0, weight=0)
+        self.triggerFrame.rowconfigure(1, weight=0)
+        self.triggerFrame.rowconfigure(2, weight=1)
+        self.triggerFrame.columnconfigure(0, weight=0)
+        self.triggerFrame.columnconfigure(1, weight=0)
+        self.triggerFrame.columnconfigure(2, weight=0)
+        self.triggerFrame.columnconfigure(3, weight=0)
+        self.triggerFrame.columnconfigure(4, weight=0)
+        self.triggerFrame.columnconfigure(5, weight=0)
+        self.triggerFrame.columnconfigure(6, weight=0)
+        self.triggerFrame.columnconfigure(7, weight=0)
+        self.triggerFrame.columnconfigure(8, weight=0)
+        self.triggerFrame.columnconfigure(9, weight=0)
+        self.triggerFrame.columnconfigure(10, weight=0)
+        self.triggerFrame.columnconfigure(11, weight=0)
+        self.triggerFrame.columnconfigure(12, weight=0)
+        self.triggerFrame.columnconfigure(13, weight=0)
+        self.triggerFrame.columnconfigure(14, weight=0)
+        self.triggerFrame.columnconfigure(15, weight=0)
+        self.triggerFrame.columnconfigure(16, weight=1)
+        self.triggerFrame.columnconfigure(17, weight=0)
+
+        self.triggerFrame.grid(row=row_, column=0, sticky='w', padx=10)
+        tk.Label(self.triggerFrame, text="MIDI Trigger for {}".format(self.name)).grid(row=0, column=0, columnspan=2, sticky='w')
+        self.triggerSelector = tk.Menubutton(self.triggerFrame, textvariable=self.devname, bg="#aa9999", activebackground="#bbaaaa", width=35, relief="raised", padx=0, indicatoron=1)
+        self.triggerSelectorMenu = tk.Menu(self.triggerSelector, tearoff=0)
+        for devname in self.myparent.myparent.midiOutDevices:
+            self.triggerSelectorMenu.add_command(label=devname, command = lambda arg1=devname: self.changeTriggerDevice(arg1))
+        self.triggerSelector['menu'] = self.triggerSelectorMenu
+        self.triggerSelector.grid(row=1, column=0, columnspan=2, sticky='w')
+
+#        self.channelSelector = tk.Spinbox(self.triggerFrame, width=6, textvariable=self.channel, from_=1, to=16)
+#        tk.Label(self.triggerFrame, text="Channel:").grid(row=0, column=3, sticky='w', columnspan=3)
+#        self.channelSelector.grid(row=1, column=2, padx=3, sticky='')
+
+        self.channelSelector = tk.Spinbox(self.triggerFrame, width=6, textvariable=self.channel, from_=0, to=127)
+        tk.Label(self.triggerFrame, text="Channel:").grid(row=0, column=2, sticky='w', columnspan=2)
+        self.channelSelector.grid(row=1, column=2, padx=3, sticky='')
+
+        self.ccSelector = tk.Spinbox(self.triggerFrame, width=6, textvariable=self.cc, from_=0, to=127)
+        tk.Label(self.triggerFrame, text="CC:").grid(row=0, column=7, sticky='w', columnspan=2)
+        self.ccSelector.grid(row=1, column=7, padx=3, sticky='')
+
+        self.valueSelector = tk.Spinbox(self.triggerFrame, width=6, textvariable=self.value, from_=0, to=127)
+        tk.Label(self.triggerFrame, text="Value:").grid(row=0, column=9, sticky='w', columnspan=2)
+        self.valueSelector.grid(row=1, column=9, padx=3, sticky='')
+
+    def changeTriggerDevice(self, arg1):
+        if self.devname.get() != arg1:
+            self.devname.set(arg1)
+
+    def devnameChange(self, *args):
+        self.info.setDevname(self.devname.get())
+
+    def channelChange(self, *args):
+        self.info.setChannel(self.channel.get())
+
+    def ccChange(self, *args):
+        self.info.setCC(self.cc.get())
+
+    def valueChange(self, *args):
+        self.info.setValue(self.value.get())
+
+    def apply(self):
+        self.devnameChange()
+        self.channelChange()
+        self.ccChange()
+        self.valueChange()
 
 class instrument:
     def __init__(self, parent, number, color):

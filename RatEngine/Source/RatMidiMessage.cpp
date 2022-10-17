@@ -81,13 +81,15 @@ void RatMidiMessage::setPreMessage(const void* data, int sz)
 void RatMidiMessage::setPreMessage()
 {
 //    juce::MidiMessage* temp = new juce::MidiMessage();
+/*
     std::cerr << "tuningBytes: ";
     for (auto bt_ : tuningBytes)
     {
         std::cerr << int(bt_) << " ";
     }
     std::cerr << std::endl;
-//    int sz_ = tuningBytes.size();
+    /**/
+    //    int sz_ = tuningBytes.size();
 //    sz_ = (sz_ >= 12 ? 12 : sz_);
     void* voidPtr{ &tuningBytes };
     preMessage = std::make_shared<juce::MidiMessage>(voidPtr, 12);

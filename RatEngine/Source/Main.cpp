@@ -25,6 +25,7 @@
 
 #include <JuceHeader.h>
 #include "RatEngine.h"
+#include <string>
 //==============================================================================
 
 class Application : public juce::JUCEApplication

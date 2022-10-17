@@ -1,0 +1,14 @@
+    Looping
+    File Open/Save/New/Close
+    Cursor movement
+SCL loading / non-JI
+
+
+Documentation, cleanup
+
+
+    Remote transport control
+scrub
+audible add / edit
+
+

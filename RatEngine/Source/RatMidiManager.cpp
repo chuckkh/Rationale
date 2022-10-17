@@ -30,21 +30,23 @@
 class RatMidiMessage;
 
 RatMidiManager::RatMidiManager()
-	: currentMidiScoreTime(0)
+	: currentMidiScoreTime(0), 
+	songPosition(0),
+	playing(false)
 {
 	
 }
 
 void RatMidiManager::handleIncomingMidiMessage(juce::MidiInput* input, const juce::MidiMessage& msg)
 {
-	std::cerr << "MIDI received: " << msg.getDescription() << std::endl;
+//	std::cerr << "MIDI received: " << msg.getDescription() << std::endl;
 	if (msg.isSongPositionPointer()) {
 		setSPP(msg.getSongPositionPointerMidiBeat());
 		std::cout << "\nReceived: SPP: " << msg.getSongPositionPointerMidiBeat();
 	}
 	else if (msg.isMidiClock()) {
 		incrementMidiBeatClock();
-		std::cout << "...tick ";
+	//	std::cout << "...tick \n";
 	}
 	else if (msg.isMidiStart()) {
 		startPlayback();
@@ -67,22 +69,23 @@ void RatMidiManager::handleIncomingMidiMessage(juce::MidiInput* input, const juc
 	}
 }
 
-void RatMidiManager::sendRatMidiMessage(RatMidiMessage &msg)
+void RatMidiManager::sendRatMidiMessage(RatMidiMessage& msg, juce::String nm = "NULL")
 {
-	uint8 instrNo_ = msg.getInstrument();
-	auto instr_ = RatNote::instruments[instrNo_];
-	auto zero = instr_[0];
-	auto fst = zero.first;
-	juce::String nm = RatNote::instruments[msg.getInstrument()][0].first;
-	juce::String identifier = midiOutDevices[nm];
-	if (!activeMidiOutputs.count(identifier))
+	if (nm == "NULL")
 	{
-//		activeMidiOutputs.emplace(std::make_unique<juce::MidiOutput>());
-		activeMidiOutputs[identifier] = juce::MidiOutput::openDevice(identifier);
+		nm = RatNote::instruments[msg.getInstrument()][0].first;
 	}
-	if (activeMidiOutputs.count(identifier))
+	
+	if (!activeMidiOutputs.count(nm))
 	{
-		if (activeMidiOutputs[identifier] != nullptr)
+		juce::String identifier = midiOutDevices[nm];
+
+//		activeMidiOutputs.emplace(std::make_unique<juce::MidiOutput>());
+		activeMidiOutputs[nm] = juce::MidiOutput::openDevice(identifier);
+	}
+	if (activeMidiOutputs.count(nm))
+	{
+		if (activeMidiOutputs[nm] != nullptr)
 		{
 			if (msg.isNoteOn() && msg.getPreMessage() != nullptr)
 			{
@@ -90,15 +93,17 @@ void RatMidiManager::sendRatMidiMessage(RatMidiMessage &msg)
 				const void* preraw = premsg.getRawData();
 				const uint8* preint{ static_cast<const uint8*>(preraw) };
 				int presz_ = premsg.getRawDataSize();
+/*
 				std::cerr << presz_ << " premessage bytes......";
 				for (int i = 0; i < presz_; i++)
 				{
 					std::cerr << int(preint[i]) << " ";
 				}
 				std::cerr << std::endl;
-				activeMidiOutputs[identifier]->sendMessageNow(premsg);
+				/**/
+				activeMidiOutputs[nm]->sendMessageNow(premsg);
 			}
-			activeMidiOutputs[identifier]->sendMessageNow(msg);
+			activeMidiOutputs[nm]->sendMessageNow(msg);
 		}
 	}
 }
@@ -154,6 +159,7 @@ void RatMidiManager::startPlayback()
 void RatMidiManager::stopPlayback()
 {
 	playing = false;
+	setCurrentMidiScoreTime(songPosition);
 	playMode = RatPlayMode::Stop;
 }
 
@@ -168,7 +174,8 @@ void RatMidiManager::setSPP(uint16 sixteenths)
 	// I don't think "step through" is necessary anymore because
 	// notes added or edited during playback have a separate queue...
 //	stepThroughMidiScoreTo(double(sixteenths) * 0.25);
-	setCurrentMidiScoreTime(double(sixteenths) * 0.25);
+	setSongPosition(double(sixteenths) * 0.25);
+	setCurrentMidiScoreTime(songPosition);
 	//
 	// I have to redo this! To find the right score index for the starting point.
 	//
@@ -177,8 +184,10 @@ void RatMidiManager::setSPP(uint16 sixteenths)
 
 void RatMidiManager::incrementMidiBeatClock()
 {
-	double t_ = getCurrentMidiScoreTime() + 1.0 / 24.0;
-	setCurrentMidiScoreTime(t_);
+//	double t_ = getCurrentMidiScoreTime() + 1.0 / 24.0;
+//	setCurrentMidiScoreTime(t_);
+	currentMidiScoreTime = currentMidiScoreTime + (1.0 / 24.0);
+	
 	if (playMode == RatPlayMode::Play)
 	{
 		std::list<std::shared_ptr<RatMidiMessage>>::iterator midiScoreEndIt = midiScore.end();
@@ -274,7 +283,7 @@ void RatMidiManager::addActiveMidiOutput(juce::String name)
 	activeMidiOutputs[name] = juce::MidiOutput::openDevice(device);
 	juce::MidiDeviceInfo devInfo = activeMidiOutputs[name]->getDeviceInfo();
 
-	std::cerr << "Device info: " << devInfo.name << "/" << devInfo.identifier << std::endl;
+	//std::cerr << "Device info: " << devInfo.name << "/" << devInfo.identifier << std::endl;
 //	}
 }
 
@@ -403,14 +412,13 @@ void RatMidiManager::clearMidiScore()
 
 void RatMidiManager::prepareToPlay()
 {
-	std::cerr << "prepareToPlay " << midiScore.size() << " MIDI messages line 364" << std::endl;
 	sortMidiScore();
 	midiScoreIt = midiScore.begin();
 	std::list<std::shared_ptr<RatMidiMessage>>::iterator endIt = midiScore.end();
 	while (midiScoreIt != endIt && (*midiScoreIt)->getTimeStamp() < currentMidiScoreTime)
 	{
 		++midiScoreIt;
-		std::cerr << "advanced 1 msg..." << std::endl;
+//		std::cerr << "advanced 1 msg..." << std::endl;
 	}
 	std::list<std::shared_ptr<RatMidiMessage>>::iterator tempIt = midiScore.begin();
 	std::bitset<128> nn_;
@@ -424,7 +432,7 @@ void RatMidiManager::prepareToPlay()
 			(*tempIt)->setTuningByte(7, realNote);
 			(*tempIt)->setPreMessage();
 //			std::cerr << " MTS Byte 6: " << (*tempIt)->getTuningByte(6);
-			std::cerr << "Used note: " << int((*tempIt)->getTuningByte(7)) << " for note: " << int((*tempIt)->getTuningByte(8)) << std::endl;
+//			std::cerr << "Used note: " << int((*tempIt)->getTuningByte(7)) << " for note: " << int((*tempIt)->getTuningByte(8)) << std::endl;
 			(*tempIt)->setNoteNumber(realNote);
 //			RatMidiMessage& msg2 = (*tempIt)->getPartner();
 //			msg2.setNoteNumber(realNote);
@@ -437,7 +445,7 @@ void RatMidiManager::prepareToPlay()
 		{
 			clearAvailableNoteNumber((*tempIt)->getNoteNumber(), nn_);
 		}
-		std::cerr << "NoteNumber: " << (*tempIt)->getNoteNumber() << std::endl;
+//		std::cerr << "NoteNumber: " << (*tempIt)->getNoteNumber() << std::endl;
 		++tempIt;
 	}
 	for (uint8 i = 1; i < 128; i++)
@@ -468,6 +476,16 @@ void RatMidiManager::addToCurrentMidiScoreTime(double delta_)
 void RatMidiManager::clearMidiScoreDelete()
 {
 	midiScoreDelete.clear();
+}
+
+double RatMidiManager::getSongPosition()
+{
+	return songPosition;
+}
+
+void RatMidiManager::setSongPosition(double time_)
+{
+	songPosition = time_;
 }
 
 uint8 RatMidiManager::getUnusedNoteNumber()

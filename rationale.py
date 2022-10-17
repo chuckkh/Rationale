@@ -69,6 +69,13 @@ class rationale(object):
         self.instlist = []
         self.regionlist = []
         self.midiTimingInDevice = MidiTimingInDevice(self)
+
+        self.triggerSpaceKey = odialog.TriggerKeyInfo(self)
+        self.triggerPageUpKey = odialog.TriggerKeyInfo(self)
+        self.triggerPageDownKey = odialog.TriggerKeyInfo(self)
+        self.triggerHomeKey = odialog.TriggerKeyInfo(self)
+        self.triggerEndKey = odialog.TriggerKeyInfo(self)
+
         self.startEngine()
         self.messageFromEngine = False
         self.bufferFromEngine = []
@@ -163,11 +170,16 @@ You should have received a copy of the GNU General Public License along with Rat
 
     def startEngine(self):
         if self.engine:
-            
-            try:
-                self.engine.communicate()
-            except:
-                print("Unable to restart engine: def startEngine(self):")
+            self.engineActive = 0
+            self.engine.active = 0
+            while self.engineActive != -1:
+                time.sleep(0.01)
+#            try:
+#                self.engine.sendToEngine("ENDCB")
+#                self.engine.communicate()
+#                time.sleep(1)
+#            except:
+#                print("Unable to restart engine: def startEngine(self):")
         self.engineActive = 1
         self.engine = ratengineinterface.RatEngineInterface(self)
         self.engine.launch(0)
@@ -2236,8 +2248,10 @@ endin
 #            elif event.serial != self.norepeat and event.keysym == "s" or event.keysym == "S":
 #                self.menumode.invoke(3)
             if event.keysym == "space" and event.serial != self.norepeat:
-                self.engine.sendToEngine("play")
                 if self.numkey == 0:
+                    self.engine.sendToEngine("play")
+                    self.triggerSpaceKey.trigger()
+
                     if self.playing == 0:
                         self.play()
 #                        self.play(self.instlist, self.sf2list, self.outputmethod, self.sr, self.ksmps, self.nchnls, self.audiomodule, self.dac, self.b, self.B, self.aifffile, self.wavfile, self.csdcommandline, self.csdcommandlineuse)
@@ -2905,6 +2919,7 @@ endin
             elif str(confirm) != 'no': 
                 self.ctlkeyzero()
                 return
+        self.engine.sendToEngine("resetAll")
 
         for i in range(len(self.notewidgetlist)):
             self.notewidgetlist[0].undraw()
@@ -3061,6 +3076,7 @@ endin
 #        self.yadj = self.regionlist[self.hover.hregion].octave11
 #        self.tonchange(self.regionlist[self.hover.hregion].num, self.regionlist[self.hover.hregion].den, self.regionlist[self.hover.hregion].octave11)
         self.regionchange()
+        self.startEngine()
         self.hover.colorupdate(self)
         region = self.regionlist[0]
         rcolor = region.color
@@ -3236,6 +3252,7 @@ endin
 #                if self.unsaved:
 #                    self.unsaved = 0
 #                    self.myparent.title('Rationale %s: %s' % (vs, os.path.basename(self.filetosave)))
+        self.startEngine()
 
     def fileimport(self, *args):
 #       print sys._getframe().f_code.co_name
@@ -4654,6 +4671,20 @@ class MidiTimingInDevice:
     def set(self, devname):
         self.myparent.engine.sendToEngine("midiTimingInDevice:"+str(devname))
         self.name = devname
+
+class TriggerKey:
+    def __init__(self, parent):
+        self.myparent = parent
+        self.devname = ''
+        self.channel = 0
+        self.cc = 0
+    def set(self, devname, channel, cc):
+        self.devname = devname
+        self.myparent.engine.sendToEngine("triggerDev:"+devname)
+        self.channel = channel
+        self.cc = cc
+    def trigger(self):
+        self.myparent.engine.sendToEngine("trigger:"+self.devname+":"+str(self.channel)+":"+str(self.cc))
             
 class scorewindow(object):
     def __init__(self, parent):
@@ -5778,6 +5809,14 @@ class cursor(object):
         self.center = 0
         self.widget = self.myparent.score.create_rectangle(-3,self.myparent.miny,3,self.myparent.maxy, fill="#99cccc", outline="#555555", stipple="gray25", tags=("timecursor", "all"))
 
+    def moveCursorTo(self, time_):
+        print("line 5782", file=sys.stderr)
+        if time >= 0:
+            self.beat = time_
+            self.center = time_
+            self.myparent.score.coords(self.widget, -3, self.myparent.miny, 3, self.myparent.maxy)
+            self.checkautoscroll(time_)
+
     def checkautoscroll(self, x):
         realw = self.myparent.score.winfo_width()
         relw = self.myparent.score.canvasx(realw)
@@ -5795,6 +5834,7 @@ class cursor(object):
 
     def scrollabs(self, time):
         pos = float(time) * self.myparent.xperquarter
+#        print("scrollabs", time)
 #        print pos
         self.center = pos
 #        print "scrollabs............"
@@ -5837,6 +5877,8 @@ class cursor(object):
                 break
 
     def nextbeat(self, *args):
+        self.myparent.triggerPageDownKey.trigger()
+        return
         if self.beat < len(self.myparent.barlist)-1:
             self.beat = int(self.beat + 1)
             oldohbajesus = self.myparent.score.coords(self.myparent.barlist[self.beat])
@@ -5845,6 +5887,8 @@ class cursor(object):
             self.checkautoscroll(self.center)
 
     def previousbeat(self, *args):
+        self.myparent.triggerPageUpKey.trigger()
+        return
         if self.beat > 0:
             self.beat = int(self.beat - 1)
             oldohbajesus = self.myparent.score.coords(self.myparent.barlist[self.beat])
@@ -5856,13 +5900,18 @@ class cursor(object):
         pass
 
     def home(self, *args):
+        self.myparent.triggerHomeKey.trigger()
+        return
         self.beat = 0
         self.center = 0
         self.myparent.score.coords(self.widget, -3, self.myparent.miny, 3, self.myparent.maxy)
         self.myparent.scorexscroll("moveto", 0.00242072)
 
     def end(self, *args):
+        self.myparent.triggerEndKey.trigger()
+        return
         if len(self.myparent.notelist):
+
             self.myparent.scsort()
             loc = (self.myparent.notelist[-1].time + abs(self.myparent.notelist[-1].dur)) * self.myparent.xperquarter
             for bar in self.myparent.barlist:

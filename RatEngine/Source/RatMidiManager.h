@@ -53,7 +53,7 @@ public:
 
 	RatMidiManager();
 	void handleIncomingMidiMessage(juce::MidiInput*, const juce::MidiMessage&) override;
-	void sendRatMidiMessage(RatMidiMessage&);
+	void sendRatMidiMessage(RatMidiMessage&, juce::String);
 	void stepThroughMidiScoreTo(double);
 	void startPlayback();
 	void stopPlayback();
@@ -83,6 +83,8 @@ public:
 	double getCurrentMidiScoreTime();
 	void setCurrentMidiScoreTime(double);
 	void addToCurrentMidiScoreTime(double);
+	double getSongPosition();
+	void setSongPosition(double);
 	void clearMidiScoreDelete();
 	void addActiveMidiOutput(juce::String);
 
@@ -113,6 +115,7 @@ private:
 	std::vector<std::vector<RatMidiOut>> ratMidiOuts;
 //	double currentMidiScoreTime;
 	std::atomic<double> currentMidiScoreTime;
+	double songPosition;
 	std::list<std::shared_ptr<RatMidiMessage>>::iterator midiScoreIt;
 	bool playing;
 	RatPlayMode playMode = RatPlayMode::Stop;
