@@ -7362,7 +7362,7 @@ if __name__ == "__main__":
 #       print "exists!"
 #    else:
 #       print "nope!"
-    vs = '0.3.0'
+    vs = '1.0.0'
     root = tk.Tk()
     root.geometry('1040x600+200+100')
     root.title('Rationale %s: New Score' % vs)
