@@ -38,6 +38,7 @@ import time
 sys.path.append("Python")
 import mdialog
 import ndialog
+import nndialog
 import odialog
 import rdialog
 import tdialog
@@ -132,9 +133,9 @@ class rationale(object):
         self.editinst = 0
         self.editregion = 0
         self.overdur = 0
-        welcome = 'Welcome to Rationale v. %s%s%sCopyright 2008, 2009%sCharles S. Hubbard, Jr.%s%sReleased under GPL v3%s(see the COPYING file for more details)%s%s' % (self.version, os.linesep, os.linesep, os.linesep, os.linesep, os.linesep, os.linesep, os.linesep, os.linesep)
+        welcome = 'Welcome to Rationale v. %s%s%sCopyright 2008, 2009, 2010, 2022%sCharles S. Hubbard, Jr.%s%sReleased under GPL v3%s(see the COPYING file for more details)%s%s' % (self.version, os.linesep, os.linesep, os.linesep, os.linesep, os.linesep, os.linesep, os.linesep, os.linesep)
         copyright = '''
-Copyright 2008, 2009 Charles S. Hubbard, Jr.
+Copyright 2008, 2009, 2010, 2022 Charles S. Hubbard, Jr.
 
 This file is part of Rationale.
 
@@ -146,7 +147,7 @@ You should have received a copy of the GNU General Public License along with Rat
 '''
         #mode 0:add; 1:edit; 2:delete; 3:scrub
         self.mode = tk.IntVar()
-        modehelp = 'Press:%s\t"a" for ADD mode;%s\t"e" for EDIT mode;%s\t"d" for DELETE mode;%s\t"s" for SCRUB mode%s' % (os.linesep, os.linesep, os.linesep, os.linesep, os.linesep)
+        modehelp = 'Press:%s\t"a" for ADD mode;%s\t"e" for EDIT mode;%s\t"d" for DELETE mode%s' % (os.linesep, os.linesep, os.linesep, os.linesep)
         self.stdouttext = tk.StringVar()
         self.stdouttext.set('%s%s%s%s' % (welcome, os.linesep, modehelp, os.linesep))
         self.playing = 0

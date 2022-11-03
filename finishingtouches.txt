@@ -1,0 +1,20 @@
+	cursor movement
+	looping
+	file open/save
+LOAD SCALA
+    option to name scale degrees
+    option to repeat at any interval
+    or not
+        note, region and hover have num, den, cent
+        for hover
+	    hover note is separate from widget
+	for dragging notes - follow current bank
+	transposition builds on whatever is chosen - cents or ratio
+	anything beyond repeat interval is truncated
+remove print messages!!!!
+more documentation
+remove extra classes
+remove extra methods
+
+scrub
+audible notes
