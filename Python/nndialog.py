@@ -134,6 +134,18 @@ class NoteBank(object):
         
 
 class nnotebankdialog(tk.Toplevel):
+    # The new version requires:
+    # Load SCL button (file dialog)
+    # Load into (merge) (file dialog)
+    # Save SCL (file dialog)
+    # Filename (label)
+    # Add ratio (entry field, button)
+    # Add cent value (entry field, button)
+    # Optional name field for each degree (entry field)
+    # Scale info field (label and edit button)
+    # Scroll?
+    # Tabs for different banks
+    # OK / Apply / Cancel
     def __init__(self, parent):
         tk.Toplevel.__init__(self, parent.myparent, width=640, height=480)
         self.columnconfigure(0, weight=1)
