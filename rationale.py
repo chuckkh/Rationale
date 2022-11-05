@@ -794,15 +794,17 @@ You should have received a copy of the GNU General Public License along with Rat
         elif self.statusshow.get() and not self.statusbar.winfo_ismapped():
             self.statusbar.grid(row=5, column=0, columnspan=4, sticky='ew')
 
-    def ratioreduce(self, num, den, lim):
+    def ratioreduce(self, num, den, lim=-1):
+        if num == den:
+            return (1,1)
 #        print(num,den,lim)
-        for factor in range(2,lim+1):            
-            for i in range(0,15):
-                if num % factor == 0 and den % factor == 0:
-                    num = num//factor
-                    den = den//factor
-                else:
-                    break
+        mn = min(num, den)
+        mx = max(num, den)
+        lim = min(mn, int(mx**0.5)) + 1
+        for factor in range(2,lim):
+            while num % factor == 0 and den % factor == 0:
+                num = num//factor
+                den = den//factor
         ret = (int(num),int(den))
 #        print(ret)
         return ret

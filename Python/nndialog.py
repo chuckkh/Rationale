@@ -49,7 +49,13 @@ class NoteBankNote(object):
     def setName(self, name):
         self.name = name
     def getName(self):
-        return self.name
+        if self.name:
+            return self.name
+        elif self.num and self.den:
+            return str(self.num)+":"+str(self.den)
+        elif self.centOffset:
+            return str(self.centOffset)
+            
     def getFractionOfOctave(self):
         return fractionOfOctave
 
@@ -130,7 +136,12 @@ class NoteBank(object):
     def sort(self):
         self.notes.sort(key=getFractionOfOctave)
         
-        
+
+class nnotebankline(tk.Toplevel):
+    def __init__(self, note):
+        self.myNote = note
+        self.text = TkStringVar()
+        self.text.set(note.getName())
         
 
 class nnotebankdialog(tk.Toplevel):
@@ -142,6 +153,7 @@ class nnotebankdialog(tk.Toplevel):
     # Add ratio (entry field, button)
     # Add cent value (entry field, button)
     # Optional name field for each degree (entry field)
+    # X button to remove each degree
     # Scale info field (label and edit button)
     # Scroll?
     # Tabs for different banks
@@ -158,7 +170,10 @@ class nnotebankdialog(tk.Toplevel):
         self.bind("<Escape>", self.cancel)
         self.title("Edit Notebanks")
         self.notebankmaybe = copy.deepcopy(self.myparent.notebanklist)
-        self.defnotebank = [(1, 1), (33, 32), (21, 20), (16, 15), (15, 14), (14, 13), (13, 12), (12, 11), (11, 10), (10, 9), (9, 8), (8, 7), (7, 6), (13, 11), (32, 27), (6, 5), (11, 9), (16, 13), (5, 4), (81, 64), (14, 11), (9, 7), (13, 10), (21, 16), (4, 3), (11, 8), (18, 13), (7, 5), (10, 7), (13, 9), (16, 11), (3, 2), (32, 21), (20, 13), (14, 9), (11, 7), (128, 81), (8, 5), (13, 8), (18, 11), (5, 3), (27, 16), (22, 13), (12, 7), (7, 4), (16, 9), (9, 5), (20, 11), (11, 6), (24, 13), (13, 7), (28, 15), (15, 8), (40, 21), (64, 33), (2, 1)]
+        defnotebank = [(1, 1), (33, 32), (21, 20), (16, 15), (15, 14), (14, 13), (13, 12), (12, 11), (11, 10), (10, 9), (9, 8), (8, 7), (7, 6), (13, 11), (32, 27), (6, 5), (11, 9), (16, 13), (5, 4), (81, 64), (14, 11), (9, 7), (13, 10), (21, 16), (4, 3), (11, 8), (18, 13), (7, 5), (10, 7), (13, 9), (16, 11), (3, 2), (32, 21), (20, 13), (14, 9), (11, 7), (128, 81), (8, 5), (13, 8), (18, 11), (5, 3), (27, 16), (22, 13), (12, 7), (7, 4), (16, 9), (9, 5), (20, 11), (11, 6), (24, 13), (13, 7), (28, 15), (15, 8), (40, 21), (64, 33), (2, 1)]
+        self.defnotebank = NoteBank()
+        for ratio in defnotebank[1:]:
+            self.defnotebank.addNote(RatioNote(ratio[0], ratio[1]))
         self.grid_propagate(0)
         row = column = ht = 0
         numdenlist = []
