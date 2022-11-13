@@ -169,7 +169,10 @@ class RatEngineInterface:
 
     def launchWithDebug(self):
         try:
-            enginePath = pathlib.Path(__file__).parent.absolute().__str__() + os.sep + "RatEngine" + os.sep + "Builds" + os.sep + "ConsoleApp" + os.sep + "RatEngine.exe"
+            if sys.platform.count("win32"):
+                enginePath = pathlib.Path(__file__).parent.absolute().__str__() + os.sep + "RatEngine" + os.sep + "Builds" + os.sep + "ConsoleApp" + os.sep + "RatEngine.exe"
+            elif sys.platform.count("linux"):
+                enginePath = pathlib.Path(__file__).parent.absolute().__str__() + os.sep + "RatEngine" + os.sep + "Builds" + os.sep + "ConsoleApp" + os.sep + "RatEngine"
 #            enginePath = pathlib.Path(__file__).parent.absolute().__str__() + os.sep + "RatEngine" + os.sep + "Builds" + os.sep + "VisualStudio2019" + os.sep + "x64" + os.sep + "Debug" + os.sep + "ConsoleApp" + os.sep + "RatEngine.exe"
         #rau = subprocess.Popen((r'C:\Users\Home\Documents\Coding\rationale-2020\RatEngine\Builds\VisualStudio2019\x64\Debug\ConsoleApp\RatEngine.exe', str(cbport)))
             self.rau = subprocess.Popen((enginePath, str(self.cbport)))
@@ -180,7 +183,10 @@ class RatEngineInterface:
 
     def launchWithoutDebug(self):
         try:
-            enginePath = pathlib.Path(__file__).parent.absolute().__str__() + os.sep + "RatEngine" + os.sep + "Builds" + os.sep + "ConsoleApp" + os.sep + "RatEngine.exe"
+            if sys.platform.count("win32"):
+                enginePath = pathlib.Path(__file__).parent.absolute().__str__() + os.sep + "RatEngine" + os.sep + "Builds" + os.sep + "ConsoleApp" + os.sep + "RatEngine.exe"
+            elif sys.platform.count("linux"):
+                enginePath = pathlib.Path(__file__).parent.absolute().__str__() + os.sep + "RatEngine" + os.sep + "Builds" + os.sep + "ConsoleApp" + os.sep + "RatEngine"
 
 #            enginePath = pathlib.Path(__file__).parent.absolute().__str__() + os.sep + "RatEngine" + os.sep + "Builds" + os.sep + "VisualStudio2019" + os.sep + "x64" + os.sep + "Release" + os.sep + "ConsoleApp" + os.sep + "RatEngine.exe"
             print("path ", enginePath)

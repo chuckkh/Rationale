@@ -38,7 +38,7 @@
 class RatEngine : public juce::InterprocessConnection
 {
 public:
-    class RatEngine::MidiScoreTimeCheckThread : public juce::Thread
+    class MidiScoreTimeCheckThread : public juce::Thread
     {
     public:
         MidiScoreTimeCheckThread(RatEngine*, RatMidiManager*);
@@ -48,7 +48,7 @@ public:
     private:
         RatMidiManager* midiManager;
         RatEngine* engine;
-        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RatEngine::MidiScoreTimeCheckThread);
+        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MidiScoreTimeCheckThread);
     };
     //RatEngine(bool, int);
     //RatEngine(int);
@@ -82,7 +82,7 @@ public:
     void setCurrentScoreTime(double);
     double getCurrentMidiScoreTime();
     void keepCheckingCurrentMidiScoreTime();
-
+  static bool isUnix();
 //    juce::MidiMessageSequence::MidiEventHolder** scoreCursor;
 
 //    static int tonalCenter;

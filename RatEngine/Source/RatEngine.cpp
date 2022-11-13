@@ -64,6 +64,20 @@ RatEngine::RatEngine(int port, JUCEApplication &a) :
 
 }
 
+bool RatEngine::isUnix()
+{
+  juce::SystemStats::OperatingSystemType os = juce::SystemStats::getOperatingSystemType();
+  
+  if ((os & juce::SystemStats::MacOSX) != 0 || (os & juce::SystemStats::Linux) != 0 || (os & juce::SystemStats::iOS) != 0)
+    {
+      return true;
+    }
+    else
+      {
+	return false;
+      }
+}
+
 /*RatEngine::RatEngine(int port) :
     cbport(port),
     juce::InterprocessConnection::InterprocessConnection(false) {
@@ -154,6 +168,12 @@ void RatEngine::sendAvailableMidiInDevices()
     auto iDevices = MidiInput::getAvailableDevices();
     sendString("MidiInBegin");
     midiManager.clearMidiInDevices();
+    bool isU = this->isUnix();
+    std::cout << "Why isn't isUnix() being called?" << isU << "\n";
+    if (isU)
+      {
+	sendString("Rationale MIDI In");
+      }
     for (juce::MidiDeviceInfo& dev : iDevices) {
         auto name = dev.name.dropLastCharacters(std::max(0, dev.name.length() - 56));
         sendString(name);
@@ -169,6 +189,15 @@ void RatEngine::sendAvailableMidiOutDevices()
     auto oDevices = MidiOutput::getAvailableDevices();
     sendString("MidiOutBegin");
     midiManager.clearMidiOutDevices();
+    if (this->isUnix())
+      {
+	for (int i = 1; i< 4; i++)
+	  {
+	    juce::String nm = "Rationale MIDI Out " + juce::String(i);
+	    sendString(nm);
+	    midiManager.addActiveMidiOutput(nm);
+	  }
+      }
     for (juce::MidiDeviceInfo& dev : oDevices) {
         auto name = dev.name.dropLastCharacters(std::max(0, dev.name.length() - 56));
 //        sendString(dev.identifier.dropLastCharacters(std::max(0, dev.identifier.length()-56)));
@@ -186,7 +215,7 @@ void RatEngine::sendAvailableMidiOutDevices()
         }*/
     }
     sendString("MidiOutEnd");
-    sendSysExTest();
+    //    sendSysExTest();
 }
 
 void RatEngine::sendSysExTest()
@@ -613,3 +642,4 @@ void RatEngine::MidiScoreTimeCheckThread::run()
     std::cerr << "Score time checker finished." << std::endl;
 
 }
+
