@@ -135,29 +135,122 @@ class NoteBank(object):
         
     def sort(self):
         self.notes.sort(key=getFractionOfOctave)
-        
 
-class nnotebankline(tk.Toplevel):
-    def __init__(self, note):
-        self.myNote = note
-        self.text = TkStringVar()
-        self.text.set(note.getName())
+class ScalaFileText(object):
+    def __init__(self, path=None):
+        self.path = path
+        self.lines = []
+        self.file = None
+        if os.path.exists(path):
+            try:
+                self.file = open(path)
+            except:
+                print("Unable to open Scala file:", self.path, file=sys.stderr)
+        self.readFromDisk()
+    def readFromDisk(self):
+        self.file.seek(0)
+        self.lines = self.file.readlines()
+    def writeToDisk(self, targetPath=self.path):
+        if os.path.exists(targetPath):
+            fileContentCheck = open(targetPath, 'r')
+            fileContentCheckText = fileContentCheck.readlines()
+            if fileContentCheckText == self.lines:
+                fileContentCheck.close()
+                return 1
+        fileToWrite = open(targetPath, 'w')
+        fileToWrite.writelines(self.lines)
+        fileToWrite.close()
+        return 0
+    def parseToNoteBank(self):
+        notes = [ln.split('!')[0] for ln in self.lines if ln[0] != '!'][2:]
+        newNoteBank = NoteBank()
+        negativeCentNotes = []
+        for note in notes:
+            splt = note.split()
+            val = splt[0]
+            name = None
+            for s in splt[1:]:
+                if s:
+                    name = s
+                    break
+            valid = True
+            if val.count('-'):
+                if not val.count('.'):
+                    continue
+                if val.count('-')>1:
+                    continue
+                if val.index('-') != 0:
+                    continue
+            if val.count('/') > 1 or val.count('.') > 1 or (val.count('/') and val.count('.')):
+                continue
+            for c in val:
+                if not c.isdigit() and c != '-' and c != '/' and c != '.':
+                    valid = False
+                    break
+            if not valid:
+                continue
+            if val.count('.'):
+                ## I still have to decide how to handle negative cent values (which seem ludicrous to me, but are allowed in the specification)
+                ## I suppose I check the highest note value, and insert a note so many cents down from that; but if that note is a ratio, I have not
+                ## included any way of handling a note with both ratio and cent values.
+                ## I suppose if the repeat note were a ratio, I would convert it to cents!
+                centOffset = float(val)
+                if centOffset > 0:
+                    newNoteBank.addNote(CentNote(centOffset, name))
+                elif centOffset < 0:
+                    negativeCentNotes.append((centOffset, name))
+            elif val[0] != '/' and val[-1] != '/':
+                if val.count('/'):
+                    numden = val.split('/')
+                    num = int(numden[0])
+                    den = int(numden[1])
+                    if num < 1 or den < 1:
+                        continue
+                else:
+                    num = int(val)
+                    den = 1
+                newNoteBank.addNote(RatioNote(num, den, name))
+        newNoteBank.sort()
+        if len(negativeCentNotes):
+            maxNote = newNoteBank.notes[-1]
+            maxCents = maxNote.getCents()
+            for negativeCentNote in negativeCentNotes:
+                cents = negativeCentNote[0]
+                name = negativeCentNote[1]
+                # Make sure it's not higher than the maximum cents (the repeat point)
+                while cents > maxCents:
+                    cents -= maxCents
+                if cents != maxCents:
+                    newNoteBank.addNote(CentNote(cents, name))
+            newNoteBank.sort()
+        return newNoteBank
+
+# This class will probably be removed, or at least not implemented yet:
+#class nnotebankline(tk.Toplevel):
+#    def __init__(self, note):
+#        self.myNote = note
+#        self.text = TkStringVar()
+#        self.text.set(note.getName())
         
 
 class nnotebankdialog(tk.Toplevel):
     # The new version requires:
     # Load SCL button (file dialog)
     # Load into (merge) (file dialog)
-    # Save SCL (file dialog)
+    # Save SCL (file dialog if no filename)
+    # Save as SCL (file dialog)
     # Filename (label)
-    # Add ratio (entry field, button)
-    # Add cent value (entry field, button)
-    # Optional name field for each degree (entry field)
-    # X button to remove each degree
-    # Scale info field (label and edit button)
-    # Scroll?
+    # SCL text field
+    # Scroll for SCL text field
+    # List of notes (text field disabled)
+    # Scroll for List of notes
     # Tabs for different banks
     # OK / Apply / Cancel
+        # Add ratio (entry field, button)
+        # Add cent value (entry field, button)
+        # Optional name field for each degree (entry field)
+        # X button to remove each degree
+        # Scale info field (label and edit button)
     def __init__(self, parent):
         tk.Toplevel.__init__(self, parent.myparent, width=640, height=480)
         self.columnconfigure(0, weight=1)
