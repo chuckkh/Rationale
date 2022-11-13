@@ -24,6 +24,13 @@ import sys
 #import chardet
 import pathlib
 import os
+sys.path.insert(0, "./RatEngine/Builds")
+if sys.platform.count("win32"):
+    import execPathRelease
+    import execPathDebug
+else:
+    import execPath as execPathRelease
+    import execPath as execPathDebug
 
 class RatEngineInterface:
     def __init__(self, parent):
@@ -169,10 +176,13 @@ class RatEngineInterface:
 
     def launchWithDebug(self):
         try:
-            if sys.platform.count("win32"):
-                enginePath = pathlib.Path(__file__).parent.absolute().__str__() + os.sep + "RatEngine" + os.sep + "Builds" + os.sep + "ConsoleApp" + os.sep + "RatEngine.exe"
-            elif sys.platform.count("linux"):
-                enginePath = pathlib.Path(__file__).parent.absolute().__str__() + os.sep + "RatEngine" + os.sep + "Builds" + os.sep + "ConsoleApp" + os.sep + "RatEngine"
+            enginePath = execPathDebug.exec_path
+#            if sys.platform.count("win32"):
+#                enginePath = pathlib.Path(__file__).parent.absolute().__str__() + os.sep + "RatEngine" + os.sep + "Builds" + os.sep + "ConsoleApp" + os.sep + "RatEngine.exe"
+#                enginePath = execPathDebug.exec_path
+#            elif sys.platform.count("linux"):
+#                enginePath = pathlib.Path(__file__).parent.absolute().__str__() + os.sep + "RatEngine" + os.sep + "Builds" + os.sep + "ConsoleApp" + os.sep + "RatEngine"
+#                enginePath = execPath.exec_path
 #            enginePath = pathlib.Path(__file__).parent.absolute().__str__() + os.sep + "RatEngine" + os.sep + "Builds" + os.sep + "VisualStudio2019" + os.sep + "x64" + os.sep + "Debug" + os.sep + "ConsoleApp" + os.sep + "RatEngine.exe"
         #rau = subprocess.Popen((r'C:\Users\Home\Documents\Coding\rationale-2020\RatEngine\Builds\VisualStudio2019\x64\Debug\ConsoleApp\RatEngine.exe', str(cbport)))
             self.rau = subprocess.Popen((enginePath, str(self.cbport)))
@@ -183,15 +193,17 @@ class RatEngineInterface:
 
     def launchWithoutDebug(self):
         try:
-            if sys.platform.count("win32"):
-                enginePath = pathlib.Path(__file__).parent.absolute().__str__() + os.sep + "RatEngine" + os.sep + "Builds" + os.sep + "ConsoleApp" + os.sep + "RatEngine.exe"
-            elif sys.platform.count("linux"):
-                enginePath = pathlib.Path(__file__).parent.absolute().__str__() + os.sep + "RatEngine" + os.sep + "Builds" + os.sep + "ConsoleApp" + os.sep + "RatEngine"
+            enginePath = execPathRelease.exec_path
+#            if sys.platform.count("win32"):
+#                enginePath = pathlib.Path(__file__).parent.absolute().__str__() + os.sep + "RatEngine" + os.sep + "Builds" + os.sep + "ConsoleApp" + os.sep + "RatEngine.exe"
+#                enginePath = execPathRelease.exec_path
+#            elif sys.platform.count("linux"):
+#                enginePath = pathlib.Path(__file__).parent.absolute().__str__() + os.sep + "RatEngine" + os.sep + "Builds" + os.sep + "ConsoleApp" + os.sep + "RatEngine"
+#                enginePath = execPath.exec_path
 
 #            enginePath = pathlib.Path(__file__).parent.absolute().__str__() + os.sep + "RatEngine" + os.sep + "Builds" + os.sep + "VisualStudio2019" + os.sep + "x64" + os.sep + "Release" + os.sep + "ConsoleApp" + os.sep + "RatEngine.exe"
             print("path ", enginePath)
             #rau = subprocess.Popen((r'C:\Users\Home\Documents\Coding\rationale-2020\RatEngine\Builds\VisualStudio2019\x64\Release\ConsoleApp\RatEngine.exe', str(cbport)))
-            print(enginePath)
             self.rau = subprocess.Popen((enginePath, str(self.cbport)))
         except:
             print("Engine stolen")
