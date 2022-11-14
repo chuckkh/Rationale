@@ -52,12 +52,12 @@ class NoteBankNote(object):
         if self.name:
             return self.name
         elif self.num and self.den:
-            return str(self.num)+":"+str(self.den)
+            return str(self.num)+"/"+str(self.den)
         elif self.centOffset:
             return str(self.centOffset)
             
     def getFractionOfOctave(self):
-        return fractionOfOctave
+        return self.fractionOfOctave
 
 class RatioNote(NoteBankNote):
     def __init__(self, num=1, den=1, name=None):
@@ -134,7 +134,7 @@ class NoteBank(object):
         
         
     def sort(self):
-        self.notes.sort(key=getFractionOfOctave)
+        self.notes.sort(key=lambda note: note.getFractionOfOctave())
 #    def createScalaFileText(self):
         
 
@@ -144,12 +144,12 @@ class ScalaFileText(object):
         self.path = path
         self.lines = []
         self.file = None
-        if os.path.exists(path):
+        if path and os.path.exists(path):
             try:
                 self.file = open(path)
+                self.readFromDisk()
             except:
                 print("Unable to open Scala file:", self.path, file=sys.stderr)
-        self.readFromDisk()
     def readFromDisk(self):
         self.file.seek(0)
         self.lines = self.file.readlines()
@@ -268,10 +268,11 @@ class nnotebankdialog(tk.Toplevel):
         self.bind("<Escape>", self.cancel)
         self.title("Edit Notebanks")
         self.notebankmaybe = copy.deepcopy(self.myparent.notebanklist)
+        self.noteBankMaybe = copy.deepcopy(self.myparent.noteBankList)
         defnotebank = [(1, 1), (33, 32), (21, 20), (16, 15), (15, 14), (14, 13), (13, 12), (12, 11), (11, 10), (10, 9), (9, 8), (8, 7), (7, 6), (13, 11), (32, 27), (6, 5), (11, 9), (16, 13), (5, 4), (81, 64), (14, 11), (9, 7), (13, 10), (21, 16), (4, 3), (11, 8), (18, 13), (7, 5), (10, 7), (13, 9), (16, 11), (3, 2), (32, 21), (20, 13), (14, 9), (11, 7), (128, 81), (8, 5), (13, 8), (18, 11), (5, 3), (27, 16), (22, 13), (12, 7), (7, 4), (16, 9), (9, 5), (20, 11), (11, 6), (24, 13), (13, 7), (28, 15), (15, 8), (40, 21), (64, 33), (2, 1)]
-        self.defnotebank = NoteBank()
-        for ratio in defnotebank[1:]:
-            self.defnotebank.addNote(RatioNote(ratio[0], ratio[1]))
+        self.defnotebank = parent.scalaFileList[0].parseToNoteBank()
+#        for ratio in defnotebank[1:]:
+#            self.defnotebank.addNote(RatioNote(ratio[0], ratio[1]))
         self.grid_propagate(0)
         row = column = ht = 0
         numdenlist = []
@@ -307,22 +308,28 @@ class nnotebankdialog(tk.Toplevel):
         tk.Button(self.mainfr, text="Load", command=self.load).grid(row=5, column=0)
 
         tk.Label(self.mainfr, text="Current Scala File").grid(row=1, column=1, columnspan=1)
-        self.inscroll = tk.Scrollbar(self.mainfr)
-        self.inscroll.grid(row=2, column=2, rowspan=5, sticky='ns')
-        self.inratios = tk.Listbox(self.mainfr, height=15, width=10, yscrollcommand=self.inscroll.set, selectmode="extended")
+        self.sclTextScroll = tk.Scrollbar(self.mainfr)
+        self.sclTextScroll.grid(row=2, column=2, rowspan=5, sticky='ns')
+        self.inratios = tk.Listbox(self.mainfr, height=15, width=10, yscrollcommand=self.sclTextScroll.set, selectmode="extended")
 #        self.inratios.grid(row=2, column=1, rowspan=5)
-        self.sclText = tk.Text(self.mainfr, height=20, width=25, yscrollcommand=self.inscroll.set)
+        self.sclText = tk.Text(self.mainfr, height=20, width=25, yscrollcommand=self.sclTextScroll.set)
         self.sclText.grid(row=2, column=1, rowspan=5)
-        self.inscroll.config(command=self.sclText.yview)
+        self.sclTextScroll.config(command=self.sclText.yview)
 
         tk.Label(self.mainfr, text="Just the Notes").grid(row=1, column=5, columnspan=1)
-        self.outscroll = tk.Scrollbar(self.mainfr)
-        self.outscroll.grid(row=2, column=6, rowspan=5, sticky='ns')
-        self.outratios = tk.Listbox(self.mainfr, height=15, width=10, yscrollcommand=self.outscroll.set, selectmode="extended")
+        self.noteListScroll = tk.Scrollbar(self.mainfr)
+        self.noteListScroll.grid(row=2, column=6, rowspan=5, sticky='ns')
+        self.outratios = tk.Listbox(self.mainfr, height=15, width=10, yscrollcommand=self.noteListScroll.set, selectmode="extended")
 #        self.outratios.grid(row=2, column=5, rowspan=5)
-        self.noteList = tk.Text(self.mainfr, height=20, width=25, yscrollcommand=self.outscroll.set)
+        self.noteList = tk.Text(self.mainfr, height=20, width=15, yscrollcommand=self.noteListScroll.set, state='disabled')
         self.noteList.grid(row=2, column=5, rowspan=5)
-        self.outscroll.config(command=self.noteList.yview)
+        self.noteListScroll.config(command=self.noteList.yview)
+        self.setScalaText()
+        self.setNoteList()
+
+
+
+
         for ratio in self.notebankmaybe[0].numdenlist:
             self.inratios.insert("end", '%4d : %d' % (ratio[0], ratio[1]))
 
@@ -359,6 +366,26 @@ class nnotebankdialog(tk.Toplevel):
         tk.Button(self.buttonfr, text="Clear", command=self.clear).grid(row=0, column=3, padx=10)
         tk.Button(self.buttonfr, text="New Bank", command=self.bankadd).grid(row=0, column=4, padx=10)
         tk.Button(self.buttonfr, text="Default", command=self.setdefault).grid(row=0, column=5, padx=10)
+
+    def setScalaText(self):
+        #sclText
+        #noteList
+        #self.myparent.scalaFileList
+        ind = self.current.get()
+        self.sclText.delete('1.0', 'end')
+        for line in self.myparent.scalaFileList[ind].lines:
+            self.sclText.insert('end', line)
+
+    def setNoteList(self):
+        ind = self.current.get()
+        
+        self.noteList.config(state='normal')
+        self.noteList.delete('1.0', 'end')
+        for note in self.myparent.noteBankList[ind].notes:
+            self.noteList.insert('end', note.getName() + '\n')
+        self.noteList.config(state='disabled')
+        
+        
 
     def selectfrreset(self, event):
         row = column = 0

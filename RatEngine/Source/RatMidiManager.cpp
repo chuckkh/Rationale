@@ -274,7 +274,9 @@ void RatMidiManager::setActiveMidiInput(juce::String name)
     }
   if (RatEngine::isUnix() && !name.compare("Rationale MIDI In"))
     {
+#ifndef JUCE_WINDOWS
       activeMidiInput = juce::MidiInput::createNewDevice("Rationale MIDI In", nullptr);
+#endif
     }
 	else if (midiInDevices.count(name))
 	{
@@ -291,7 +293,9 @@ void RatMidiManager::addActiveMidiOutput(juce::String name)
 //	{
   if (RatEngine::isUnix() && name.startsWith("Rationale MIDI Out "))
     {
-      activeMidiOutputs[name] = juce::MidiOutput::createNewDevice(name);
+      #ifndef JUCE_WINDOWS
+      activeMidiOutputs[name] = juce::MidiOutput::createNewDevice(name, nullptr);
+      #endif
     }
   else if (midiOutDevices.count(name))
     {
