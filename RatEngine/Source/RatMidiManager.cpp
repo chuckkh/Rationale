@@ -20,6 +20,7 @@
 #include "RatMidiManager.h"
 //#include "RatMidiMessage.h"
 #include "RatNote.h"
+#include "RatEngine.h"
 //#include "RatNoteOn.h"
 //#include "RatNoteOff.h"
 #include <iostream>
@@ -34,7 +35,7 @@ RatMidiManager::RatMidiManager()
 	songPosition(0),
 	playing(false)
 {
-	
+  
 }
 
 void RatMidiManager::handleIncomingMidiMessage(juce::MidiInput* input, const juce::MidiMessage& msg)
@@ -266,7 +267,16 @@ void RatMidiManager::addMidiOutDevice(juce::String name, juce::String dev)
 
 void RatMidiManager::setActiveMidiInput(juce::String name)
 {
-	if (midiInDevices.count(name))
+  if (activeMidiInput != nullptr)
+    {
+      activeMidiInput->stop();
+      activeMidiInput.reset();
+    }
+  if (RatEngine::isUnix() && !name.compare("Rationale MIDI In"))
+    {
+      activeMidiInput = juce::MidiInput::createNewDevice("Rationale MIDI In", nullptr);
+    }
+	else if (midiInDevices.count(name))
 	{
 		juce::String device = midiInDevices[name];
 		activeMidiInput = juce::MidiInput::openDevice(device, this);
@@ -279,9 +289,17 @@ void RatMidiManager::addActiveMidiOutput(juce::String name)
 {
 //	if (activeMidiOutputs.count(name) == 0)
 //	{
+  if (RatEngine::isUnix() && name.startsWith("Rationale MIDI Out "))
+    {
+      activeMidiOutputs[name] = juce::MidiOutput::createNewDevice(name);
+    }
+  else if (midiOutDevices.count(name))
+    {
 	juce::String device = midiOutDevices[name];
 	activeMidiOutputs[name] = juce::MidiOutput::openDevice(device);
 	juce::MidiDeviceInfo devInfo = activeMidiOutputs[name]->getDeviceInfo();
+    }
+  
 
 	//std::cerr << "Device info: " << devInfo.name << "/" << devInfo.identifier << std::endl;
 //	}
