@@ -65,7 +65,7 @@ class RatioNote(NoteBankNote):
         self.num = num
         self.den = den
         self.centOffset = None
-        setFractionOfOctave()
+        self.setFractionOfOctave()
     def getCents(self):
         cent = pow(2,(1/1200))
         return math.log(num/den)/math.log(cent)
@@ -85,7 +85,7 @@ class CentNote(NoteBankNote):
         super().__init__(name)
         self.centOffset = centOffset
         self.num = self.den = None
-        setFractionOfOctave()
+        self.setFractionOfOctave()
     def getCents(self):
         return centOffset
     def setFractionOfOctave():
@@ -135,7 +135,10 @@ class NoteBank(object):
         
     def sort(self):
         self.notes.sort(key=getFractionOfOctave)
+#    def createScalaFileText(self):
+        
 
+        
 class ScalaFileText(object):
     def __init__(self, path=None):
         self.path = path
@@ -150,7 +153,9 @@ class ScalaFileText(object):
     def readFromDisk(self):
         self.file.seek(0)
         self.lines = self.file.readlines()
-    def writeToDisk(self, targetPath=self.path):
+    def writeToDisk(self, targetPath=None):
+        if targetPath == None:
+            targetPath = self.path
         if os.path.exists(targetPath):
             fileContentCheck = open(targetPath, 'r')
             fileContentCheckText = fileContentCheck.readlines()
@@ -259,7 +264,7 @@ class nnotebankdialog(tk.Toplevel):
         if sys.platform.count("win32"):
             try: self.iconbitmap('rat32.ico')
             except: pass
-        self.bind("<Return>", self.indirectok)
+#        self.bind("<Return>", self.indirectok)
         self.bind("<Escape>", self.cancel)
         self.title("Edit Notebanks")
         self.notebankmaybe = copy.deepcopy(self.myparent.notebanklist)
@@ -277,6 +282,7 @@ class nnotebankdialog(tk.Toplevel):
         self.selectfr.bind("<Configure>", self.selectfrreset)
         self.selectfr.grid(row=0, column=0, columnspan=1, sticky='w', padx=20)
         self.mainfr = tk.Frame(self)
+        self.mainfr.bind("<Return>", self.indirectok)
         self.mainfr.rowconfigure(0, weight=1)
         self.mainfr.rowconfigure(1, weight=0)
         self.mainfr.rowconfigure(2, weight=0)
@@ -300,46 +306,49 @@ class nnotebankdialog(tk.Toplevel):
         tk.Button(self.mainfr, text="Save...", command=self.save).grid(row=4, column=0)
         tk.Button(self.mainfr, text="Load", command=self.load).grid(row=5, column=0)
 
-        tk.Label(self.mainfr, text="Current").grid(row=1, column=1, columnspan=1)
+        tk.Label(self.mainfr, text="Current Scala File").grid(row=1, column=1, columnspan=1)
         self.inscroll = tk.Scrollbar(self.mainfr)
         self.inscroll.grid(row=2, column=2, rowspan=5, sticky='ns')
         self.inratios = tk.Listbox(self.mainfr, height=15, width=10, yscrollcommand=self.inscroll.set, selectmode="extended")
-        self.inratios.grid(row=2, column=1, rowspan=5)
+#        self.inratios.grid(row=2, column=1, rowspan=5)
+        self.sclText = tk.Text(self.mainfr, height=20, width=25, yscrollcommand=self.inscroll.set)
+        self.sclText.grid(row=2, column=1, rowspan=5)
+        self.inscroll.config(command=self.sclText.yview)
 
-        self.inscroll.config(command=self.inratios.yview)
-
-        tk.Label(self.mainfr, text="Suggested").grid(row=1, column=5, columnspan=1)
+        tk.Label(self.mainfr, text="Just the Notes").grid(row=1, column=5, columnspan=1)
         self.outscroll = tk.Scrollbar(self.mainfr)
         self.outscroll.grid(row=2, column=6, rowspan=5, sticky='ns')
         self.outratios = tk.Listbox(self.mainfr, height=15, width=10, yscrollcommand=self.outscroll.set, selectmode="extended")
-        self.outratios.grid(row=2, column=5, rowspan=5)
-        self.outscroll.config(command=self.outratios.yview)
+#        self.outratios.grid(row=2, column=5, rowspan=5)
+        self.noteList = tk.Text(self.mainfr, height=20, width=25, yscrollcommand=self.outscroll.set)
+        self.noteList.grid(row=2, column=5, rowspan=5)
+        self.outscroll.config(command=self.noteList.yview)
         for ratio in self.notebankmaybe[0].numdenlist:
             self.inratios.insert("end", '%4d : %d' % (ratio[0], ratio[1]))
 
         self.setratiosfromprime(self.primelimit.get())
 
-        tk.Label(self.mainfr, text="Prime Limit").grid(row=2, column=7, sticky='s')
+#        tk.Label(self.mainfr, text="Prime Limit").grid(row=2, column=7, sticky='s')
         self.primeselector = tk.Menubutton(self.mainfr, textvariable=self.primelimit, width=4, relief="raised", padx=0, indicatoron=1, anchor='w')
         self.primemenu = tk.Menu(self.primeselector, tearoff=0)
         for prime in self.primelist:
             self.primemenu.add_command(label=prime, command=lambda arg1=prime: self.setprimelimit(arg1))
 
         self.primeselector['menu'] = self.primemenu
-        self.primeselector.grid(row=3, column=7, sticky='n')
+#        self.primeselector.grid(row=3, column=7, sticky='n')
 
-        tk.Button(self.mainfr, text="->", command=self.ratioremove).grid(row=3, column=3, columnspan=2)
-        tk.Button(self.mainfr, text="<-", command=self.ratioadd).grid(row=4, column=3, columnspan=2)
+#        tk.Button(self.mainfr, text="->", command=self.ratioremove).grid(row=3, column=3, columnspan=2)
+#        tk.Button(self.mainfr, text="<-", command=self.ratioadd).grid(row=4, column=3, columnspan=2)
         self.toadd = tk.StringVar()
         self.toadd.trace("w", self.findinverse)
-        tk.Label(self.mainfr, text="Enter Ratio").grid(row=5, column=3, sticky='s')
+#        tk.Label(self.mainfr, text="Enter Ratio").grid(row=5, column=3, sticky='s')
         self.addbox = tk.Entry(self.mainfr, textvariable=self.toadd, width=6)
-        self.addbox.grid(row=6, column=3, sticky='n')
+#        self.addbox.grid(row=6, column=3, sticky='n')
         self.addbox.bind("<Return>", self.addjust)
-        tk.Button(self.mainfr, text="Just Ratio", command=self.addjust).grid(row=7, column=3)
-        tk.Label(self.mainfr, text='Ratio & Inverse').grid(row=6, column=4, sticky='s')
+#        tk.Button(self.mainfr, text="Just Ratio", command=self.addjust).grid(row=7, column=3)
+#        tk.Label(self.mainfr, text='Ratio & Inverse').grid(row=6, column=4, sticky='s')
         self.inverse = tk.Button(self.mainfr, text="", command=self.addinverse)
-        self.inverse.grid(row=7, column=4, sticky='n')
+#        self.inverse.grid(row=7, column=4, sticky='n')
 
         self.buttonfr = tk.Frame(self, width=640, height=80, borderwidth=1, relief="raised")
         self.buttonfr.grid(row=4, column=0, sticky='', ipady=20)
