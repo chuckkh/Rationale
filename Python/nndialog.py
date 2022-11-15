@@ -88,7 +88,7 @@ class CentNote(NoteBankNote):
         self.setFractionOfOctave()
     def getCents(self):
         return centOffset
-    def setFractionOfOctave():
+    def setFractionOfOctave(self):
         self.fractionOfOctave = self.centOffset/1200
     def getInfo(self):
         if self.name == None:
@@ -141,19 +141,29 @@ class NoteBank(object):
         
 class ScalaFileText(object):
     def __init__(self, path=None):
-        self.path = path
+        self.setPath(path)
         self.lines = []
-        self.file = None
+ #       self.file = None
         if path and os.path.exists(path):
             try:
-                self.file = open(path)
                 self.readFromDisk()
             except:
                 print("Unable to open Scala file:", self.path, file=sys.stderr)
+    def setPath(self, path):
+        self.path = path
+    def readFromText(self, txt):
+        self.lines = txt.split(os.linesep)
+#        print(self.lines, file=sys.stderr)
     def readFromDisk(self):
-        self.file.seek(0)
-        self.lines = self.file.readlines()
+        if self.path == None:
+            return
+        file = open(self.path)
+        file.seek(0)
+        self.lines = file.readlines()
+        file.close()
     def writeToDisk(self, targetPath=None):
+        if self.path == None:
+            return
         if targetPath == None:
             targetPath = self.path
         if os.path.exists(targetPath):
@@ -163,15 +173,21 @@ class ScalaFileText(object):
                 fileContentCheck.close()
                 return 1
         fileToWrite = open(targetPath, 'w')
-        fileToWrite.writelines(self.lines)
+        for ln in self.lines:
+            fileToWrite.write(ln + os.linesep)
         fileToWrite.close()
         return 0
     def parseToNoteBank(self):
-        notes = [ln.split('!')[0] for ln in self.lines if ln[0] != '!'][2:]
+        notes = [ln.split('!')[0] for ln in self.lines if len(ln) and ln[0] != '!'][2:]
         newNoteBank = NoteBank()
         negativeCentNotes = []
         for note in notes:
+            if note == '' or len(note) == 0:
+                continue
+
             splt = note.split()
+            if len(splt) == 0:
+                continue
             val = splt[0]
             name = None
             for s in splt[1:]:
@@ -268,7 +284,8 @@ class nnotebankdialog(tk.Toplevel):
         self.bind("<Escape>", self.cancel)
         self.title("Edit Notebanks")
         self.notebankmaybe = copy.deepcopy(self.myparent.notebanklist)
-        self.noteBankMaybe = copy.deepcopy(self.myparent.noteBankList)
+        self.noteBankListMaybe = copy.deepcopy(self.myparent.noteBankList)
+        self.scalaFileListMaybe = copy.deepcopy(self.myparent.scalaFileList)
         defnotebank = [(1, 1), (33, 32), (21, 20), (16, 15), (15, 14), (14, 13), (13, 12), (12, 11), (11, 10), (10, 9), (9, 8), (8, 7), (7, 6), (13, 11), (32, 27), (6, 5), (11, 9), (16, 13), (5, 4), (81, 64), (14, 11), (9, 7), (13, 10), (21, 16), (4, 3), (11, 8), (18, 13), (7, 5), (10, 7), (13, 9), (16, 11), (3, 2), (32, 21), (20, 13), (14, 9), (11, 7), (128, 81), (8, 5), (13, 8), (18, 11), (5, 3), (27, 16), (22, 13), (12, 7), (7, 4), (16, 9), (9, 5), (20, 11), (11, 6), (24, 13), (13, 7), (28, 15), (15, 8), (40, 21), (64, 33), (2, 1)]
         self.defnotebank = parent.scalaFileList[0].parseToNoteBank()
 #        for ratio in defnotebank[1:]:
@@ -300,8 +317,10 @@ class nnotebankdialog(tk.Toplevel):
         self.primelist = [3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]
         self.primelimit = tk.IntVar(value=self.myparent.primelimit)
         self.availableratios = self.unusedratios = []
-        for ind, nb in enumerate(self.notebankmaybe):
-            self.bankadd(nb)
+        for scl in self.scalaFileListMaybe:
+            self.bankadd(scl)
+#        for ind, nb in enumerate(self.notebankmaybe):
+#            self.bankadd(nb)
 #            tk.Button(self.selectfr, text="%s" % ind, command=lambda arg1=ind: self.choosebank(arg1)).grid(row=0, column=ind)
 
         tk.Button(self.mainfr, text="Save...", command=self.save).grid(row=4, column=0)
@@ -312,7 +331,7 @@ class nnotebankdialog(tk.Toplevel):
         self.sclTextScroll.grid(row=2, column=2, rowspan=5, sticky='ns')
         self.inratios = tk.Listbox(self.mainfr, height=15, width=10, yscrollcommand=self.sclTextScroll.set, selectmode="extended")
 #        self.inratios.grid(row=2, column=1, rowspan=5)
-        self.sclText = tk.Text(self.mainfr, height=20, width=25, yscrollcommand=self.sclTextScroll.set)
+        self.sclText = tk.Text(self.mainfr, height=20, width=25, yscrollcommand=self.sclTextScroll.set, spacing3=3, wrap='word')
         self.sclText.grid(row=2, column=1, rowspan=5)
         self.sclTextScroll.config(command=self.sclText.yview)
 
@@ -321,11 +340,13 @@ class nnotebankdialog(tk.Toplevel):
         self.noteListScroll.grid(row=2, column=6, rowspan=5, sticky='ns')
         self.outratios = tk.Listbox(self.mainfr, height=15, width=10, yscrollcommand=self.noteListScroll.set, selectmode="extended")
 #        self.outratios.grid(row=2, column=5, rowspan=5)
-        self.noteList = tk.Text(self.mainfr, height=20, width=15, yscrollcommand=self.noteListScroll.set, state='disabled')
+        self.noteList = tk.Text(self.mainfr, height=20, width=15, yscrollcommand=self.noteListScroll.set, state='disabled', spacing3=3, relief='groove')
         self.noteList.grid(row=2, column=5, rowspan=5)
         self.noteListScroll.config(command=self.noteList.yview)
         self.setScalaText()
         self.setNoteList()
+        self.sclText.bind("<KeyRelease>", self.updateNoteList)
+                                            
 
 
 
@@ -373,19 +394,26 @@ class nnotebankdialog(tk.Toplevel):
         #self.myparent.scalaFileList
         ind = self.current.get()
         self.sclText.delete('1.0', 'end')
-        for line in self.myparent.scalaFileList[ind].lines:
+        for line in self.scalaFileListMaybe[ind].lines:
+            if len(line) and line[-1] != '\n' and line[-1] != os.linesep:
+                line += os.linesep
             self.sclText.insert('end', line)
+
 
     def setNoteList(self):
         ind = self.current.get()
         
         self.noteList.config(state='normal')
         self.noteList.delete('1.0', 'end')
-        for note in self.myparent.noteBankList[ind].notes:
+        for note in self.noteBankListMaybe[ind].notes:
             self.noteList.insert('end', note.getName() + '\n')
         self.noteList.config(state='disabled')
         
-        
+    def updateNoteList(self, *kw):
+        ind = self.current.get()
+        self.scalaFileListMaybe[ind].readFromText(self.sclText.get('1.0', 'end'))
+        self.noteBankListMaybe[ind] = self.scalaFileListMaybe[ind].parseToNoteBank()
+        self.setNoteList()
 
     def selectfrreset(self, event):
         row = column = 0
@@ -424,8 +452,10 @@ class nnotebankdialog(tk.Toplevel):
         button.grid(row=row, column=column, sticky='ew')
 
         if not nb:
-            nb = notebank(copy.copy(self.defnotebank))
-            self.notebankmaybe.append(nb)
+            nb = ScalaFileText('Rationale13.scl')
+#            nb = notebank(copy.copy(self.defnotebank))
+            self.scalaFileListMaybe.append(nb)
+            self.noteBankListMaybe.append(nb.parseToNoteBank())
             
 #        frame = tk.Frame(self.nb)
 #        self.framelist.append(frame)
@@ -582,38 +612,51 @@ class nnotebankdialog(tk.Toplevel):
         return powers
 
     def choosebank(self, bank):
-        self.inratios.delete(0, "end")
-        self.outratios.delete(0, "end")
-        for rat in self.notebankmaybe[bank].numdenlist:
-            self.inratios.insert("end", '%4d : %d' % (int(rat[0]), int(rat[1])))
-        self.setratiosfromprime(self.primelimit.get())
+        self.sclText.delete('1.0', "end")
+        self.noteList.delete('1.0', "end")
+        self.current.set(bank)
+        self.setScalaText()
+        self.setNoteList()
+#        for rat in self.notebankmaybe[bank].numdenlist:
+#            self.inratios.insert("end", '%4d : %d' % (int(rat[0]), int(rat[1])))
+#        self.setratiosfromprime(self.primelimit.get())
 
     def setprimelimit(self, limit):
         self.primelimit.set(limit)
         self.setratiosfromprime(limit)
 
     def save(self, *args):
-        filetosave = tkfd.asksaveasfilename(master=self, title="Save Note Bank", defaultextension=".rnb", filetypes=[('Rationale Note Bank', ".rnb")])
+        filetosave = tkfd.asksaveasfilename(master=self, title="Save Scala Tuning File", defaultextension=".scl", filetypes=[('Scala Tuning File', ".scl")])
         if not filetosave:
             return
-        file = open(filetosave, 'wb')
-        pickle.dump(self.notebankmaybe, file)
+#        file = open(filetosave, 'wb')
+        ind = self.current.get()
+        self.scalaFileListMaybe[ind].setPath(filetosave)
+        self.scalaFileListMaybe[ind].writeToDisk()
+#        pickle.dump(self.scalaFileListMaybe[ind], file)
 
     def load(self, *args):
-        filetoload = tkfd.askopenfilename(title="Open", filetypes=[('Rationale Note Bank', ".rnb"), ("All", "*")])
+        filetoload = tkfd.askopenfilename(title="Open", filetypes=[('Scala Tuning File', ".scl"), ("All", "*")])
         if not filetoload:
             return
-        file = open(filetoload, 'rb')
-        self.notebankmaybe = pickle.load(file)
-        for sel in self.selectfr.winfo_children():
-            sel.destroy()
-        for bank in self.notebankmaybe:
-            self.bankadd(bank)
-        self.selectfr.winfo_children()[0].select()
-        self.selectfr.winfo_children()[0].invoke()
+#        file = open(filetoload, 'rb')
+        ind = self.current.get()
+#        self.scalaFileListMaybe[ind] = pickle.load(file)
+        self.scalaFileListMaybe[ind].setPath(filetoload)
+        self.scalaFileListMaybe[ind].readFromDisk()
+        self.noteBankListMaybe[ind] = self.scalaFileListMaybe[ind].parseToNoteBank()
+        self.setScalaText()
+        self.setNoteList()
+#        for sel in self.selectfr.winfo_children():
+#            sel.destroy()
+#        for bank in self.notebankmaybe:
+#            self.bankadd(bank)
+#        self.selectfr.winfo_children()[0].select()
+#        self.selectfr.winfo_children()[0].invoke()
 
     def indirectok(self, *args):
-        if self.focus_get() != self.addbox:
+#        if self.focus_get() != self.addbox:
+        if self.focus_get() != self.sclText:
             self.ok()
 
     def ok(self, *args):
@@ -621,32 +664,34 @@ class nnotebankdialog(tk.Toplevel):
         self.cancel()
 
     def apply(self, *args):
-        self.myparent.notebanklist = copy.deepcopy(self.notebankmaybe)
-        primelimit = 3
-        for prime in self.primelist:
-            for bank in self.notebankmaybe:
-                for ratio in bank.numdenlist:
-                    if not ratio[0] % prime or not ratio[1] % prime:
-                        primelimit = prime
-                        break
-        self.myparent.primelimit = primelimit
+        self.myparent.noteBankList = copy.deepcopy(self.noteBankListMaybe)
+        self.myparent.scalaFileList = copy.deepcopy(self.scalaFileListMaybe)
+#        primelimit = 3
+#        for prime in self.primelist:
+#            for bank in self.notebankmaybe:
+#                for ratio in bank.numdenlist:
+#                    if not ratio[0] % prime or not ratio[1] % prime:
+#                        primelimit = prime
+#                        break
+#        self.myparent.primelimit = primelimit
 
     def cancel(self, *args):
         self.destroy()
 
     def clear(self, *args):
-        self.inratios.selection_set(0, "end")
-        self.ratioremove()
+        ind = self.current.get()
+        self.scalaFileListMaybe[ind] = ScalaFileText()
+        self.noteBankListMaybe[ind] = self.scalaFileListMaybe[ind].parseToNoteBank()
+        self.setScalaText()
+        self.setNoteList()
+        #self.inratios.selection_set(0, "end")
+        #self.ratioremove()
 
     def setdefault(self, *args):
+        
         self.clear()
-        for ratio in self.defnotebank:
-            self.notebankmaybe[self.current.get()].numdenlist.append(ratio)
-            self.inratios.insert("end", '%4d : %d' % (ratio[0], ratio[1]))
-        inds = []
-        for ind, rat in enumerate(self.outratios.get(0, "end")):
-            ratsplit = rat.split(':')
-            if (int(ratsplit[0]), int(ratsplit[1])) in self.defnotebank:
-                inds.append(ind)
-        for ind in reversed(inds):
-            self.outratios.delete(ind)
+        ind = self.current.get()
+        self.scalaFileListMaybe[ind] = ScalaFileText('Rationale13.scl')
+        self.noteBankListMaybe[ind] = self.scalaFileListMaybe[ind].parseToNoteBank()
+        self.setScalaText()
+        self.setNoteList()
