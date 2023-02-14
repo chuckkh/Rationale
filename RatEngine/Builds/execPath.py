@@ -1,1 +1,1 @@
-exec_path = "/home/chuckk/Coding/Rationale/RatEngine/Builds/RatEngine_artefacts/RatEngine"
+exec_path = "RatEngine/Builds/RatEngine_artefacts/RatEngine"
